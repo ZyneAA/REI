@@ -115,12 +115,38 @@ impl<'a> Lexer<'a> {
             '\n' => self.line += 1,
             '"' => self.string(),
             _ => {
-                if c != '\n' {
+
+                if c.is_digit(10) {
+                    self.number();
+                }
+                else {
                     println!("Unexpected character at -> {}:{}", self.line, self.current);
                     process::exit(65)
                 }
+
             }
         };
+
+    }
+
+    fn number(&mut self) {
+
+        let c = self.peek();
+        while c.is_digit(10) {
+            self.advance();
+        }
+
+        if self.peek() == '.' && self.peek_next().is_digit(10) {
+
+            self.advance();
+            while self.peek().is_digit(10) {
+                self.advance();
+            }
+
+        }
+
+        let number: f64 = self.source[self.start..self.current].to_string().parse().unwrap();
+        self.add_token(TokenType::Number, Object::Number(number));
 
     }
 
@@ -157,6 +183,17 @@ impl<'a> Lexer<'a> {
             let c = self.source[self.current..].chars().next().unwrap();
             c
         }
+
+    }
+
+    fn peek_next(&mut self) -> char {
+
+        if self.current + 1 >= self.length {
+            return '\0'
+        }
+
+        let c = self.source[self.current + 1..].chars().next().unwrap();
+        c
 
     }
 
