@@ -1,0 +1,39 @@
+use std::{ process, env, io::Result };
+
+mod frontend;
+
+fn main() -> Result<()> {
+
+    let args: Vec<String> = env::args().collect();
+    let args_size = args.len();
+
+    let runner = frontend::runner::Runner::new();
+
+    if args_size > 2 {
+
+        println!("Usage: ggs [filename]");
+        Ok(())
+
+    }
+    else if args_size == 2 {
+
+        let source = frontend::read_file(&args[1])
+            .unwrap_or_else(|_| {
+                eprintln!("No file found");
+                process::exit(65);
+        });
+
+        runner.run(&source);
+        Ok(())
+
+    }
+    else {
+
+        frontend::run_prompt();
+        Ok(())
+
+    }
+
+}
+
+
