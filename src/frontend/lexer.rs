@@ -57,46 +57,46 @@ impl<'a> Lexer<'a> {
 
         let c = self.advance();
         match c {
-            '(' => self.add_token(TokenType::LeftParen),
-            ')' => self.add_token(TokenType::RightParen),
-            '{' => self.add_token(TokenType::LeftBrace),
-            '}' => self.add_token(TokenType::RightBrace),
-            ',' => self.add_token(TokenType::Comma),
-            '.' => self.add_token(TokenType::Dot),
-            '-' => self.add_token(TokenType::Minus),
-            '+' => self.add_token(TokenType::Plus),
-            ';' => self.add_token(TokenType::Semicolon),
-            '*' => self.add_token(TokenType::Star),
+            '(' => self.add_token(TokenType::LeftParen, Object::Non),
+            ')' => self.add_token(TokenType::RightParen, Object::Non),
+            '{' => self.add_token(TokenType::LeftBrace, Object::Non),
+            '}' => self.add_token(TokenType::RightBrace, Object::Non),
+            ',' => self.add_token(TokenType::Comma, Object::Non),
+            '.' => self.add_token(TokenType::Dot, Object::Non),
+            '-' => self.add_token(TokenType::Minus, Object::Non),
+            '+' => self.add_token(TokenType::Plus, Object::Non),
+            ';' => self.add_token(TokenType::Semicolon, Object::Non),
+            '*' => self.add_token(TokenType::Star, Object::Non),
             '!' => {
                 if self.match_next_char('=') {
-                    self.add_token(TokenType::BangEqual)
+                    self.add_token(TokenType::BangEqual, Object::Non)
                 }
                 else {
-                    self.add_token(TokenType::Bang)
+                    self.add_token(TokenType::Bang, Object::Non)
                 }
             },
             '=' => {
                 if self.match_next_char('=') {
-                    self.add_token(TokenType::EqualEqual)
+                    self.add_token(TokenType::EqualEqual, Object::Non)
                 }
                 else {
-                    self.add_token(TokenType::Equal)
+                    self.add_token(TokenType::Equal, Object::Non)
                 }
             },
             '>' => {
                 if self.match_next_char('=') {
-                    self.add_token(TokenType::GreaterEqual)
+                    self.add_token(TokenType::GreaterEqual, Object::Non)
                 }
                 else {
-                    self.add_token(TokenType::Greater)
+                    self.add_token(TokenType::Greater, Object::Non)
                 }
             }
             '<' => {
                 if self.match_next_char('=') {
-                    self.add_token(TokenType::LessEqual)
+                    self.add_token(TokenType::LessEqual, Object::Non)
                 }
                 else {
-                    self.add_token(TokenType::Less)
+                    self.add_token(TokenType::Less, Object::Non)
                 }
             }
             '/' => {
@@ -106,9 +106,14 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 else {
-                    self.add_token(TokenType::Slash)
+                    self.add_token(TokenType::Slash, Object::Non)
                 }
             }
+            ' ' => {},
+            '\r' => {},
+            '\t' => {},
+            '\n' => self.line += 1,
+            '"' => self.string(),
             _ => {
                 if c != '\n' {
                     println!("Unexpected character at -> {}:{}", self.line, self.current);
@@ -116,6 +121,26 @@ impl<'a> Lexer<'a> {
                 }
             }
         };
+
+    }
+
+    fn string(&mut self) {
+
+        while self.peek() != '"' && !self.is_end() {
+            if self.peek() == '\n' {
+                self.line += 1;
+            }
+            self.advance();
+        }
+
+        if self.is_end() {
+            println!("Unterminated string");
+            process::exit(65);
+        }
+
+        self.advance();
+        let sub_string = self.source[self.start + 1..self.current -1].to_string();
+        self.add_token(TokenType::String, Object::Str(sub_string));
 
     }
 
@@ -143,13 +168,13 @@ impl<'a> Lexer<'a> {
 
     }
 
-    fn add_token(&mut self, token_type: TokenType) {
+    fn add_token(&mut self, token_type: TokenType, literal: Object) {
 
         let text = self.source[self.start..self.current].to_string();
         let token = Token::new(
                 token_type,
                 text,
-                Object::Non,
+                literal,
                 self.line
         );
 
