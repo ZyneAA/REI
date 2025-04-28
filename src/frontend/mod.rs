@@ -8,7 +8,6 @@ pub mod lexer;
 pub fn read_file(path: &str) -> Result<String> {
 
     let content = fs::read_to_string(path)?;
-    print!("{}", content);
     let mut lexer = lexer::Lexer::new(&content);
     let tokens = lexer.scan_tokens();
     for i in tokens {

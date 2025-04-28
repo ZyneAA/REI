@@ -1,6 +1,6 @@
 use std::process;
 
-use super::token::{ Token, TokenType, Object };
+use super::token::{ Token, TokenType, Object, KEYWORDS };
 
 pub struct Lexer<'a> {
 
@@ -30,7 +30,7 @@ impl<'a> Lexer<'a> {
 
     }
 
-    pub fn scan_tokens(&mut self) -> &Vec<Token> {
+    pub fn scan_tokens(mut self) -> Vec<Token> {
 
 
         while !self.is_end() {
@@ -49,7 +49,7 @@ impl<'a> Lexer<'a> {
             )
         );
 
-        &self.tokens
+        self.tokens
 
     }
 
@@ -57,6 +57,7 @@ impl<'a> Lexer<'a> {
 
         let c = self.advance();
         match c {
+
             '(' => self.add_token(TokenType::LeftParen, Object::Non),
             ')' => self.add_token(TokenType::RightParen, Object::Non),
             '{' => self.add_token(TokenType::LeftBrace, Object::Non),
@@ -119,12 +120,16 @@ impl<'a> Lexer<'a> {
                 if c.is_digit(10) {
                     self.number();
                 }
+                else if self.is_alpha(c) {
+                    self.identifier();
+                }
                 else {
                     println!("Unexpected character at -> {}:{}", self.line, self.current);
                     process::exit(65)
                 }
 
             }
+
         };
 
     }
@@ -216,6 +221,31 @@ impl<'a> Lexer<'a> {
 
         self.tokens.push(token);
 
+    }
+
+    fn identifier(&mut self) {
+
+        let mut c = self.peek();
+        while self.is_alpha_numeric(c) {
+            self.advance();
+            c = self.peek();
+        }
+
+        let token_type = match KEYWORDS.get(&self.source[self.start..self.current]){
+            Some(v) => v.clone(),
+            None => TokenType::Identifier
+        };
+
+        self.add_token(token_type, Object::Non);
+
+    }
+
+    fn is_alpha(&self, c: char) -> bool {
+        c.is_ascii_alphabetic() || c == '_'
+    }
+
+    fn is_alpha_numeric(&self, c: char) -> bool {
+        self.is_alpha(c) || c.is_digit(10)
     }
 
     fn match_next_char(&mut self, expected: char) -> bool {

@@ -1,5 +1,8 @@
 use std::fmt;
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenType {
 
     // Single-character tokens.
@@ -21,6 +24,28 @@ pub enum TokenType {
     Eof
 
 }
+pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
+
+    let mut map = HashMap::new();
+    map.insert("and", TokenType::And);
+    map.insert("class", TokenType::Class);
+    map.insert("else", TokenType::Else);
+    map.insert("false", TokenType::False);
+    map.insert("for", TokenType::For);
+    map.insert("fn", TokenType::Fn);
+    map.insert("if", TokenType::If);
+    map.insert("non", TokenType::Non);
+    map.insert("or", TokenType::Or);
+    map.insert("print", TokenType::Print);
+    map.insert("return", TokenType::Return);
+    map.insert("base", TokenType::Base);
+    map.insert("this", TokenType::This);
+    map.insert("true", TokenType::True);
+    map.insert("let", TokenType::Let);
+    map.insert("while", TokenType::While);
+    map
+
+});
 
 pub enum Object {
 
@@ -56,6 +81,7 @@ pub struct Token {
 impl fmt::Display for TokenType {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+
         let text = match self {
             // Single-character tokens
             TokenType::LeftParen => "Left Paren",
@@ -86,7 +112,7 @@ impl fmt::Display for TokenType {
             TokenType::Number => "Number",
 
             // Keywords
-            TokenType::And => "And",
+            TokenType::And => "IDENTIFIER(and)",
             TokenType::Class => "Class",
             TokenType::Else => "Else",
             TokenType::False => "Fasle",
@@ -100,12 +126,13 @@ impl fmt::Display for TokenType {
             TokenType::Base => "Base",
             TokenType::This => "This",
             TokenType::True => "True",
-            TokenType::Let => "Let",
+            TokenType::Let => "IDENTIFIER(let)",
             TokenType::While => "While",
 
             TokenType::Eof => "End of File",
         };
         write!(f, "{text}")
+
     }
 
 }
