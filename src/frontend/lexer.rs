@@ -131,8 +131,7 @@ impl<'a> Lexer<'a> {
 
     fn number(&mut self) {
 
-        let c = self.peek();
-        while c.is_digit(10) {
+        while self.peek().is_digit(10) {
             self.advance();
         }
 
@@ -199,8 +198,8 @@ impl<'a> Lexer<'a> {
 
     fn advance(&mut self) -> char {
 
-        let c = self.source[self.current..].chars().next().unwrap();
         self.current += 1;
+        let c = self.source[self.current - 1..].chars().next().unwrap();
         c
 
     }
