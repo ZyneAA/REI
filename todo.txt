@@ -1,2 +1,5 @@
 // Optimization
-1. Instead of slicing the whole source string on every call of advance() and peek(), make a source: Vec<char> so that it wont be O(n) because of unicode-8 encoding(This is kinda on Rust part. Because Rust's &str are not array of char. Instead they are array of bytes, u8). So instant lookup time would be much better in the future.
+1. Instead of slicing the whole source string on every call of advance() and peek(),
+make a source: Vec<char> so that it wont be O(n) because of unicode-8 encoding
+(This is kinda on Rust part. Because Rust's &str are not array of char.
+Instead they are array of bytes, u8). So instant lookup time would be much better in the future.
