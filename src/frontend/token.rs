@@ -108,26 +108,26 @@ impl fmt::Display for TokenType {
 
             // Literals
             TokenType::Identifier => "Identifier",
-            TokenType::String => "String",
-            TokenType::Number => "Number",
+            TokenType::String => "STRING",
+            TokenType::Number => "NUMBER",
 
             // Keywords
-            TokenType::And => "IDENTIFIER(and)",
-            TokenType::Class => "Class",
-            TokenType::Else => "Else",
-            TokenType::False => "Fasle",
-            TokenType::Fn => "Function",
-            TokenType::For => "For",
-            TokenType::If => "If",
-            TokenType::Non => "Non",
-            TokenType::Or => "Or",
-            TokenType::Print => "Print",
-            TokenType::Return => "Return",
-            TokenType::Base => "Base",
-            TokenType::This => "This",
-            TokenType::True => "True",
-            TokenType::Let => "IDENTIFIER(let)",
-            TokenType::While => "While",
+            TokenType::And => "IDENTIFIER",
+            TokenType::Class => "IDENTIFIER",
+            TokenType::Else => "IDENTIFIER",
+            TokenType::False => "IDENTIFIER",
+            TokenType::Fn => "IDENTIFIER",
+            TokenType::For => "IDENTIFIER",
+            TokenType::If => "IDENTIFIER",
+            TokenType::Non => "IDENTIFIER",
+            TokenType::Or => "IDENTIFIER",
+            TokenType::Print => "IDENTIFIER",
+            TokenType::Return => "IDENTIFIER",
+            TokenType::Base => "IDENTIFIER",
+            TokenType::This => "IDENTIFIER",
+            TokenType::True => "IDENTIFIER",
+            TokenType::Let => "IDENTIFIER",
+            TokenType::While => "IDENTIFIER",
 
             TokenType::Eof => "End of File",
         };
@@ -151,7 +151,7 @@ impl Token {
     }
 
     pub fn show(&self) {
-        println!("{} - {} - {}", self.token_type, self.lexeme, self.literal);
+        println!("{}  {}  {}  {}", self.token_type, self.lexeme, self.literal, self.line);
     }
 
 }

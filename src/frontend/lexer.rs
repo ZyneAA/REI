@@ -106,6 +106,20 @@ impl<'a> Lexer<'a> {
                         let _ = self.advance();
                     }
                 }
+                else if self.match_next_char('*') {
+                    while !self.is_end() {
+                        if self.peek() == '*' && self.peek_next() == '/' {
+                            // Skipping * and /
+                            self.advance();
+                            self.advance();
+                            break;
+                        }
+                        if self.peek() == '\n' {
+                            self.line += 1;
+                        }
+                        self.advance();
+                    }
+                }
                 else {
                     self.add_token(TokenType::Slash, Object::Non)
                 }

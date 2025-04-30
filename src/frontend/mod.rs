@@ -8,7 +8,7 @@ pub mod lexer;
 pub fn read_file(path: &str) -> Result<String> {
 
     let content = fs::read_to_string(path)?;
-    let mut lexer = lexer::Lexer::new(&content);
+    let lexer = lexer::Lexer::new(&content);
     let tokens = lexer.scan_tokens();
     for i in tokens {
         i.show();
@@ -36,5 +36,4 @@ pub fn run_prompt() {
     }
 
 }
-
 
