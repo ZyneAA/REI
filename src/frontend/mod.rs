@@ -3,6 +3,7 @@ use std::{ fs, io::{ self, Result, Write } };
 pub mod token;
 pub mod runner;
 pub mod lexer;
+pub mod ast;
 
 /// Reading the file from the command line args
 pub fn read_file(path: &str) -> Result<String> {

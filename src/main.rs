@@ -1,6 +1,7 @@
 use std::{ process, env, io::Result };
 
 mod frontend;
+mod tools;
 
 fn main() -> Result<()> {
 
@@ -24,6 +25,16 @@ fn main() -> Result<()> {
         });
 
         runner.run(&source);
+        tools::ast_generator::define_ast(
+            "./src",
+            "Expr",
+            vec![
+                "Binary : Expr left, Token operator, Expr right",
+                "Grouping : Expr expression",
+                "Literal : Object value",
+                "Unary : Token operator, Expr right"
+            ]
+        )?;
         Ok(())
 
     }
