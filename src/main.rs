@@ -26,7 +26,7 @@ fn main() -> Result<()> {
 
         runner.run(&source);
         tools::ast_generator::define_ast(
-            "./src/frontend/",
+            "./src/frontend",
             "Expr",
             vec![
                 "Binary : Expr left, Token operator, Expr right",

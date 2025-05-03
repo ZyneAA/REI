@@ -53,12 +53,33 @@ fn define_visitor(out: &mut File, base_name: &str, types: &Vec<&str>) -> Result<
     writeln!(out, "pub trait Visitor<T> {{\n").unwrap();
 
     for type_def in types {
-        let type_def = type_def.split(':').next().unwrap().trim();
-        let method_name = format!("visit_{}_{}", type_def.to_lowercase(), base_name.to_lowercase());
+
+        let parts = type_def.split(':').nth(1).unwrap();
+        let types: Vec<String> = if parts.contains(',') {
+            let mut temp: Vec<String> = Vec::new();
+            let a: Vec<&str> = parts.split(',').collect();
+            for i in a {
+                let i: Vec<&str> = i.trim().split(' ').rev().collect();
+                let i = i.join(": &");
+                temp.push(i);
+            }
+            temp
+        }
+        else {
+            let a: Vec<&str> = parts.trim().split(' ').rev().collect();
+            let a = a.join(": &");
+            vec![a]
+
+        };
+        let types = types.join(", ");
+        let type_def = type_def.split(':').next().unwrap().trim().to_lowercase();
+        let method_name = format!("visit_{}_{}", type_def, base_name.to_lowercase());
+
         writeln!(
             out,
-            "    fn {}(&mut self, expr: &Expr) -> T;",
-            method_name
+            "    fn {}(&mut self, {}) -> T;",
+            method_name,
+            types
         )?;
     }
 
@@ -75,14 +96,36 @@ fn define_accept_impl(out: &mut File, base_name: &str, types: &Vec<&str>) -> Res
     writeln!(out, "        match self {{")?;
 
     for type_def in types {
+
+        let parts = type_def.split(':').nth(1).unwrap();
+        let types: Vec<String> = if parts.contains(',') {
+            let mut temp: Vec<String> = Vec::new();
+            let a: Vec<&str> = parts.split(',').collect();
+            for i in a {
+                let i: Vec<&str> = i.trim().split(' ').collect();
+                let i = i.get(1).unwrap();
+                temp.push(i.to_string());
+            }
+            temp
+        }
+        else {
+            let a: Vec<&str> = parts.trim().split(' ').collect();
+            vec![a.get(1).unwrap().to_string()]
+
+        };
+
+        let types = types.join(", ");
         let type_name = type_def.split(':').next().unwrap().trim();
+
         writeln!(
             out,
-            "            {}::{} {{ .. }} => visitor.visit_{}_{}(self),",
+            "            {}::{} {{ {} }} => visitor.visit_{}_{}({}),",
             base_name,
             type_name,
+            types,
             type_name.to_lowercase(),
-            base_name.to_lowercase()
+            base_name.to_lowercase(),
+            types
         )?;
     }
 
