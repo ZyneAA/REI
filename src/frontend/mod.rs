@@ -4,6 +4,7 @@ pub mod token;
 pub mod runner;
 pub mod lexer;
 pub mod ast;
+pub mod expr;
 
 /// Reading the file from the command line args
 pub fn read_file(path: &str) -> Result<String> {

@@ -3,10 +3,10 @@ use super::token::{ Token, TokenType, Object, KEYWORDS };
 
 pub trait Visitor<T> {
 
-    fn visit_binary_expr(&mut self, expr: &Binary) -> T;
-    fn visit_grouping_expr(&mut self, expr: &Grouping) -> T;
-    fn visit_literal_expr(&mut self, expr: &Literal) -> T;
-    fn visit_unary_expr(&mut self, expr: &Unary) -> T;
+    fn visit_binary_expr(&mut self, expr: &Expr) -> T;
+    fn visit_grouping_expr(&mut self, expr: &Expr) -> T;
+    fn visit_literal_expr(&mut self, expr: &Expr) -> T;
+    fn visit_unary_expr(&mut self, expr: &Expr) -> T;
 
 }
 
@@ -35,7 +35,7 @@ pub enum Expr {
 
 impl Expr {
 
-    pub fn accept<R>(&self, visitor: &mut dyn Visitor<T>) -> T {
+    pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
             Expr::Binary { .. } => visitor.visit_binary_expr(self),
             Expr::Grouping { .. } => visitor.visit_grouping_expr(self),

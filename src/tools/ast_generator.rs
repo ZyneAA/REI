@@ -3,7 +3,8 @@ use std::io::{ Write, Result };
 
 pub fn define_ast(target_dir: &str, base_name: &str, types: Vec<&str>) -> Result<()> {
 
-    let path = format!("{}/{}.rs", target_dir, base_name);
+    let lower_base_name = &base_name.to_lowercase();
+    let path = format!("{}/{}.rs", target_dir, lower_base_name);
     println!("{}", &path);
     let mut out = File::create(path).expect("Can't create the file");
 
@@ -56,8 +57,8 @@ fn define_visitor(out: &mut File, base_name: &str, types: &Vec<&str>) -> Result<
         let method_name = format!("visit_{}_{}", type_def.to_lowercase(), base_name.to_lowercase());
         writeln!(
             out,
-            "    fn {}(&mut self, expr: &{}) -> T;",
-            method_name, type_def
+            "    fn {}(&mut self, expr: &Expr) -> T;",
+            method_name
         )?;
     }
 
