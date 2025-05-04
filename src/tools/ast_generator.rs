@@ -19,7 +19,7 @@ pub fn define_ast(target_dir: &str, base_name: &str, types: Vec<&str>) -> Result
         let parts: Vec<&str> = type_def.split(':').collect();
         let struct_name = parts[0].trim();
         let field_list = parts[1].trim();
-        define_type(&mut out, base_name, struct_name, field_list).unwrap();
+        define_type(&mut out, struct_name, field_list).unwrap();
     }
     writeln!(out, "}}\n").unwrap();
 
@@ -29,7 +29,7 @@ pub fn define_ast(target_dir: &str, base_name: &str, types: Vec<&str>) -> Result
 
 }
 
-fn define_type(out: &mut File, base_name: &str, struct_name: &str, field_list: &str) -> Result<()> {
+fn define_type(out: &mut File, struct_name: &str, field_list: &str) -> Result<()> {
 
     writeln!(out, "    {} {{", struct_name)?;
 

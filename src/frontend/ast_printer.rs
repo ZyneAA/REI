@@ -1,5 +1,5 @@
 use super::expr;
-use super::token::{ Token, TokenType, Object, KEYWORDS };
+use super::token::{ Token, Object };
 
 pub struct AstPrinter;
 
