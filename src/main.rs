@@ -3,6 +3,9 @@ use std::{ process, env, io::Result };
 mod frontend;
 mod tools;
 
+#[cfg(test)]
+mod tests;
+
 fn main() -> Result<()> {
 
     let args: Vec<String> = env::args().collect();

@@ -1,7 +1,7 @@
 use super::expr;
 use super::token::{ Token, TokenType, Object, KEYWORDS };
 
-struct AstPrinter;
+pub struct AstPrinter;
 
 impl expr::Visitor<String> for AstPrinter {
 
