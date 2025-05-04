@@ -72,7 +72,7 @@ impl fmt::Display for Object {
 pub struct Token {
 
     token_type: TokenType,
-    lexeme: String,
+    pub lexeme: String,
     literal: Object,
     line: usize
 
