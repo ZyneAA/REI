@@ -154,8 +154,9 @@ impl Token {
 
     }
 
-    pub fn show(&self) {
-        println!("{}  {}  {}  {}", self.token_type, self.lexeme, self.literal, self.line);
+    pub fn display(&self) -> String {
+        let display =  format!("{}  {}  {}  {}", self.token_type, self.lexeme, self.literal, self.line);
+        display
     }
 
 }

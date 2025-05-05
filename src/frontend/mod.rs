@@ -15,7 +15,7 @@ pub fn read_file(path: &str) -> Result<String> {
     let lexer = lexer::Lexer::new(&content);
     let tokens = lexer.scan_tokens();
     for i in tokens {
-        i.show();
+        println!("{}", i.display())
     }
 
     Ok(content)

@@ -122,7 +122,7 @@ impl Parser {
 
         if self.rmatch(&[TokenType::LeftParen]) {
             let expr = self.expression();
-            self.consume(TokenType::RightParen, "Expected ) after expression");
+            self.consume(&TokenType::RightParen, "Expected ) after expression");
             return expr::Expr::Grouping { expression: Box::new(expr) }
         }
 
@@ -132,6 +132,18 @@ impl Parser {
 
         // Just for now
         panic!("ARRRRRRRR")
+
+    }
+
+    fn consume(&mut self, token_type: &TokenType, msg: &str) -> &Token {
+
+        if self.check(token_type) {
+            self.advance()
+        }
+        else {
+            let err = format!("{}", self.peek().display());
+            panic!("{}", err)
+        }
 
     }
 
