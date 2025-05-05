@@ -1,5 +1,5 @@
 use std::boxed::Box;
-use super::token::{ Token, TokenType, Object, KEYWORDS };
+use crate::core::token::{ Token, TokenType, Object, KEYWORDS };
 
 pub trait Visitor<T> {
 

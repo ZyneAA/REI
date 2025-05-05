@@ -1,6 +1,6 @@
 use std::process;
 
-use super::token::{ Token, TokenType, Object, KEYWORDS };
+use crate::core::token::{ Token, TokenType, Object, KEYWORDS };
 
 pub struct Lexer<'a> {
 
