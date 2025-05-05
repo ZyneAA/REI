@@ -47,6 +47,8 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
 
 });
 
+
+#[derive(Clone)]
 pub enum Object {
 
     Number(f64),
@@ -69,11 +71,13 @@ impl fmt::Display for Object {
 
 }
 
+
+#[derive(Clone)]
 pub struct Token {
 
-    token_type: TokenType,
+    pub token_type: TokenType,
     pub lexeme: String,
-    literal: Object,
+    pub literal: Object,
     line: usize
 
 }
