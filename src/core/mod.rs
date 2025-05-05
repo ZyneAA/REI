@@ -1,38 +1,69 @@
-use std::{ fs, io::{ self, Result, Write } };
+use std::{ process, env, io::Result };
 
-use crate::frontend::lexer;
+use crate::tools;
 
 pub mod token;
 pub mod runner;
+pub mod error;
 
-/// Reading the file from the command line args
-pub fn read_file(path: &str) -> Result<String> {
+pub struct Rei;
 
-    let content = fs::read_to_string(path)?;
-    let lexer = lexer::Lexer::new(&content);
-    let tokens = lexer.scan_tokens();
-    for i in tokens {
-        println!("{}", i.display())
-    }
+impl Rei {
 
-    Ok(content)
+    #[allow(non_snake_case)]
+    pub fn Ayanami() -> Result<()> {
 
-}
+        let args: Vec<String> = env::args().collect();
+        let args_size = args.len();
 
-/// For REPL
-pub fn run_prompt() {
+        if args_size == 2 {
 
-    loop {
+            if &args[1] == "gen" {
+                tools::ast_generator::define_ast(
+                "./src/frontend",
+                "Expr",
+                vec![
+                    "Binary : Expr left, Token operator, Expr right",
+                    "Grouping : Expr expression",
+                    "Literal : Object value",
+                    "Unary : Token operator, Expr right"
+                ]
+                )?;
+            }
+            else {
 
-        print!("> ");
-        io::stdout().flush().unwrap();
+                let source = runner::Runner::read_file(&args[1])
+                    .unwrap_or_else(|_| {
+                        eprintln!("No file found");
+                        process::exit(65);
+                });
+                runner::Runner::run(&source);
 
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
+            }
 
-        let input = input.trim();
+            Ok(())
 
-        println!("> {}", input);
+        }
+        else if args_size == 3 && args[1] == "test" {
+
+            let test_file_location = format!("./src/tests/code/{}.gg", &args[2]);
+            let source = runner::Runner::read_file(&test_file_location)
+                    .unwrap_or_else(|_| {
+                        eprintln!("No file found");
+                        process::exit(65);
+                });
+                runner::Runner::run(&source);
+
+            Ok(())
+
+        }
+        else {
+
+            runner::Runner::run_prompt();
+            Ok(())
+
+        }
+
 
     }
 

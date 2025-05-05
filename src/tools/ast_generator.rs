@@ -5,11 +5,11 @@ pub fn define_ast(target_dir: &str, base_name: &str, types: Vec<&str>) -> Result
 
     let lower_base_name = &base_name.to_lowercase();
     let path = format!("{}/{}.rs", target_dir, lower_base_name);
-    println!("{}", &path);
+    println!("generated in {}", &path);
     let mut out = File::create(path).expect("Can't create the file");
 
     // importing what we'll be using
-    writeln!(out, "use std::boxed::Box;\nuse super::token::{{ Token, TokenType, Object, KEYWORDS }};\n").unwrap();
+    writeln!(out, "use std::boxed::Box;\nuse crate::core::token::{{ Token, TokenType, Object, KEYWORDS }};\n").unwrap();
 
     define_visitor(&mut out, base_name, &types).unwrap();
 
@@ -92,7 +92,7 @@ fn define_visitor(out: &mut File, base_name: &str, types: &Vec<&str>) -> Result<
 fn define_accept_impl(out: &mut File, base_name: &str, types: &Vec<&str>) -> Result<()> {
 
     writeln!(out, "impl {} {{\n", base_name)?;
-    writeln!(out, "    pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {{")?;
+    writeln!(out, "    pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {{\n")?;
     writeln!(out, "        match self {{")?;
 
     for type_def in types {
@@ -129,7 +129,7 @@ fn define_accept_impl(out: &mut File, base_name: &str, types: &Vec<&str>) -> Res
         )?;
     }
 
-    writeln!(out, "        }}")?;
+    writeln!(out, "        }}\n")?;
     writeln!(out, "    }}")?;
     writeln!(out, "\n}}\n")?;
     Ok(())
