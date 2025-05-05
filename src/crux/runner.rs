@@ -35,9 +35,8 @@ impl Runner {
             let input = input.trim();
 
             println!("> {}", input);
+        }
 
     }
-
-}
 
 }

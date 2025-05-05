@@ -1,4 +1,4 @@
-use crate::core::token::{ Token, TokenType, Object };
+use crate::crux::token::{ Token, TokenType, Object };
 use super::expr;
 
 pub struct Parser {

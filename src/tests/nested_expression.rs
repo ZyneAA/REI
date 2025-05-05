@@ -2,7 +2,7 @@ use std::boxed::Box;
 
 use crate::frontend::ast_printer::AstPrinter;
 use crate::frontend::expr::Expr;
-use crate::core::token::{ Token, TokenType, Object };
+use crate::crux::token::{ Token, TokenType, Object };
 
 #[test]
 pub fn test_binary_expression() {

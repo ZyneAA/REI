@@ -1,6 +1,6 @@
 use std::boxed::Box;
 
-use crate::core::token::Token;
+use crate::crux::token::Token;
 
 pub enum Expr {
 

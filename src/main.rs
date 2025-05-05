@@ -1,16 +1,17 @@
 use std::io::Result;
 
-mod core;
+use crux::Rei;
+
 mod frontend;
 mod tools;
+mod crux;
 
 #[cfg(test)]
 mod tests;
 
 fn main() -> Result<()> {
 
-    core::Rei::Ayanami()
+    Rei::Ayanami()
 
 }
-
 

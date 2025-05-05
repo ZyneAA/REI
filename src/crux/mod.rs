@@ -2,9 +2,9 @@ use std::{ process, env, io::Result };
 
 use crate::tools;
 
-pub mod token;
 pub mod runner;
 pub mod error;
+pub mod token;
 
 pub struct Rei;
 

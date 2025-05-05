@@ -1,5 +1,5 @@
 use super::expr;
-use crate::core::token::{ Token, Object };
+use crate::crux::token::{ Token, Object };
 
 pub struct AstPrinter;
 
