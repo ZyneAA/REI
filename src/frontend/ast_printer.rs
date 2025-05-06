@@ -30,6 +30,13 @@ impl expr::Visitor<String> for AstPrinter {
 
 impl AstPrinter {
 
+    pub fn print_ast(&mut self, expression: expr::Expr) -> String {
+
+        let output = expression.accept(self);
+        output
+
+    }
+
     fn parenthesize(&mut self, name: &str, exprs: &[&expr::Expr]) -> String {
 
         let mut result = String::new();

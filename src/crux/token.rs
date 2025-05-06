@@ -48,7 +48,7 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
 });
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Object {
 
     Number(f64),
@@ -72,7 +72,7 @@ impl fmt::Display for Object {
 }
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Token {
 
     pub token_type: TokenType,
@@ -135,6 +135,7 @@ impl fmt::Display for TokenType {
 
             TokenType::Eof => "End of File",
         };
+
         write!(f, "{text}")
 
     }
@@ -155,8 +156,10 @@ impl Token {
     }
 
     pub fn display(&self) -> String {
+
         let display =  format!("{}  {}  {}  {}", self.token_type, self.lexeme, self.literal, self.line);
         display
+
     }
 
 }

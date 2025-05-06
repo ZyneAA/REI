@@ -1,6 +1,8 @@
 use std::{ fs, io::{ self, Result, Write } };
 
 use crate::frontend::lexer;
+use crate::frontend::parser::Parser;
+use crate::frontend::ast_printer::AstPrinter;
 
 pub struct Runner;
 
@@ -10,10 +12,12 @@ impl Runner {
 
         let lexer = lexer::Lexer::new(source);
         let tokens = lexer.scan_tokens();
-        for i in tokens {
-            println!("{}", i.display())
-        }
 
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+        let output = expr.accept(&mut AstPrinter);
+
+        println!("{}", output)
 
     }
 

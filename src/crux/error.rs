@@ -1,4 +1,4 @@
-use std::process;
+use std::{ process, fmt };
 
 use super::token::{ Token, TokenType };
 
@@ -10,35 +10,41 @@ pub trait ReiError<T> {
 
 }
 
-pub struct ParseError;
-
 pub struct SyntaxError;
 
-impl ReiError<Token> for ParseError {
+#[derive(Debug)]
+pub enum ParseError {
+    SyntaxError {
+        token: Token,
+        message: String,
+    },
+    UnexpectedEof {
+        line: usize,
+        message: String,
+    },
+}
 
-    fn throw_error(token: &Token, msg: &str) -> ! {
+impl fmt::Display for ParseError {
 
-        Self::error(token, msg);
-        process::exit(65)
-
-    }
-
-    fn error(token: &Token, msg: &str) {
-
-        if token.token_type == TokenType::Eof {
-            Self::report(token.line, "at end", msg);
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ParseError::SyntaxError { token, message } => {
+                let location = if token.token_type == TokenType::Eof {
+                    "at end".to_string()
+                } else {
+                    format!("at '{}'", token.lexeme)
+                };
+                write!(f, "[line {}] Error {}: {}", token.line, location, message)
+            }
+            ParseError::UnexpectedEof { line, message } => {
+                write!(f, "[line {}] Error at end: {}", line, message)
+            }
         }
-        else {
-            Self::report(token.line, "at", msg);
-        }
-
-    }
-
-    fn report(line: usize, place: &str, msg: &str) {
-        eprintln!("[At line {}] Error {}: {}", line, place, msg);
     }
 
 }
+
+impl std::error::Error for ParseError {}
 
 impl ReiError<(usize, usize)> for SyntaxError {
 
