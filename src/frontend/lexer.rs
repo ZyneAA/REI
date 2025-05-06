@@ -1,6 +1,7 @@
 use std::process;
 
 use crate::crux::token::{ Token, TokenType, Object, KEYWORDS };
+use crate::crux::error::{ ReiError, SyntaxError };
 
 pub struct Lexer<'a> {
 
@@ -138,8 +139,7 @@ impl<'a> Lexer<'a> {
                     self.identifier();
                 }
                 else {
-                    println!("Unexpected character at -> {}:{}", self.line, self.current);
-                    process::exit(65)
+                    SyntaxError::throw_error(&(self.line, self.current), "syntax error")
                 }
 
             }
@@ -178,6 +178,7 @@ impl<'a> Lexer<'a> {
         }
 
         if self.is_end() {
+            // Error handling needed
             println!("Unterminated string");
             process::exit(65);
         }

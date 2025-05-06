@@ -1,3 +1,4 @@
+use crate::crux::error::{ ReiError, ParseError };
 use crate::crux::token::{ Token, TokenType, Object };
 use super::expr;
 
@@ -122,7 +123,7 @@ impl Parser {
 
         if self.rmatch(&[TokenType::LeftParen]) {
             let expr = self.expression();
-            self.consume(&TokenType::RightParen, "Expected ) after expression");
+            self.consume(&TokenType::RightParen, "Expected ) after expression").unwrap();
             return expr::Expr::Grouping { expression: Box::new(expr) }
         }
 
@@ -135,14 +136,13 @@ impl Parser {
 
     }
 
-    fn consume(&mut self, token_type: &TokenType, msg: &str) -> &Token {
+    fn consume(&mut self, token_type: &TokenType, msg: &str) -> Result<&Token, ()> {
 
         if self.check(token_type) {
-            self.advance()
+            Ok(self.advance())
         }
         else {
-            let err = format!("{}", self.peek().display());
-            panic!("{}", err)
+            ParseError::throw_error(self.peek(), msg)
         }
 
     }
