@@ -1,62 +1,83 @@
 use crate::crux::token::{ Object, Token, TokenType };
 use crate::frontend::expr;
+use super::runtime_error::RuntimeError;
 
 pub struct Interpreter;
 
-impl expr::Visitor<Object> for Interpreter {
+impl expr::Visitor<Result<Object, RuntimeError>> for Interpreter {
 
-    fn visit_literal_expr(&mut self, value: &Object) -> Object {
-        value.clone()
+    fn visit_literal_expr(&mut self, value: &Object) -> Result<Object, RuntimeError> {
+        Ok(value.clone())
     }
 
-    fn visit_grouping_expr(&mut self, expression: &expr::Expr) -> Object {
+    fn visit_grouping_expr(&mut self, expression: &expr::Expr) -> Result<Object, RuntimeError> {
         self.evaluate(expression)
     }
 
-    fn visit_unary_expr(&mut self, operator: &Token, expression: &expr::Expr) -> Object {
+    fn visit_unary_expr(&mut self, operator: &Token, expression: &expr::Expr) -> Result<Object, RuntimeError> {
 
-        let right = self.evaluate(expression);
+        let right = self.evaluate(expression)?;
 
         match operator.token_type {
             TokenType::Minus => {
-                if let Object::Number(n) = right {
-                    Object::Number(-n)
-                }
-                else {
-                    panic!("Operand must be a number for unary minus");
+                self.check_number_operand(operator.clone(), right.clone())?;
+                match right {
+                    Object::Number(v) => Ok(Object::Number(-v)),
+                    _ => {  unreachable!("Both operands should be numbers due to prior checks")}
                 }
             },
             TokenType::Bang => {
-                Object::Bool(!self.is_truthy(&right))
+                Ok(Object::Bool(!self.is_truthy(&right)))
             },
-            _ => panic!("Invalid")
+            _ => Err(RuntimeError::InvalidOperator { token: operator.clone() })
         }
 
     }
 
-    fn visit_binary_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> Object {
+    fn visit_binary_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> Result<Object, RuntimeError> {
 
-        let left = self.evaluate(left);
-        let right = self.evaluate(right);
+        let left = self.evaluate(left)?;
+        let right = self.evaluate(right)?;
 
         match operator.token_type {
 
             TokenType::Plus => match (left, right) {
-                (Object::Number(a), Object::Number(b)) => Object::Number(a + b),
-                (Object::Str(a), Object::Str(b)) => Object::Str(a + &b),
-                _ => panic!("Runtime error: '+' requires two numbers or two strings."),
+                (Object::Number(a), Object::Number(b)) => Ok(Object::Number(a + b)),
+                (Object::Str(a), Object::Str(b)) => Ok(Object::Str(a + &b)),
+                _ => Err(RuntimeError::TypeMismatch { token: operator.clone() })
             },
-            TokenType::Minus => { self.binary_number_operation(left, right, |a, b| a - b) },
-            TokenType::Slash => { self.binary_number_operation(left, right, |a, b| a / b) },
-            TokenType::Star => { self.binary_number_operation(left, right, |a, b| a * b) },
+            TokenType::Minus =>{
+                self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
+                Ok(self.binary_number_operation(left, right, |a, b| a - b))
+            },
+            TokenType::Slash =>{
+                self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
+                Ok(self.binary_number_operation(left, right, |a, b| a / b))
+            },
+            TokenType::Star =>{
+                self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
+                Ok(self.binary_number_operation(left, right, |a, b| a * b))
+            },
 
-            TokenType::Greater => { self.compare_number_operation(left, right, |a, b| a > b) },
-            TokenType::GreaterEqual => { self.compare_number_operation(left, right, |a, b| a >= b) },
-            TokenType::Less => { self.compare_number_operation(left, right, |a, b| a < b) },
-            TokenType::LessEqual => { self.compare_number_operation(left, right, |a, b| a <= b) },
+            TokenType::Greater => {
+                self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
+                Ok(self.compare_number_operation(left, right, |a, b| a > b))
+            },
+            TokenType::GreaterEqual =>{
+                self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
+                Ok(self.compare_number_operation(left, right, |a, b| a >= b))
+            },
+            TokenType::Less => {
+                self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
+                Ok(self.compare_number_operation(left, right, |a, b| a < b))
+            },
+            TokenType::LessEqual =>{
+                self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
+                Ok(self.compare_number_operation(left, right, |a, b| a <= b))
+            },
 
-            TokenType::EqualEqual => Object::Bool(self.is_equal(left, right)),
-            TokenType::BangEqual => Object::Bool(!self.is_equal(left, right)),
+            TokenType::EqualEqual => Ok(Object::Bool(self.is_equal(left, right))),
+            TokenType::BangEqual => Ok(Object::Bool(!self.is_equal(left, right))),
 
             _ => panic!("Invalid Binary Operation")
         }
@@ -67,7 +88,7 @@ impl expr::Visitor<Object> for Interpreter {
 
 impl Interpreter {
 
-    fn evaluate(&mut self, expression: &expr::Expr) -> Object {
+    fn evaluate(&mut self, expression: &expr::Expr) -> Result<Object, RuntimeError> {
         expression.accept(self)
     }
 
@@ -77,6 +98,24 @@ impl Interpreter {
             Object::Null => false,
             Object::Bool(v) => *v,
             _ => true
+        }
+
+    }
+
+    fn check_number_operand(&self, operator: Token, operand: Object) -> Result<(), RuntimeError> {
+
+        match operand {
+            Object::Number(_) => { Ok(()) },
+            _ => Err(RuntimeError::OperandMustBeNumber { token: operator })
+        }
+
+    }
+
+    fn check_number_operands(&self, operator: Token, a: Object, b: Object) -> Result<(), RuntimeError> {
+
+        match (a, b) {
+            (Object::Number(_), Object::Number(_)) => { Ok(()) },
+            _ => Err(RuntimeError::OperandMustBeNumber { token: operator})
         }
 
     }

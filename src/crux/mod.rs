@@ -34,7 +34,7 @@ impl Rei {
 
                 let source = runner::Runner::read_file(&args[1])
                     .unwrap_or_else(|_| {
-                        eprintln!("No file found");
+                        eprintln!("File not found");
                         process::exit(65);
                 });
                 runner::Runner::run(&source);
@@ -49,7 +49,7 @@ impl Rei {
             let test_file_location = format!("./src/tests/code/{}.gg", &args[2]);
             let source = runner::Runner::read_file(&test_file_location)
                     .unwrap_or_else(|_| {
-                        eprintln!("No file found");
+                        eprintln!("File not found: {}", test_file_location);
                         process::exit(65);
                 });
                 runner::Runner::run(&source);

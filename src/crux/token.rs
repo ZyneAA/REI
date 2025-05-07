@@ -66,7 +66,7 @@ impl fmt::Display for Object {
             Object::Number(n) => write!(f, "{}", n),
             Object::Str(s) => write!(f, "{}", s),
             Object::Bool(b) => write!(f, "{}", b),
-            Object::Null => write!(f, "Non"),
+            Object::Null => write!(f, "Null"),
         }
     }
 
@@ -156,10 +156,13 @@ impl Token {
 
     }
 
-    pub fn display(&self) -> String {
+}
 
-        let display =  format!("{}  {}  {}  {}", self.token_type, self.lexeme, self.literal, self.line);
-        display
+impl fmt::Display for Token {
+
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+
+        write!(f, "Token: [ {} {} {} {} ]", self.token_type, self.lexeme, self.literal, self.line)
 
     }
 

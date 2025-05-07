@@ -14,6 +14,7 @@ pub struct SyntaxError;
 
 #[derive(Debug)]
 pub enum ParseError {
+
     SyntaxError {
         token: Token,
         message: String,
@@ -22,16 +23,19 @@ pub enum ParseError {
         line: usize,
         message: String,
     },
+
 }
 
 impl fmt::Display for ParseError {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+
         match self {
             ParseError::SyntaxError { token, message } => {
                 let location = if token.token_type == TokenType::Eof {
                     "at end".to_string()
-                } else {
+                }
+                else {
                     format!("at '{}'", token.lexeme)
                 };
                 write!(f, "[line {}] Error {}: {}", token.line, location, message)
@@ -40,6 +44,7 @@ impl fmt::Display for ParseError {
                 write!(f, "[line {}] Error at end: {}", line, message)
             }
         }
+
     }
 
 }
