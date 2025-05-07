@@ -88,6 +88,28 @@ impl expr::Visitor<Result<Object, RuntimeError>> for Interpreter {
 
 impl Interpreter {
 
+    pub fn interprete(&mut self, expression: expr::Expr) -> Result<String, RuntimeError> {
+
+        let val = self.evaluate(&expression)?;
+        Ok(self.stringify(&val))
+
+    }
+
+    pub fn stringify(&mut self, object: &Object) -> String {
+        match object {
+            Object::Null => "nil".to_string(),
+            Object::Number(n) => {
+                let mut s = n.to_string();
+                if s.ends_with(".0") {
+                    s.truncate(s.len() - 2); // yeet the ".0"
+                }
+                s
+            },
+            Object::Bool(b) => b.to_string(),
+            Object::Str(s) => s.clone(),
+        }
+    }
+
     fn evaluate(&mut self, expression: &expr::Expr) -> Result<Object, RuntimeError> {
         expression.accept(self)
     }

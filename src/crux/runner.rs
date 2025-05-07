@@ -4,6 +4,8 @@ use crate::frontend::lexer;
 use crate::frontend::parser::Parser;
 use crate::frontend::ast_printer::AstPrinter;
 
+use crate::backend::interpreter::Interpreter;
+
 pub struct Runner;
 
 impl Runner {
@@ -15,7 +17,11 @@ impl Runner {
 
         let mut parser = Parser::new(tokens);
         let expr = parser.parse().unwrap();
-        let output = expr.accept(&mut AstPrinter);
+
+        let mut less_gooo = Interpreter;
+        let output = less_gooo.interprete(expr).unwrap();
+
+        //let output = expr.accept(&mut AstPrinter);
 
         println!("{}", output)
 
