@@ -12,12 +12,12 @@ pub fn test_binary_expression() {
     let expr = Expr::Binary {
         left: Box::new(
             Expr::Unary {
-                operator: Token::new(TokenType::Minus, "-".to_string(), Object::Non, 1),
+                operator: Token::new(TokenType::Minus, "-".to_string(), Object::Null, 1),
                 right: Box::new(Expr::Literal { value: Object::Number(6.9) })
             }
         ),
         operator: Token::new(
-            TokenType::Star, "*".to_string(), Object::Non, 1
+            TokenType::Star, "*".to_string(), Object::Null, 1
         ),
         right: Box::new(
             Expr::Grouping {

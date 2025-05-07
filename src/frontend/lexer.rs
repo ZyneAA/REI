@@ -45,7 +45,7 @@ impl<'a> Lexer<'a> {
             Token::new(
                 TokenType::Eof,
                 String::from(""),
-                Object::Non,
+                Object::Null,
                 self.line
             )
         );
@@ -59,46 +59,46 @@ impl<'a> Lexer<'a> {
         let c = self.advance();
         match c {
 
-            '(' => self.add_token(TokenType::LeftParen, Object::Non),
-            ')' => self.add_token(TokenType::RightParen, Object::Non),
-            '{' => self.add_token(TokenType::LeftBrace, Object::Non),
-            '}' => self.add_token(TokenType::RightBrace, Object::Non),
-            ',' => self.add_token(TokenType::Comma, Object::Non),
-            '.' => self.add_token(TokenType::Dot, Object::Non),
-            '-' => self.add_token(TokenType::Minus, Object::Non),
-            '+' => self.add_token(TokenType::Plus, Object::Non),
-            ';' => self.add_token(TokenType::Semicolon, Object::Non),
-            '*' => self.add_token(TokenType::Star, Object::Non),
+            '(' => self.add_token(TokenType::LeftParen, Object::Null),
+            ')' => self.add_token(TokenType::RightParen, Object::Null),
+            '{' => self.add_token(TokenType::LeftBrace, Object::Null),
+            '}' => self.add_token(TokenType::RightBrace, Object::Null),
+            ',' => self.add_token(TokenType::Comma, Object::Null),
+            '.' => self.add_token(TokenType::Dot, Object::Null),
+            '-' => self.add_token(TokenType::Minus, Object::Null),
+            '+' => self.add_token(TokenType::Plus, Object::Null),
+            ';' => self.add_token(TokenType::Semicolon, Object::Null),
+            '*' => self.add_token(TokenType::Star, Object::Null),
             '!' => {
                 if self.match_next_char('=') {
-                    self.add_token(TokenType::BangEqual, Object::Non)
+                    self.add_token(TokenType::BangEqual, Object::Null)
                 }
                 else {
-                    self.add_token(TokenType::Bang, Object::Non)
+                    self.add_token(TokenType::Bang, Object::Null)
                 }
             },
             '=' => {
                 if self.match_next_char('=') {
-                    self.add_token(TokenType::EqualEqual, Object::Non)
+                    self.add_token(TokenType::EqualEqual, Object::Null)
                 }
                 else {
-                    self.add_token(TokenType::Equal, Object::Non)
+                    self.add_token(TokenType::Equal, Object::Null)
                 }
             },
             '>' => {
                 if self.match_next_char('=') {
-                    self.add_token(TokenType::GreaterEqual, Object::Non)
+                    self.add_token(TokenType::GreaterEqual, Object::Null)
                 }
                 else {
-                    self.add_token(TokenType::Greater, Object::Non)
+                    self.add_token(TokenType::Greater, Object::Null)
                 }
             }
             '<' => {
                 if self.match_next_char('=') {
-                    self.add_token(TokenType::LessEqual, Object::Non)
+                    self.add_token(TokenType::LessEqual, Object::Null)
                 }
                 else {
-                    self.add_token(TokenType::Less, Object::Non)
+                    self.add_token(TokenType::Less, Object::Null)
                 }
             }
             '/' => {
@@ -122,7 +122,7 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 else {
-                    self.add_token(TokenType::Slash, Object::Non)
+                    self.add_token(TokenType::Slash, Object::Null)
                 }
             }
             ' ' => {},
@@ -248,10 +248,10 @@ impl<'a> Lexer<'a> {
 
         let token_type = match KEYWORDS.get(&self.source[self.start..self.current]){
             Some(v) => v.clone(),
-            None => TokenType::Identifier
+            Nulle => TokenType::Identifier
         };
 
-        self.add_token(token_type, Object::Non);
+        self.add_token(token_type, Object::Null);
 
     }
 

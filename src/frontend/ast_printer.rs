@@ -18,7 +18,7 @@ impl expr::Visitor<String> for AstPrinter {
             Object::Number(n) => n.to_string(),
             Object::Str(s) => s.clone(),
             Object::Bool(b) => b.to_string(),
-            Object::Non => "nil".to_string(),
+            Object::Null => "nil".to_string(),
         }
     }
 

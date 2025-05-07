@@ -19,7 +19,7 @@ pub enum TokenType {
     Identifier, String, Number,
 
     // Keywords
-    And, Class, Else, False, Fn, For, If, Non, Or,
+    And, Class, Else, False, Fn, For, If, Null, Or,
     Print, Return, Base, This, True, Let, While,
     Eof
 
@@ -34,7 +34,7 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("for", TokenType::For);
     map.insert("fn", TokenType::Fn);
     map.insert("if", TokenType::If);
-    map.insert("non", TokenType::Non);
+    map.insert("non", TokenType::Null);
     map.insert("or", TokenType::Or);
     map.insert("print", TokenType::Print);
     map.insert("return", TokenType::Return);
@@ -54,9 +54,10 @@ pub enum Object {
     Number(f64),
     Str(String),
     Bool(bool),
-    Non
+    Null
 
 }
+
 
 impl fmt::Display for Object {
 
@@ -65,7 +66,7 @@ impl fmt::Display for Object {
             Object::Number(n) => write!(f, "{}", n),
             Object::Str(s) => write!(f, "{}", s),
             Object::Bool(b) => write!(f, "{}", b),
-            Object::Non => write!(f, "Non"),
+            Object::Null => write!(f, "Non"),
         }
     }
 
@@ -123,7 +124,7 @@ impl fmt::Display for TokenType {
             TokenType::Fn => "IDENTIFIER",
             TokenType::For => "IDENTIFIER",
             TokenType::If => "IDENTIFIER",
-            TokenType::Non => "IDENTIFIER",
+            TokenType::Null => "IDENTIFIER",
             TokenType::Or => "IDENTIFIER",
             TokenType::Print => "IDENTIFIER",
             TokenType::Return => "IDENTIFIER",

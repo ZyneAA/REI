@@ -140,9 +140,9 @@ impl Parser {
             });
         }
 
-        if self.rmatch(&[TokenType::Non])? {
+        if self.rmatch(&[TokenType::Null])? {
             return Ok(expr::Expr::Literal {
-                value: Object::Non,
+                value: Object::Null,
             });
         }
 
