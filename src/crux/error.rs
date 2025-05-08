@@ -19,10 +19,6 @@ pub enum ParseError {
         token: Token,
         message: String,
     },
-    UnexpectedEof {
-        line: usize,
-        message: String,
-    },
 
 }
 
@@ -38,10 +34,7 @@ impl fmt::Display for ParseError {
                 else {
                     format!("at '{}'", token.lexeme)
                 };
-                write!(f, "[line {}] Error {}: {}", token.line, location, message)
-            }
-            ParseError::UnexpectedEof { line, message } => {
-                write!(f, "[line {}] Error at end: {}", line, message)
+                write!(f, "At line {} | Error {}\n{}", token.line, location, message)
             }
         }
 

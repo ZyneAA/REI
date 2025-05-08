@@ -3,6 +3,7 @@ use std::result::Result;
 use crate::crux::error::ParseError;
 use crate::crux::token::{ Token, TokenType, Object };
 use super::expr;
+use crate::backend::stmt::Stmt;
 
 pub struct Parser {
 
@@ -18,19 +19,57 @@ impl Parser {
         Parser { tokens, current: 0, had_error: false }
     }
 
-    pub fn parse(&mut self) -> Result<expr::Expr, ParseError> {
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, ParseError> {
 
-        let expr = self.expression()?;
+        let mut statements = Vec::new();
+        while !self.is_end() {
+            match self.statement() {
+                Ok(stmt) => statements.push(stmt),
+                Err(e) => {
+                    self.synchronize();
+                    return Err(e);
+                }
+            }
+        }
 
-        if self.had_error {
-            Err(ParseError::SyntaxError {
-                token: self.peek().clone(),
-                message: "Parser encountered errors".into(),
-            })
+        Ok(statements)
+
+    }
+
+    fn statement(&mut self) -> Result<Stmt, ParseError> {
+
+        if self.rmatch(&[TokenType::Print])? {
+            Ok(self.print_statement()?)
         }
         else {
-            Ok(expr)
+            Ok(self.expression_statement()?)
         }
+
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, ParseError> {
+
+        let value = self.expression()?;
+        match self.consume(&TokenType::Semicolon, "Expected ; after value") {
+            Ok(_) => Ok(Stmt::Print { expression: Box::new(value) }),
+            Err(e) => {
+                self.synchronize();
+                Err(e)
+            }
+    }
+
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
+
+        let expr = self.expression()?;
+        match self.consume(&TokenType::Semicolon, "Expected ; after expression") {
+            Ok(_) => Ok(Stmt::Expression { expression: Box::new(expr) }),
+            Err(e) => {
+                self.synchronize();
+                Err(e)
+        }
+    }
 
     }
 
@@ -198,7 +237,6 @@ impl Parser {
             Ok(self.advance())
         }
         else {
-            self.had_error = true;
             Err(ParseError::SyntaxError {
                 token: self.peek().clone(),
                 message: message.to_string(),

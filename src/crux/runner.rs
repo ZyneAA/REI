@@ -2,7 +2,6 @@ use std::{ fs, io::{ self, Write } };
 
 use crate::frontend::lexer;
 use crate::frontend::parser::Parser;
-use crate::frontend::ast_printer::AstPrinter;
 
 use crate::backend::interpreter::Interpreter;
 
@@ -16,18 +15,20 @@ impl Runner {
         let tokens = lexer.scan_tokens();
 
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse()?;
 
-        let mut less_gooo = Interpreter;
-        let ast = expr.accept(&mut AstPrinter);
-
-        match less_gooo.interpret(expr) {
-            Ok(output) => {
-                println!("Ast: {}\nOutput: {}", ast, output);
-                Ok(())
+        match parser.parse() {
+            Ok(v) => {
+                let mut interpreter = Interpreter;
+                match interpreter.interpret(v) {
+                    Ok(_) => Ok(()),
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        Err(Box::new(e))
+                    }
+                }
             }
             Err(e) => {
-                eprintln!("Runtime error: {}", e);
+                eprintln!("{}", e);
                 Err(Box::new(e))
             }
         }

@@ -1,5 +1,6 @@
 use crate::crux::token::{ Object, Token, TokenType };
 use crate::frontend::expr;
+use crate::backend::stmt;
 use super::runtime_error::RuntimeError;
 
 pub struct Interpreter;
@@ -23,7 +24,7 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
                 self.check_number_operand(operator.clone(), right.clone())?;
                 match right {
                     Object::Number(v) => Ok(Object::Number(-v)),
-                    _ => {  unreachable!("Both operands should be numbers due to prior checks")}
+                    _ => {  unreachable!("Both operands should be numbers due to prior checks") }
                 }
             },
             TokenType::Bang => {
@@ -86,13 +87,39 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
 
 }
 
+impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
+
+    fn visit_expression_stmt(&mut self, expression: &expr::Expr) -> Result<(), RuntimeError<Token>> {
+
+        self.evaluate(expression)?;
+        Ok(())
+
+    }
+
+    fn visit_print_stmt(&mut self, expression: &expr::Expr) -> Result<(), RuntimeError<Token>> {
+
+        let value =  self.evaluate(expression)?;
+        println!("{}", self.stringify(&value));
+        Ok(())
+
+    }
+
+}
+
 impl Interpreter {
 
-    pub fn interpret(&mut self, expression: expr::Expr) -> Result<String, RuntimeError<Token>> {
+    pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) -> Result<(), RuntimeError<Token>> {
 
-        let val = self.evaluate(&expression)?;
-        Ok(self.stringify(&val))
+        for stmt in statements {
+            self.execute(stmt)?;
+        }
+        Ok(())
 
+    }
+
+    fn execute(&mut self, statement: stmt::Stmt) -> Result<(), RuntimeError<Token>> {
+        statement.accept(self)?;
+        Ok(())
     }
 
     pub fn stringify(&mut self, object: &Object) -> String {

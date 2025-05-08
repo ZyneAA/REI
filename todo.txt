@@ -9,3 +9,7 @@ in parser::Parser::primary(), add a proper error handling for else case
 
 // Error Synchronization improvement
 instead of exiting the process, make a better error handling
+make batshit crazy error reports
+
+// To add later maybe?
+add support for comparing of different types

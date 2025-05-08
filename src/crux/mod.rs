@@ -29,6 +29,14 @@ impl Rei {
                     "Unary : Token operator, Expr right"
                 ]
                 )?;
+                tools::ast_generator::define_ast(
+                "./src/backend",
+                "Stmt",
+                vec![
+                    "Expression : Expr expression",
+                    "Print : Expr expression"
+                ]
+                )?;
             }
             else {
 

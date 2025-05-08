@@ -24,6 +24,7 @@ pub enum TokenType {
     Eof
 
 }
+
 pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
 
     let mut map = HashMap::new();
@@ -162,7 +163,7 @@ impl fmt::Display for Token {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
-        write!(f, "[ {} {} {} {} ]", self.token_type, self.lexeme, self.literal, self.line)
+        write!(f, "Token: {} --->'{}'<--- {} at line: {}", self.token_type, self.lexeme, self.literal, self.line)
 
     }
 
