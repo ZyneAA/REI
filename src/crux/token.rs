@@ -73,7 +73,7 @@ impl fmt::Display for Object {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Token {
 
     pub token_type: TokenType,
@@ -162,8 +162,20 @@ impl fmt::Display for Token {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
-        write!(f, "Token: [ {} {} {} {} ]", self.token_type, self.lexeme, self.literal, self.line)
+        write!(f, "[ {} {} {} {} ]", self.token_type, self.lexeme, self.literal, self.line)
 
     }
 
+}
+
+
+impl fmt::Debug for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Token")
+         .field("token_type", &self.token_type)
+         .field("lexeme", &self.lexeme)
+         .field("literal", &self.literal)
+         .field("line", &self.line)
+         .finish()
+    }
 }

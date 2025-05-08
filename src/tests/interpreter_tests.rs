@@ -1,5 +1,5 @@
 use crate::backend::interpreter::Interpreter;
-use crate::crux::token::Object;
+use crate::crux::token::{ Object, Token, TokenType };
 
 #[test]
 pub fn test_binary_number_object() {
@@ -9,10 +9,30 @@ pub fn test_binary_number_object() {
     let left = Object::Number(10.0);
     let right = Object::Number(2.0);
 
-    let obj_plus = caller.binary_number_operation(left.clone(), right.clone(), |a, b| a + b);
-    let obj_minus = caller.binary_number_operation(left.clone(), right.clone(), |a, b| a - b);
-    let obj_multiply = caller.binary_number_operation(left.clone(), right.clone(), |a, b| a * b);
-    let obj_divide = caller.binary_number_operation(left.clone(), right.clone(), |a, b| a / b);
+    let obj_plus = caller.binary_number_operation(
+        left.clone(),
+        right.clone(),
+        Token::new(TokenType::Plus, String::from("+"), Object::Null, 1),
+        |a, b| a + b
+    ).unwrap();
+    let obj_minus = caller.binary_number_operation(
+        left.clone(),
+        right.clone(),
+        Token::new(TokenType::Minus, String::from("-"), Object::Null, 2),
+        |a, b| a - b
+    ).unwrap();
+    let obj_multiply = caller.binary_number_operation(
+        left.clone(),
+        right.clone(),
+        Token::new(TokenType::Star, String::from("*"), Object::Null, 3),
+        |a, b| a * b
+    ).unwrap();
+    let obj_divide = caller.binary_number_operation(
+        left.clone(),
+        right.clone(),
+        Token::new(TokenType::Slash, String::from("/"), Object::Null, 4),
+        |a, b| a / b
+    ).unwrap();
 
     println!("binary operations on Object::Number(10.0) and Object::Number(2.0)\nplus: {}, minus: {}, multiply: {}, divide: {}", obj_plus, obj_minus, obj_multiply, obj_divide);
 

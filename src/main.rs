@@ -1,5 +1,3 @@
-use std::io::Result;
-
 use crux::Rei;
 
 mod frontend;
@@ -10,7 +8,7 @@ mod crux;
 #[cfg(test)]
 mod tests;
 
-fn main() -> Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Rei::Ayanami()
 

@@ -1,41 +1,42 @@
 use std::fmt;
 
-use crate::crux::token::Token;
-
 #[derive(Debug)]
-pub enum RuntimeError {
+pub enum RuntimeError<T>
+{
 
     TypeMismatch {
-        token: Token,
+        token: T,
     },
     UndefinedVariable {
-        token: Token,
+        token: T,
     },
-    DivideByZero {
-        token: Token,
+    DividedByZero {
+        token: T,
     },
     OperandMustBeNumber {
-        token: Token,
+        token: T,
     },
-    UnexpectedRuntimeError {
-        token: Token
+    UnexpectedBinaryOperation {
+        token: T
     },
     InvalidOperator {
-        token: Token
+        token: T
     }
 
 }
 
-impl fmt::Display for RuntimeError {
+impl<T> fmt::Display for RuntimeError<T>
+where T: fmt::Debug + fmt::Display
+{
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
         match self {
             RuntimeError::InvalidOperator { token } => write!(f, "Invalid operator: {}", token),
-            RuntimeError::UnexpectedRuntimeError { token } => write!(f, "Unexpected runtime error: {}", token),
+            RuntimeError::UnexpectedBinaryOperation { token } => write!(f, "Unexpected binary operation: {}", token),
             RuntimeError::TypeMismatch { token } => write!(f, "Type mismatch: {}", token),
             RuntimeError::UndefinedVariable { token } => write!(f, "Undefined variable: {}", token),
-            RuntimeError::DivideByZero { token } => write!(f, "Divide by zero: {}", token),
+            RuntimeError::DividedByZero { token } => write!(f, "Divide by zero: {}", token),
             RuntimeError::OperandMustBeNumber { token } => write!(f, "Operand mut be a number: {}", token),
         }
 
@@ -43,4 +44,4 @@ impl fmt::Display for RuntimeError {
 
 }
 
-impl std::error::Error for RuntimeError {}
+impl<T> std::error::Error for RuntimeError<T> where T: fmt::Debug + fmt::Display {}

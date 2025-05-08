@@ -1,4 +1,4 @@
-use std::{ process, env, io::Result };
+use std::{ process, env };
 
 use crate::tools;
 
@@ -11,7 +11,7 @@ pub struct Rei;
 impl Rei {
 
     #[allow(non_snake_case)]
-    pub fn Ayanami() -> Result<()> {
+    pub fn Ayanami() -> Result<(), Box<dyn std::error::Error>> {
 
         let args: Vec<String> = env::args().collect();
         let args_size = args.len();
@@ -37,7 +37,7 @@ impl Rei {
                         eprintln!("File not found");
                         process::exit(65);
                 });
-                runner::Runner::run(&source);
+                runner::Runner::run(&source)?;
 
             }
 
