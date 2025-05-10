@@ -6,6 +6,7 @@ pub trait Visitor<T> {
 
     fn visit_expression_stmt(&mut self, expression: &Expr) -> T;
     fn visit_print_stmt(&mut self, expression: &Expr) -> T;
+    fn visit_let_stmt(&mut self, name: &Token, initializer: &Expr) -> T;
 
 }
 
@@ -19,6 +20,11 @@ pub enum Stmt {
         expression: Box<Expr>,
     },
 
+    Let {
+        name: Token,
+        initializer: Box<Expr>,
+    },
+
 }
 
 impl Stmt {
@@ -28,6 +34,7 @@ impl Stmt {
         match self {
             Stmt::Expression { expression } => visitor.visit_expression_stmt(expression),
             Stmt::Print { expression } => visitor.visit_print_stmt(expression),
+            Stmt::Let { name, initializer } => visitor.visit_let_stmt(name, initializer),
         }
 
     }

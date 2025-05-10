@@ -1,9 +1,14 @@
 use crate::crux::token::{ Object, Token, TokenType };
 use crate::frontend::expr;
 use crate::backend::stmt;
+use crate::backend::environment::Environment;
 use super::runtime_error::RuntimeError;
 
-pub struct Interpreter;
+pub struct Interpreter {
+
+    environment: Environment
+
+}
 
 impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
 
@@ -32,6 +37,12 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
             },
             _ => Err(RuntimeError::InvalidOperator { token: operator.clone() })
         }
+
+    }
+
+    fn visit_variable_expr(&mut self, expression: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
+
+        self.environment.get(name)
 
     }
 
@@ -104,9 +115,24 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     }
 
+    fn visit_let_stmt(&mut self, name: &Token, initializer: &expr::Expr) -> Result<(), RuntimeError<Token>> {
+
+        let value = self.evaluate(initializer)?;
+        self.environment.define(name.lexeme.clone(), value);
+        Ok(())
+
+    }
+
 }
 
 impl Interpreter {
+
+    pub fn new() -> Self {
+
+        let environment = Environment::new();
+        Interpreter { environment }
+
+    }
 
     pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) -> Result<(), RuntimeError<Token>> {
 

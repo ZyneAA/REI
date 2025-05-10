@@ -23,10 +23,9 @@ impl Parser {
 
         let mut statements = Vec::new();
         while !self.is_end() {
-            match self.statement() {
+            match self.declaration() {
                 Ok(stmt) => statements.push(stmt),
                 Err(e) => {
-                    self.synchronize();
                     return Err(e);
                 }
             }
@@ -47,6 +46,23 @@ impl Parser {
 
     }
 
+    fn declaration(&mut self) -> Result<Stmt, ParseError> {
+
+        match self.rmatch(&[TokenType::Let]) {
+            Ok(true) => Ok(self.var_declaration()?),
+            Ok(false) => Ok(self.statement()?),
+            Err(e) => {
+                self.synchronize();
+                eprintln!("{}", e);
+                Err(ParseError::SyntaxError {
+                    token: self.peek().clone(),
+                    message: "Expected expression".into(),
+                })
+            }
+        }
+
+    }
+
     fn print_statement(&mut self) -> Result<Stmt, ParseError> {
 
         let value = self.expression()?;
@@ -56,7 +72,31 @@ impl Parser {
                 self.synchronize();
                 Err(e)
             }
+        }
+
     }
+
+
+
+    fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
+
+        let name = self.consume(&TokenType::Identifier, "Expect variable name.")?.clone();
+
+        let initializer = if self.rmatch(&[TokenType::Equal])? {
+            Some(self.expression()?)
+        }
+            else {
+            None
+        };
+
+        self.consume(&TokenType::Semicolon, "Expect ';' after variable declaration.")?;
+
+        Ok(Stmt::Let {
+            name,
+            initializer: Box::new(initializer.unwrap_or(expr::Expr::Literal {
+                value: Object::Null,
+            })),
+        })
 
     }
 
@@ -68,8 +108,8 @@ impl Parser {
             Err(e) => {
                 self.synchronize();
                 Err(e)
+            }
         }
-    }
 
     }
 
@@ -188,6 +228,12 @@ impl Parser {
         if self.rmatch(&[TokenType::Number, TokenType::String])? {
             return Ok(expr::Expr::Literal {
                 value: self.previous().literal.clone(),
+            });
+        }
+
+        if self.rmatch(&[TokenType::Identifier])? {
+            return Ok(expr::Expr::Literal {
+                value: self.previous().literal.clone()
             });
         }
 

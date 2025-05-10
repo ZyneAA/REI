@@ -248,7 +248,7 @@ impl<'a> Lexer<'a> {
 
         let token_type = match KEYWORDS.get(&self.source[self.start..self.current]){
             Some(v) => v.clone(),
-            Nulle => TokenType::Identifier
+            None => TokenType::Identifier
         };
 
         self.add_token(token_type, Object::Null);

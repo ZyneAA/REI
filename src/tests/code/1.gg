@@ -1,2 +1,2 @@
-print 2 / 1
+print "ok" + " mate";
 print true == "dw";
