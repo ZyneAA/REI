@@ -54,7 +54,7 @@ impl Rei {
         }
         else if args_size == 3 && args[1] == "test" {
 
-            let test_file_location = format!("./src/tests/code/{}.gg", &args[2]);
+            let test_file_location = format!("./src/tests/code/{}.reix", &args[2]);
             let source = runner::Runner::read_file(&test_file_location)
                     .unwrap_or_else(|_| {
                         eprintln!("File not found: {}", test_file_location);

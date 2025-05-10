@@ -1,2 +1,1 @@
-The repo of the new interpreted language im working on.
-source.gg is the test file. '.gg' is the extension of the language.
+The repo of the new interpreted language i'm working on. All the test codes are in ./src/tests/code. The file extension, '.reix', which I called REI executable is the extension of the language.

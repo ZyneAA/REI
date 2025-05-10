@@ -30,7 +30,6 @@ impl Parser {
                 }
             }
         }
-        println!("{:?}", statements);
 
         Ok(statements)
 

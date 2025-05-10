@@ -21,7 +21,6 @@ impl Environment {
 
     pub fn define(&mut self, name: String, value: Object) -> Result<(), RuntimeError<Token>>{
 
-        println!("defining {} = {:?}", name, value);
         self.values.insert(name, value);
         Ok(())
 
