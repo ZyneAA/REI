@@ -36,4 +36,18 @@ impl Environment {
 
     }
 
+    pub fn assign(&mut self, name: &Token, value: Object) -> Result<(), RuntimeError<Token>> {
+
+        if self.values.contains_key(&name.lexeme) {
+            self.values.insert(name.lexeme.clone(), value);
+            Ok(())
+        }
+        else {
+            Err(RuntimeError::UndefinedVariable {
+                token: name.clone(),
+            })
+        }
+
+    }
+
 }

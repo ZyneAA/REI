@@ -1,8 +1,9 @@
 use std::boxed::Box;
-use crate::crux::token::{ Token, Object };
+use crate::crux::token::{ Token, TokenType, Object, KEYWORDS };
 
 pub trait Visitor<T> {
 
+    fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> T;
     fn visit_binary_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> T;
     fn visit_grouping_expr(&mut self, expression: &Expr) -> T;
     fn visit_literal_expr(&mut self, value: &Object) -> T;
@@ -11,8 +12,12 @@ pub trait Visitor<T> {
 
 }
 
-#[derive(Debug)]
 pub enum Expr {
+
+    Assign {
+        name: Token,
+        value: Box<Expr>,
+    },
 
     Binary {
         left: Box<Expr>,
@@ -44,6 +49,7 @@ impl Expr {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
 
         match self {
+            Expr::Assign { name, value } => visitor.visit_assign_expr(name, value),
             Expr::Binary { left, operator, right } => visitor.visit_binary_expr(left, operator, right),
             Expr::Grouping { expression } => visitor.visit_grouping_expr(expression),
             Expr::Literal { value } => visitor.visit_literal_expr(value),

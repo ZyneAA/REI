@@ -94,6 +94,14 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
 
     }
 
+    fn visit_assign_expr(&mut self, name: &Token, value: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
+
+        let value = self.evaluate(value)?;
+        self.environment.assign(name, value.clone())?;
+        Ok(value)
+
+    }
+
 }
 
 impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
