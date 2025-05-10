@@ -1,10 +1,12 @@
+use crate::backend::stmt::Stmt;
 use crate::backend::interpreter::Interpreter;
 use crate::crux::token::{ Object, Token, TokenType };
+use crate::frontend::expr::Expr;
 
 #[test]
 pub fn test_binary_number_object() {
 
-    let caller = Interpreter;
+    let caller = Interpreter::new();
 
     let left = Object::Number(10.0);
     let right = Object::Number(2.0);
@@ -56,7 +58,7 @@ pub fn test_string_concat() {
 #[test]
 pub fn comparison_test() {
 
-    let caller = Interpreter;
+    let caller = Interpreter::new();
 
     let com_1 = caller.is_equal(Object::Bool(true), Object::Bool(true));
     let com_2 = caller.is_equal(Object::Bool(true), Object::Bool(false));
@@ -70,5 +72,35 @@ pub fn comparison_test() {
     assert_eq!(false, com_3);
     assert_eq!(true, com_4);
 
+
+}
+
+#[test]
+pub fn environment_test() -> Result<(), Box<dyn std::error::Error>> {
+
+    let expr = Expr::Binary {
+        left: Box::new(
+            Expr::Unary {
+                operator: Token::new(TokenType::Minus, "-".to_string(), Object::Null, 1),
+                right: Box::new(Expr::Literal { value: Object::Number(6.9) })
+            }
+        ),
+        operator: Token::new(
+            TokenType::Star, "*".to_string(), Object::Null, 1
+        ),
+        right: Box::new(
+            Expr::Grouping {
+                expression: Box::new( Expr::Literal { value: Object::Number(232.0) } )
+            }
+        ),
+    };
+
+    let statement = Stmt::Expression {
+        expression: Box::new(expr)
+    };
+
+    let mut i = Interpreter::new();
+    i.interpret(vec![statement])?;
+    Ok(())
 
 }

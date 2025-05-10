@@ -18,7 +18,7 @@ impl Runner {
 
         match parser.parse() {
             Ok(v) => {
-                let mut interpreter = Interpreter;
+                let mut interpreter = Interpreter::new();
                 match interpreter.interpret(v) {
                     Ok(_) => Ok(()),
                     Err(e) => {

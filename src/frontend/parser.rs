@@ -30,6 +30,7 @@ impl Parser {
                 }
             }
         }
+        println!("{:?}", statements);
 
         Ok(statements)
 
@@ -76,8 +77,6 @@ impl Parser {
 
     }
 
-
-
     fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
 
         let name = self.consume(&TokenType::Identifier, "Expect variable name.")?.clone();
@@ -85,7 +84,7 @@ impl Parser {
         let initializer = if self.rmatch(&[TokenType::Equal])? {
             Some(self.expression()?)
         }
-            else {
+        else {
             None
         };
 
@@ -232,8 +231,8 @@ impl Parser {
         }
 
         if self.rmatch(&[TokenType::Identifier])? {
-            return Ok(expr::Expr::Literal {
-                value: self.previous().literal.clone()
+            return Ok(expr::Expr::Variable {
+                name: self.previous().clone()
             });
         }
 

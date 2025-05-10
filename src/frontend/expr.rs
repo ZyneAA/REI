@@ -11,6 +11,7 @@ pub trait Visitor<T> {
 
 }
 
+#[derive(Debug)]
 pub enum Expr {
 
     Binary {

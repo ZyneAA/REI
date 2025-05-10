@@ -6,7 +6,7 @@ use super::runtime_error::RuntimeError;
 
 pub struct Interpreter {
 
-    environment: Environment
+    pub environment: Environment
 
 }
 
@@ -40,10 +40,8 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
 
     }
 
-    fn visit_variable_expr(&mut self, expression: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
-
-        self.environment.get(name)
-
+    fn visit_variable_expr(&mut self, name: &Token) -> Result<Object, RuntimeError<Token>> {
+        Ok(self.environment.get(name)?.clone())
     }
 
     fn visit_binary_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
@@ -109,7 +107,7 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     fn visit_print_stmt(&mut self, expression: &expr::Expr) -> Result<(), RuntimeError<Token>> {
 
-        let value =  self.evaluate(expression)?;
+        let value = self.evaluate(expression)?;
         println!("{}", self.stringify(&value));
         Ok(())
 
@@ -118,7 +116,7 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
     fn visit_let_stmt(&mut self, name: &Token, initializer: &expr::Expr) -> Result<(), RuntimeError<Token>> {
 
         let value = self.evaluate(initializer)?;
-        self.environment.define(name.lexeme.clone(), value);
+        self.environment.define(name.lexeme.clone(), value)?;
         Ok(())
 
     }
@@ -144,13 +142,12 @@ impl Interpreter {
     }
 
     fn execute(&mut self, statement: stmt::Stmt) -> Result<(), RuntimeError<Token>> {
-        statement.accept(self)?;
-        Ok(())
+        statement.accept(self)
     }
 
     pub fn stringify(&mut self, object: &Object) -> String {
         match object {
-            Object::Null => "nil".to_string(),
+            Object::Null => "null".to_string(),
             Object::Number(n) => {
                 let mut s = n.to_string();
                 if s.ends_with(".0") {
