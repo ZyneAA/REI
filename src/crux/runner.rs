@@ -28,7 +28,6 @@ impl Runner {
                 }
             }
             Err(e) => {
-                eprintln!("{}", e);
                 Err(Box::new(e))
             }
         }

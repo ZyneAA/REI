@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::crux::token::{ Object, Token };
 use super::runtime_error::RuntimeError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Environment {
 
     values: HashMap<String, Object>,

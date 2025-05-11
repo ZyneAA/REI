@@ -40,9 +40,26 @@ impl Parser {
         if self.rmatch(&[TokenType::Print])? {
             Ok(self.print_statement()?)
         }
+        else if self.rmatch(&[TokenType::LeftBrace])? {
+            Ok(self.block()?)
+        }
         else {
             Ok(self.expression_statement()?)
         }
+
+    }
+
+    fn block(&mut self) -> Result<Stmt, ParseError> {
+
+        let mut statements: Vec<Stmt> = Vec::new();
+        while !self.check(&TokenType::RightBrace) && !self.is_end() {
+            statements.push(self.declaration()?);
+        }
+
+        self.consume(&TokenType::RightBrace, "Expected a } after block")?;
+        Ok(Stmt::Block {
+            statements
+        })
 
     }
 

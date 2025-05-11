@@ -129,6 +129,14 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     }
 
+    fn visit_block_stmt(&mut self, statements: &Vec<stmt::Stmt>) -> Result<(), RuntimeError<Token>> {
+
+        let new_env = Environment::from_enclosing(self.environment.clone());
+        self.execute_block(statements, new_env)?;
+        Ok(())
+
+    }
+
 }
 
 impl Interpreter {
@@ -143,14 +151,29 @@ impl Interpreter {
     pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) -> Result<(), RuntimeError<Token>> {
 
         for stmt in statements {
-            self.execute(stmt)?;
+            self.execute(&stmt)?;
         }
         Ok(())
 
     }
 
-    fn execute(&mut self, statement: stmt::Stmt) -> Result<(), RuntimeError<Token>> {
+    fn execute(&mut self, statement: &stmt::Stmt) -> Result<(), RuntimeError<Token>> {
         statement.accept(self)
+    }
+
+    fn execute_block(&mut self, statements: &Vec<stmt::Stmt>, env: Environment) -> Result<(), RuntimeError<Token>> {
+
+        let previous = self.environment.clone();
+        self.environment = env;
+
+        for stmt in statements {
+            self.execute(stmt)?;
+        }
+
+        self.environment = previous;
+
+        Ok(())
+
     }
 
     pub fn stringify(&mut self, object: &Object) -> String {
