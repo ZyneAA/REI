@@ -135,7 +135,7 @@ impl Interpreter {
 
     pub fn new() -> Self {
 
-        let environment = Environment::new();
+        let environment = Environment::global(None);
         Interpreter { environment }
 
     }

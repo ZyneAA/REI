@@ -6,16 +6,26 @@ use super::runtime_error::RuntimeError;
 #[derive(Debug)]
 pub struct Environment {
 
-    values: HashMap<String, Object>
+    values: HashMap<String, Object>,
+    enclosing: Option<Box<Environment>>
 
 }
 
 impl Environment {
 
-    pub fn new() -> Self {
+    pub fn global(enclosing: Option<Box<Environment>>) -> Self {
 
         let values: HashMap<String, Object> = HashMap::new();
-        Environment { values }
+        Environment { values, enclosing }
+
+    }
+
+    pub fn from_enclosing(enclosing: Environment) -> Self {
+
+        Environment {
+            values: HashMap::new(),
+            enclosing: Some(Box::new(enclosing)),
+        }
 
     }
 
@@ -28,11 +38,19 @@ impl Environment {
 
     pub fn get(&mut self, name: &Token) -> Result<&Object, RuntimeError<Token>> {
 
-        self.values
-            .get(&name.lexeme)
-            .ok_or(RuntimeError::UndefinedVariable {
-                token: name.clone(),
-        })
+        if let Some(value) = self.values.get(&name.lexeme) {
+            Ok(value)
+        }
+        else {
+            if let Some(ref mut env) = self.enclosing {
+                env.get(name)
+            }
+            else {
+                Err(RuntimeError::UndefinedVariable {
+                    token: name.clone(),
+                })
+            }
+        }
 
     }
 

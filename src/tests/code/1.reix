@@ -1,2 +1,2 @@
 let a = 12;
-print b = 2 + 12;
+print a = 2 + 12;
