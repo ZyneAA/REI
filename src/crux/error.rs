@@ -29,7 +29,7 @@ impl fmt::Display for ParseError {
 
         match self {
             ParseError::SyntaxError { token, message } => {
-                write!(f, "{} | At line {} {}", util::red_colored("Syntax error"), token.line, message)
+                write!(f, "{} | {} at {}:{}", util::red_colored("Syntax error"), message, token.line, token.place)
             },
 
         }

@@ -1,8 +1,11 @@
 let a = 12;
-let b = true
+let b = "OK";
 {
     let c = 12;
-    print a + c + b;
+    print a + c;
+    print a + b + c;
 }
 print "The sum: ";
-print a + b + x;
+print a ;
+
+print true + " okokokok";

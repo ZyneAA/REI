@@ -101,6 +101,5 @@ pub fn environment_test() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut i = Interpreter::new();
     i.interpret(vec![statement])?;
-    Ok(())
 
 }

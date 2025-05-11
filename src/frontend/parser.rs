@@ -103,7 +103,7 @@ impl Parser {
             None
         };
 
-        self.consume(&TokenType::Semicolon, "Expect ';' after variable declaration.")?;
+        self.consume(&TokenType::Semicolon, "Expect ';' after variable declaration")?;
 
         Ok(Stmt::Let {
             name,
@@ -148,7 +148,7 @@ impl Parser {
                 }
                 _ => { Err(ParseError::SyntaxError {
                     token: equals.clone(),
-                    message: "Invalid assignment target.".into(), })
+                    message: "Invalid assignment target ".into(), })
                 }
             }
 
@@ -326,7 +326,7 @@ impl Parser {
         }
         else {
             Err(ParseError::SyntaxError {
-                token: self.peek().clone(),
+                token: self.previous().clone(),
                 message: message.to_string(),
             })
         }

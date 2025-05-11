@@ -10,6 +10,7 @@ pub struct Lexer<'a> {
     start: usize,
     current: usize,
     line: usize,
+    place: usize,
     length: usize
 
 }
@@ -26,6 +27,7 @@ impl<'a> Lexer<'a> {
             start: 0,
             current: 0,
             line: 1,
+            place: 1,
             length: source.len()
         }
 
@@ -46,7 +48,8 @@ impl<'a> Lexer<'a> {
                 TokenType::Eof,
                 String::from(""),
                 Object::Null,
-                self.line
+                self.line,
+                self.place
             )
         );
 
@@ -128,7 +131,10 @@ impl<'a> Lexer<'a> {
             ' ' => {},
             '\r' => {},
             '\t' => {},
-            '\n' => self.line += 1,
+            '\n' => {
+                self.line += 1;
+                self.place = 0;
+            },
             '"' => self.string(),
             _ => {
 
@@ -219,6 +225,7 @@ impl<'a> Lexer<'a> {
     fn advance(&mut self) -> char {
 
         self.current += 1;
+        self.place += 1;
         let c = self.source[self.current - 1..].chars().next().unwrap();
         c
 
@@ -231,7 +238,8 @@ impl<'a> Lexer<'a> {
                 token_type,
                 text,
                 literal,
-                self.line
+                self.line,
+                self.place
         );
 
         self.tokens.push(token);

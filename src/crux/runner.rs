@@ -1,5 +1,7 @@
 use std::{ fs, io::{ self, Write } };
 
+use super::util;
+
 use crate::frontend::lexer;
 use crate::frontend::parser::Parser;
 
@@ -15,13 +17,14 @@ impl Runner {
         let tokens = lexer.scan_tokens();
 
         let mut parser = Parser::new(tokens);
+        let location =  util::red_colored(&format!("Error in{}", location));
 
         match parser.parse() {
 
             Ok(statements) => {
                 let mut interpreter = Interpreter::new();
                 if let Err(e) = interpreter.interpret(statements) {
-                    eprintln!("{}\n{}", source,e);
+                    eprintln!("{}\n{}", location, e);
                 }
             }
             Err(e) => {

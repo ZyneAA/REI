@@ -54,6 +54,8 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
             TokenType::Plus => match (left, right) {
                 (Object::Number(a), Object::Number(b)) => Ok(Object::Number(a + b)),
                 (Object::Str(a), Object::Str(b)) => Ok(Object::Str(a + &b)),
+                (Object::Str(a), b) => Ok(Object::Str(a + &b.to_string())),
+                (a, Object::Str(b)) => Ok(Object::Str(a.to_string() + &b)),
                 _ => Err(RuntimeError::TypeMismatch { token: operator.clone() })
             },
             TokenType::Minus => {

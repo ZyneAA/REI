@@ -80,7 +80,8 @@ pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
     pub literal: Object,
-    pub line: usize
+    pub line: usize,
+    pub place: usize
 
 }
 
@@ -146,13 +147,14 @@ impl fmt::Display for TokenType {
 
 impl Token {
 
-    pub fn new(token_type: TokenType, lexeme: String, literal: Object, line: usize) -> Self {
+    pub fn new(token_type: TokenType, lexeme: String, literal: Object, line: usize, place: usize) -> Self {
 
         Token{
             token_type,
             lexeme,
             literal,
-            line
+            line,
+            place
         }
 
     }
@@ -164,8 +166,8 @@ impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
         match self.literal{
-            Object::Null => write!(f, "{} -->'{}'<-- at line: {}", self.token_type, self.lexeme, self.line),
-            _ => write!(f, "{} -->' {} '<-- {} at line: {}", self.token_type, self.lexeme, self.literal, self.line)
+            Object::Null => write!(f, "{} -->'{}'<-- at {}:{}", self.token_type, self.lexeme, self.line, self.place),
+            _ => write!(f, "{} -->' {} '<-- {} at : {}:{}", self.token_type, self.lexeme, self.literal, self.line, self.place)
         }
 
     }
