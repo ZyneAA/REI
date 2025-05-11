@@ -5,6 +5,7 @@ use crate::tools;
 pub mod runner;
 pub mod error;
 pub mod token;
+pub mod util;
 
 pub struct Rei;
 
@@ -47,7 +48,7 @@ impl Rei {
                         eprintln!("File not found");
                         process::exit(65);
                 });
-                runner::Runner::run(&source)?;
+                runner::Runner::run(&source, &args[1]);
 
             }
 
@@ -62,7 +63,7 @@ impl Rei {
                         eprintln!("File not found: {}", test_file_location);
                         process::exit(65);
                 });
-                runner::Runner::run(&source)?;
+                runner::Runner::run(&source, &test_file_location);
 
             Ok(())
 

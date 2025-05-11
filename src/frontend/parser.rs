@@ -68,9 +68,8 @@ impl Parser {
         match self.rmatch(&[TokenType::Let]) {
             Ok(true) => Ok(self.var_declaration()?),
             Ok(false) => Ok(self.statement()?),
-            Err(e) => {
+            Err(_) => {
                 self.synchronize();
-                eprintln!("{}", e);
                 Err(ParseError::SyntaxError {
                     token: self.peek().clone(),
                     message: "Expected expression".into(),

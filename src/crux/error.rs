@@ -1,5 +1,6 @@
 use std::{ process, fmt };
 
+use crate::crux::util;
 use super::token::{ Token, TokenType };
 
 pub trait ReiError<T> {
@@ -28,14 +29,9 @@ impl fmt::Display for ParseError {
 
         match self {
             ParseError::SyntaxError { token, message } => {
-                let location = if token.token_type == TokenType::Eof {
-                    "at end".to_string()
-                }
-                else {
-                    format!("at '{}'", token.lexeme)
-                };
-                write!(f, "At line {} | Error {}\n{}", token.line, location, message)
-            }
+                write!(f, "{} | At line {} {}", util::red_colored("Syntax error"), token.line, message)
+            },
+
         }
 
     }

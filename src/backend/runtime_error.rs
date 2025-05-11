@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::crux::util;
+
 #[derive(Debug)]
 pub enum RuntimeError<T>
 {
@@ -32,12 +34,12 @@ where T: fmt::Debug + fmt::Display
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
         match self {
-            RuntimeError::InvalidOperator { token } => write!(f, "{} | {}", self.red_colored("Invalid operator") ,token),
-            RuntimeError::UnexpectedBinaryOperation { token } => write!(f, "{} | {}", self.red_colored("Unexpected binary operation"), token),
-            RuntimeError::TypeMismatch { token } => write!(f, "{} | {}", self.red_colored("Type mismatch"), token),
-            RuntimeError::UndefinedVariable { token } => write!(f, "{} | {}", self.red_colored("Undefined variable"), token),
-            RuntimeError::DividedByZero { token } => write!(f, "{} | {}", self.red_colored("Divided by zero"), token),
-            RuntimeError::OperandMustBeNumber { token } => write!(f, "{} | {}", self.red_colored("Operand must be a number"), token),
+            RuntimeError::InvalidOperator { token } => write!(f, "{} | {}", util::red_colored("Invalid operator") ,token),
+            RuntimeError::UnexpectedBinaryOperation { token } => write!(f, "{} | {}", util::red_colored("Unexpected binary operation"), token),
+            RuntimeError::TypeMismatch { token } => write!(f, "{} | {}", util::red_colored("Type mismatch, both operands must be same type"), token),
+            RuntimeError::UndefinedVariable { token } => write!(f, "{} | {}", util::red_colored("Undefined variable"), token),
+            RuntimeError::DividedByZero { token } => write!(f, "{} | {}", util::red_colored("Divided by zero"), token),
+            RuntimeError::OperandMustBeNumber { token } => write!(f, "{} | {}", util::red_colored("Operand must be a number"), token),
         }
 
     }

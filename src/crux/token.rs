@@ -163,7 +163,10 @@ impl fmt::Display for Token {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
-        write!(f, "Token: {} --->' {} '<--- {} at line: {}", self.token_type, self.lexeme, self.literal, self.line)
+        match self.literal{
+            Object::Null => write!(f, "{} -->'{}'<-- at line: {}", self.token_type, self.lexeme, self.line),
+            _ => write!(f, "{} -->' {} '<-- {} at line: {}", self.token_type, self.lexeme, self.literal, self.line)
+        }
 
     }
 

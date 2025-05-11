@@ -9,7 +9,7 @@ pub struct Runner;
 
 impl Runner {
 
-    pub fn run(source: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run(source: &str, location: &str) {
 
         let lexer = lexer::Lexer::new(source);
         let tokens = lexer.scan_tokens();
@@ -17,19 +17,17 @@ impl Runner {
         let mut parser = Parser::new(tokens);
 
         match parser.parse() {
-            Ok(v) => {
+
+            Ok(statements) => {
                 let mut interpreter = Interpreter::new();
-                match interpreter.interpret(v) {
-                    Ok(_) => Ok(()),
-                    Err(e) => {
-                        eprintln!("{}", e);
-                        Err(Box::new(e))
-                    }
+                if let Err(e) = interpreter.interpret(statements) {
+                    eprintln!("{}\n{}", source,e);
                 }
             }
             Err(e) => {
-                Err(Box::new(e))
+                eprintln!("{}\n{}", location, e);
             }
+
         }
 
     }
