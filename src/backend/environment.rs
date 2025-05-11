@@ -61,9 +61,15 @@ impl Environment {
             Ok(())
         }
         else {
-            Err(RuntimeError::UndefinedVariable {
-                token: name.clone(),
-            })
+            if let Some(ref mut env) = self.enclosing {
+                env.assign(name, value)?;
+                Ok(())
+            }
+            else {
+                Err(RuntimeError::UndefinedVariable {
+                    token: name.clone(),
+                })
+            }
         }
 
     }

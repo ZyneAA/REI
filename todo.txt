@@ -7,6 +7,8 @@ Instead they are array of bytes, u8). So instant lookup time would be much bette
 // Comeback later
 in parser::Parser::primary(), add a proper error handling for else case
 
+// uhmm print and println impl??
+
 // Error Synchronization improvement
 instead of exiting the process, make a better error handling
 make batshit crazy error reports

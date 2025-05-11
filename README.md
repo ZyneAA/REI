@@ -1,1 +1,1 @@
-The repo of the new interpreted language i'm working on. All the test codes are in ./src/tests/code. The file extension, '.reix', which I called REI executable is the extension of the language.
+The repo of the new interpreted language i'm working on. All the test codes are in ./src/tests/code. The file extension, '.reix', which I called REI executable is the extension of the language. REI is called Recursive Executing Interpreter which me and YapGPT came up with. It kinda makes sense but not really but it sounds cool.
