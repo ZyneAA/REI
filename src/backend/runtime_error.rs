@@ -46,14 +46,4 @@ where T: fmt::Debug + fmt::Display
 
 }
 
-impl<T> RuntimeError<T> {
-
-    fn red_colored(&self, text: &str) -> String{
-
-        format!("\x1b[31m{}\x1b[0m", text)
-
-    }
-
-}
-
 impl<T> std::error::Error for RuntimeError<T> where T: fmt::Debug + fmt::Display {}

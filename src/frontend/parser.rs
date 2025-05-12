@@ -40,6 +40,9 @@ impl Parser {
         if self.rmatch(&[TokenType::Print])? {
             Ok(self.print_statement()?)
         }
+        else if self.rmatch(&[TokenType::PrintLn])? {
+            Ok(self.println_statement()?)
+        }
         else if self.rmatch(&[TokenType::LeftBrace])? {
             Ok(self.block()?)
         }
@@ -92,9 +95,22 @@ impl Parser {
 
     }
 
+    fn println_statement(&mut self) -> Result<Stmt, ParseError> {
+
+        let value = self.expression()?;
+        match self.consume(&TokenType::Semicolon, "Expected ; after value") {
+            Ok(_) => Ok(Stmt::PrintLn { expression: Box::new(value) }),
+            Err(e) => {
+                self.synchronize();
+                Err(e)
+            }
+        }
+
+    }
+
     fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
 
-        let name = self.consume(&TokenType::Identifier, "Expect variable name.")?.clone();
+        let name = self.consume(&TokenType::Identifier, "Expect variable name")?.clone();
 
         let initializer = if self.rmatch(&[TokenType::Equal])? {
             Some(self.expression()?)
@@ -309,6 +325,7 @@ impl Parser {
                 | TokenType::If
                 | TokenType::While
                 | TokenType::Print
+                | TokenType::PrintLn
                 | TokenType::Return => return,
                 _ => {},
             }

@@ -118,6 +118,14 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
     fn visit_print_stmt(&mut self, expression: &expr::Expr) -> Result<(), RuntimeError<Token>> {
 
         let value = self.evaluate(expression)?;
+        print!("{}", self.stringify(&value));
+        Ok(())
+
+    }
+
+    fn visit_println_stmt(&mut self, expression: &expr::Expr) -> Result<(), RuntimeError<Token>> {
+
+        let value = self.evaluate(expression)?;
         println!("{}", self.stringify(&value));
         Ok(())
 
