@@ -4,5 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+cranelift-jit = "0.116.1"
+cranelift-module = "0.116.1"
+cranelift-simplejit = "0.68.0"
 once_cell = "1.21.3"
 signal-hook = "0.3.17"
+target-lexicon = "0.13.2"
