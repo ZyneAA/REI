@@ -9,11 +9,17 @@ pub fn define_ast(target_dir: &str, base_name: &str, types: Vec<&str>) -> Result
     let mut out = File::create(path).expect("Can't create the file");
 
     // importing what we'll be using
-    writeln!(out, "use std::boxed::Box;\nuse crate::crux::token::{{ Token, TokenType, Object, KEYWORDS }};\nuse crate::frontend::expr::Expr;\n").unwrap();
+    if base_name == "Stmt" {
+        writeln!(out, "use std::boxed::Box;\nuse crate::crux::token::Token;\nuse crate::frontend::expr::Expr;\n").unwrap(); 
+    }
+    else {
+        writeln!(out, "use std::boxed::Box;\nuse crate::crux::token::{{ Token, Object }};\n").unwrap(); 
+    }
 
     define_visitor(&mut out, base_name, &types).unwrap();
 
     // The AST
+    writeln!(out, "#[derive(Clone)]");
     writeln!(out, "pub enum {} {{\n", base_name).unwrap();
     for type_def in &types {
         let parts: Vec<&str> = type_def.split(':').collect();

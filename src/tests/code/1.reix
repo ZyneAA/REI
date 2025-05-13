@@ -1,4 +1,11 @@
-let a = 121.212;
-let b = 10;
-println a - b;
-print true == true;
+let a = true;
+let b = true;
+
+if (a and b) {
+    println "Both are true";
+}
+
+if (a or b) {
+    println "a or b is true";
+}
+

@@ -38,30 +38,59 @@ impl Parser {
     fn statement(&mut self) -> Result<Stmt, ParseError> {
 
         if self.rmatch(&[TokenType::Print])? {
-            Ok(self.print_statement()?)
+            self.print_statement()
         }
         else if self.rmatch(&[TokenType::PrintLn])? {
-            Ok(self.println_statement()?)
+            self.println_statement()
+        }
+        else if self.rmatch(&[TokenType::While])? {
+            self.while_statement()
         }
         else if self.rmatch(&[TokenType::LeftBrace])? {
-            Ok(self.block()?)
+            self.block()
         }
         else if self.rmatch(&[TokenType::If])? {
-            Ok(self.if_statement()?)
+            self.if_statement()
         }
         else {
-            Ok(self.expression_statement()?)
+            self.expression_statement()
         }
 
     }
 
-    fn if_statement(&self) -> Result<Stmt, ParseError> {
+    fn while_statement(&mut self) -> Result<Stmt, ParseError> {
+
+        self.consume(&TokenType::LeftParen, "Expected a '(' after 'while'")?;
+        let condition = self.expression()?;
+        self.consume(&TokenType::RightParen, "Expected a ')' after condition")?;
+        let body = self.statement()?;
+
+        Ok(Stmt::While {
+            condition: Box::new(condition),
+            body: Box::new(body)
+        })
+
+    }
+
+    fn if_statement(&mut self) -> Result<Stmt, ParseError> {
 
         self.consume(&TokenType::LeftParen, "Expected ')' after 'if'")?;
         let condition = self.expression()?;
         self.consume(&TokenType::RightParen, "Expected ')' after if condition")?;
 
         let then_branch = self.statement()?;
+        let else_branch = if self.rmatch(&[TokenType::Else])? {
+            let a = self.statement()?;
+            Some(Box::new(a))
+        }
+        else {
+            None
+        };
+        Ok(Stmt::If {
+            condition: Box::new(condition),
+            then_branch: Box::new(then_branch),
+            else_branch
+        })
 
     }
 
@@ -162,7 +191,7 @@ impl Parser {
 
     fn assignment(&mut self) -> Result<expr::Expr, ParseError> {
 
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if self.rmatch(&[TokenType::Equal])? {
             let equals = self.previous().clone();
@@ -185,6 +214,42 @@ impl Parser {
         else {
             Ok(expr)
         }
+
+    }
+
+    fn or(&mut self) -> Result<expr::Expr, ParseError> {
+
+        let mut expr = self.and()?;
+
+        while self.rmatch(&[TokenType::Or])? {
+            let operator = self.previous().clone();
+            let right = self.and()?;
+            expr = expr::Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right)
+            }
+        }
+
+        Ok(expr)
+
+    }
+
+    fn and(&mut self) -> Result<expr::Expr, ParseError> {
+
+        let mut expr = self.equality()?;
+
+        while self.rmatch(&[TokenType::And])? {
+            let operator = self.previous().clone();
+            let right = self.equality()?;
+            expr = expr::Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right)
+            }
+        }
+
+        Ok(expr)
 
     }
 

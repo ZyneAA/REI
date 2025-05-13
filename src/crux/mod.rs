@@ -28,6 +28,7 @@ impl Rei {
                     "Binary : Expr left, Token operator, Expr right",
                     "Grouping : Expr expression",
                     "Literal : Object value",
+                    "Logical : Expr left, Token operator, Expr right",
                     "Unary : Token operator, Expr right",
                     "Variable: Token name"
                 ])?;
@@ -37,10 +38,11 @@ impl Rei {
                 vec![
                     "Block: Vec<Stmt> statements",
                     "Expression : Expr expression",
-                    "If : Expr condition, Stmt then_branch",
-                    "Else: Stmt else_branch",
+                    "If : Expr condition, Box<Stmt> then_branch, Option<Box<Stmt>> else_branch",
                     "Print : Expr expression",
-                    "Let : Token name, Expr initializer"
+                    "PrintLn : Expr expression",
+                    "Let : Token name, Expr initializer",
+                    "While: Expr condition, Box<Stmt> body"
                 ])?;
             }
             else {

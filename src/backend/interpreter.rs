@@ -105,6 +105,25 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
 
     }
 
+    fn visit_logical_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
+
+        let left = self.evaluate(left)?;
+
+        if operator.token_type == TokenType::Or {
+            if self.is_truthy(&left) {
+                return Ok(left)
+            }
+        }
+        else {
+            if !self.is_truthy(&left) {
+                return Ok(left)
+            }
+        }
+
+        self.evaluate(right)
+
+    }
+
 }
 
 impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
@@ -147,6 +166,35 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
         Ok(())
 
     }
+
+    fn visit_if_stmt(&mut self, condition: &expr::Expr, then_branch: &stmt::Stmt, else_branch: &Option<Box<stmt::Stmt>>) -> Result<(), RuntimeError<Token>> {
+
+        let obj = self.evaluate(condition)?;
+
+        if self.is_truthy(&obj) {
+            self.execute(then_branch)
+        }
+        else {
+            match else_branch {
+                Some(v) => self.execute(v),
+                None => Ok(())
+            }
+        }
+
+    }
+
+    fn visit_while_stmt(&mut self, condition: &expr::Expr, body: &stmt::Stmt) -> Result<(), RuntimeError<Token>> {
+
+        let obj = &self.evaluate(condition)?;
+
+        while self.is_truthy(obj) {
+            self.execute(body)?
+        }
+
+        Ok(())
+
+    }
+ 
 
 }
 
