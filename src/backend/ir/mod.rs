@@ -1,2 +1,2 @@
 pub mod cranelift;
-// pub mod intrinsics;
+pub mod intrinsics;

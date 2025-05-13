@@ -46,9 +46,22 @@ impl Parser {
         else if self.rmatch(&[TokenType::LeftBrace])? {
             Ok(self.block()?)
         }
+        else if self.rmatch(&[TokenType::If])? {
+            Ok(self.if_statement()?)
+        }
         else {
             Ok(self.expression_statement()?)
         }
+
+    }
+
+    fn if_statement(&self) -> Result<Stmt, ParseError> {
+
+        self.consume(&TokenType::LeftParen, "Expected ')' after 'if'")?;
+        let condition = self.expression()?;
+        self.consume(&TokenType::RightParen, "Expected ')' after if condition")?;
+
+        let then_branch = self.statement()?;
 
     }
 

@@ -1,23 +1,19 @@
 use cranelift::prelude::*;
-use cranelift_jit::{ JITBuilder, JITModule };
-use cranelift_module::{ Linkage, Module };
+use cranelift_jit::{JITBuilder, JITModule};
+use cranelift_module::{Linkage, Module};
 
 /// Simple AST
 enum Expr {
-
     Num(i64),
     Add(Box<Expr>, Box<Expr>),
     Mul(Box<Expr>, Box<Expr>),
-
 }
 
 fn make_ast() -> Expr {
-
     Expr::Add(
         Box::new(Expr::Num(2)),
         Box::new(Expr::Mul(Box::new(Expr::Num(3)), Box::new(Expr::Num(4)))),
     )
-
 }
 
 fn codegen_expr<'a>(
@@ -25,9 +21,7 @@ fn codegen_expr<'a>(
     builder: &mut FunctionBuilder<'a>,
     ctx: &mut FunctionBuilderContext,
     module: &mut JITModule,
-) -> Value
-{
-
+) -> Value {
     let int_type = types::I64;
 
     match expr {
@@ -48,44 +42,38 @@ fn codegen_expr<'a>(
 #[test]
 pub fn jit_testing() {
 
-    // Set up JIT module
     let builder = JITBuilder::new(cranelift_module::default_libcall_names());
     let mut module = JITModule::new(builder.unwrap());
-
-    // Create a function context and signature
     let mut ctx = module.make_context();
     let mut func_ctx = FunctionBuilderContext::new();
-    ctx.func.signature = module.make_signature(); // define signature if needed
 
-    // Now build the IR
-    {
-        let mut builder = FunctionBuilder::new(&mut ctx.func, &mut func_ctx);
+    let int_type = types::I64;
+    let sig = module.make_signature();
+    ctx.func.signature = sig;
+    let mut builder = FunctionBuilder::new(&mut ctx.func, &mut func_ctx);
+    let block = builder.create_block();
+    builder.append_block_params_for_function_params(block);
+    builder.switch_to_block(block);
+    builder.seal_block(block);
 
-        let entry_block = builder.create_block();
-        builder.append_block_params_for_function_params(entry_block);
-        builder.switch_to_block(entry_block);
-        builder.seal_block(entry_block);
+    let ast = make_ast();
+    let val = codegen_expr(&ast, &mut builder, &mut func_ctx, &mut module);
 
-        // Just return 42 as an example
-        let forty_two = builder.ins().iconst(types::I64, 42);
-        builder.ins().return_(&[forty_two]);
+    builder.ins().return_(&[val]);
+    builder.finalize();
 
-        builder.finalize(); // Don't forget this
-    }
-
-    // Finalize and compile the function
-    let func_id = module
-        .declare_function("main", cranelift_module::Linkage::Export, &ctx.func.signature)
+    let id = module
+        .declare_function("main", Linkage::Export, &ctx.func.signature)
         .unwrap();
-
-    module.define_function(func_id, &mut ctx).unwrap();
+    module.define_function(id, &mut ctx).unwrap();
     module.clear_context(&mut ctx);
     module.finalize_definitions();
 
-    // Get pointer to compiled code and call it
-    let code_ptr = module.get_finalized_function(func_id);
-    let func = unsafe { std::mem::transmute::<_, fn() -> i64>(code_ptr) };
+    let code_ptr = module.get_finalized_function(id);
 
-    println!("JIT ran and returned: {}", func());
+    let func = unsafe { std::mem::transmute::<_, fn() -> i64>(code_ptr) };
+    let result = func();
+
+    println!("JIT result: {}", result);
 
 }

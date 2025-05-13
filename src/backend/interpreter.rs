@@ -92,6 +92,7 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
             TokenType::BangEqual => Ok(Object::Bool(!self.is_equal(left, right))),
 
             _ => Err(RuntimeError::UnexpectedBinaryOperation { token: operator.clone() })
+
         }
 
     }
@@ -187,6 +188,7 @@ impl Interpreter {
     }
 
     pub fn stringify(&mut self, object: &Object) -> String {
+
         match object {
             Object::Null => "null".to_string(),
             Object::Number(n) => {
@@ -199,6 +201,7 @@ impl Interpreter {
             Object::Bool(b) => b.to_string(),
             Object::Str(s) => s.clone(),
         }
+
     }
 
     fn evaluate(&mut self, expression: &expr::Expr) -> Result<Object, RuntimeError<Token>> {

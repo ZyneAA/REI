@@ -1,4 +1,5 @@
 use super::expr;
+use crate::backend::stmt;
 use crate::crux::token::{ Token, Object };
 
 pub struct AstPrinter;
@@ -26,15 +27,61 @@ impl expr::Visitor<String> for AstPrinter {
         self.parenthesize(&operator.lexeme, &[right])
     }
 
+    fn visit_assign_expr(&mut self, name: &Token, value: &expr::Expr) -> String {
+        let name = format!("assign {}", name.lexeme);
+        self.parenthesize(&name, &[value])
+    }
+
+    fn visit_variable_expr(&mut self, name: &Token) -> String {
+        let name = format!("{}", name.lexeme);
+        name
+    }
+
+}
+
+impl stmt::Visitor<String> for AstPrinter {
+
+    fn visit_block_stmt(&mut self, statements: &Vec<stmt::Stmt>) -> String {
+        let mut out = String::from("(block");
+        for stmt in statements {
+            out.push(' ');
+            out.push_str(&stmt.accept(self));
+        }
+        out.push(')');
+        out
+    }
+
+    fn visit_expression_stmt(&mut self, expression: &expr::Expr) -> String {
+        format!("(expr {})", expression.accept(self))
+    }
+
+    fn visit_print_stmt(&mut self, expression: &expr::Expr) -> String {
+        format!("(print {})", expression.accept(self))
+    }
+
+    fn visit_println_stmt(&mut self, expression: &expr::Expr) -> String {
+        format!("(println {})", expression.accept(self))
+    }
+
+    fn visit_let_stmt(&mut self, name: &Token, initializer: &expr::Expr) -> String {
+        format!("(let {} {})", name.lexeme, initializer.accept(self))
+    }
+
 }
 
 impl AstPrinter {
 
-    pub fn print_ast(&mut self, expression: expr::Expr) -> String {
+    pub fn print_ast(&mut self, statements: Vec<stmt::Stmt>) {
 
-        let output = expression.accept(self);
-        output
+        for stmt in statements {
+            let output = self.execute(&stmt);
+            println!("{}", output);
+        }
 
+    }
+
+    fn execute(&mut self, statement: &stmt::Stmt) -> String{
+        statement.accept(self)
     }
 
     fn parenthesize(&mut self, name: &str, exprs: &[&expr::Expr]) -> String {

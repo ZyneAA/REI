@@ -37,8 +37,9 @@ impl Rei {
                 vec![
                     "Block: Vec<Stmt> statements",
                     "Expression : Expr expression",
+                    "If : Expr condition, Stmt then_branch",
+                    "Else: Stmt else_branch",
                     "Print : Expr expression",
-                    "PrintLn: Expr expression",
                     "Let : Token name, Expr initializer"
                 ])?;
             }
@@ -64,7 +65,7 @@ impl Rei {
                         eprintln!("File not found: {}", test_file_location);
                         process::exit(65);
                 });
-            runner::Runner::run(&source, &test_file_location);
+                runner::Runner::run(&source, &test_file_location);
 
             Ok(())
 

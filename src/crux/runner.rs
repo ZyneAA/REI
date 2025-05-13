@@ -24,7 +24,7 @@ impl Runner {
             Ok(statements) => {
                 let mut interpreter = Interpreter::new();
                 if let Err(e) = interpreter.interpret(statements) {
-                    eprintln!("{}\n{}", location, e);
+                    eprintln!("{}\n{}", source, e);
                 }
             }
             Err(e) => {
