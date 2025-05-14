@@ -19,7 +19,7 @@ pub fn define_ast(target_dir: &str, base_name: &str, types: Vec<&str>) -> Result
     define_visitor(&mut out, base_name, &types).unwrap();
 
     // The AST
-    writeln!(out, "#[derive(Clone)]");
+    writeln!(out, "#[derive(Clone, Debug]")?;
     writeln!(out, "pub enum {} {{\n", base_name).unwrap();
     for type_def in &types {
         let parts: Vec<&str> = type_def.split(':').collect();

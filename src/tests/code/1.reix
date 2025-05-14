@@ -1,11 +1,6 @@
-let a = true;
-let b = true;
-
-if (a and b) {
-    println "Both are true";
+let a = 1;
+while (a <= 10){
+    a = a + 1;
+    println a;
 }
-
-if (a or b) {
-    println "a or b is true";
-}
-
+println a;

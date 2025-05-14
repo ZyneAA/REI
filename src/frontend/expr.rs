@@ -1,5 +1,5 @@
 use std::boxed::Box;
-use crate::crux::token::{ Token, TokenType, Object, KEYWORDS };
+use crate::crux::token::{ Token, Object };
 
 pub trait Visitor<T> {
 
@@ -13,8 +13,7 @@ pub trait Visitor<T> {
 
 }
 
-#[derive(Clone)]
-
+#[derive(Clone, Debug)]
 pub enum Expr {
 
     Assign {

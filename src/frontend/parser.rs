@@ -9,14 +9,13 @@ pub struct Parser {
 
     tokens: Vec<Token>,
     current: usize,
-    had_error: bool
 
 }
 
 impl Parser {
 
     pub fn new(tokens: Vec<Token>) -> Self {
-        Parser { tokens, current: 0, had_error: false }
+        Parser { tokens, current: 0 }
     }
 
     pub fn parse(&mut self) -> Result<Vec<Stmt>, ParseError> {

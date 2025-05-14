@@ -37,6 +37,11 @@ impl expr::Visitor<String> for AstPrinter {
         name
     }
 
+    fn visit_logical_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> String {
+        self.parenthesize(&format!("logical {}", operator.lexeme), &[left, right])
+    }
+
+
 }
 
 impl stmt::Visitor<String> for AstPrinter {
@@ -66,6 +71,25 @@ impl stmt::Visitor<String> for AstPrinter {
     fn visit_let_stmt(&mut self, name: &Token, initializer: &expr::Expr) -> String {
         format!("(let {} {})", name.lexeme, initializer.accept(self))
     }
+    fn visit_if_stmt(&mut self, condition: &expr::Expr, then_branch: &stmt::Stmt, else_branch: &Option<Box<stmt::Stmt>>) -> String {
+
+        let mut out = String::from("(if ");
+        out.push_str(&condition.accept(self));
+        out.push(' ');
+        out.push_str(&then_branch.accept(self));
+        if let Some(else_branch) = else_branch {
+            out.push(' ');
+            out.push_str(&else_branch.accept(self));
+        }
+        out.push(')');
+        out
+
+    }
+
+    fn visit_while_stmt(&mut self, condition: &expr::Expr, body: &stmt::Stmt) -> String {
+        format!("(while {} {})", condition.accept(self), body.accept(self))
+    }
+
 
 }
 

@@ -2,7 +2,7 @@
     let a = 12;
     let b = 1;
     let c = a + b;
-    print c;
+    println c;
 }
 
 print c;

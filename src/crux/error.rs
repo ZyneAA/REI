@@ -1,7 +1,7 @@
 use std::{ process, fmt };
 
 use crate::crux::util;
-use super::token::{ Token, TokenType };
+use super::token::Token;
 
 pub trait ReiError<T> {
 

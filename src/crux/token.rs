@@ -35,7 +35,7 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("for", TokenType::For);
     map.insert("fn", TokenType::Fn);
     map.insert("if", TokenType::If);
-    map.insert("non", TokenType::Null);
+    map.insert("null", TokenType::Null);
     map.insert("or", TokenType::Or);
     map.insert("print", TokenType::Print);
     map.insert("println", TokenType::PrintLn);

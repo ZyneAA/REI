@@ -1,12 +1,15 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::crux::token::{ Object, Token, TokenType };
 use crate::frontend::expr;
 use crate::backend::stmt;
-use crate::backend::environment::Environment;
+use crate::backend::environment::{ Environment, EnvRef };
 use super::runtime_error::RuntimeError;
 
 pub struct Interpreter {
 
-    pub environment: Environment
+    pub environment: EnvRef
 
 }
 
@@ -41,7 +44,7 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, name: &Token) -> Result<Object, RuntimeError<Token>> {
-        Ok(self.environment.get(name)?.clone())
+        self.environment.borrow_mut().get(name)
     }
 
     fn visit_binary_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
@@ -100,7 +103,7 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
     fn visit_assign_expr(&mut self, name: &Token, value: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
 
         let value = self.evaluate(value)?;
-        self.environment.assign(name, value.clone())?;
+        self.environment.borrow_mut().assign(name, value.clone())?;
         Ok(value)
 
     }
@@ -154,7 +157,7 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
     fn visit_let_stmt(&mut self, name: &Token, initializer: &expr::Expr) -> Result<(), RuntimeError<Token>> {
 
         let value = self.evaluate(initializer)?;
-        self.environment.define(name.lexeme.clone(), value)?;
+        self.environment.borrow_mut().define(name.lexeme.clone(), value)?;
         Ok(())
 
     }
@@ -162,8 +165,7 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
     fn visit_block_stmt(&mut self, statements: &Vec<stmt::Stmt>) -> Result<(), RuntimeError<Token>> {
 
         let new_env = Environment::from_enclosing(self.environment.clone());
-        self.execute_block(statements, new_env)?;
-        Ok(())
+        self.execute_block(statements, new_env)
 
     }
 
@@ -185,16 +187,17 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     fn visit_while_stmt(&mut self, condition: &expr::Expr, body: &stmt::Stmt) -> Result<(), RuntimeError<Token>> {
 
-        let obj = &self.evaluate(condition)?;
-
-        while self.is_truthy(obj) {
-            self.execute(body)?
+        loop {
+            let cond = self.evaluate(condition)?;
+            if !self.is_truthy(&cond) {
+                break;
+            }
+            // println!("{:?}", &condition);
+            self.execute(body)?;
         }
-
         Ok(())
 
     }
- 
 
 }
 
@@ -202,7 +205,7 @@ impl Interpreter {
 
     pub fn new() -> Self {
 
-        let environment = Environment::global(None);
+        let environment = Environment::global();
         Interpreter { environment }
 
     }
@@ -220,7 +223,7 @@ impl Interpreter {
         statement.accept(self)
     }
 
-    fn execute_block(&mut self, statements: &Vec<stmt::Stmt>, env: Environment) -> Result<(), RuntimeError<Token>> {
+    fn execute_block(&mut self, statements: &Vec<stmt::Stmt>, env: EnvRef) -> Result<(), RuntimeError<Token>> {
 
         let previous = self.environment.clone();
         self.environment = env;
