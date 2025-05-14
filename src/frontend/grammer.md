@@ -1,9 +1,6 @@
 ## Declarations
-declaration  → classDecl\
-              | funDecl\
-              | varDecl\
-              | statement ;\
-class_decl   → "class" IDENTIFIER ( "<" IDENTIFIER )? \
+declaration  → classDecl| funDecl | varDecl | statement ;\\
+class_decl   → "class" IDENTIFIER ( "<" IDENTIFIER )? 
                "{" function* "}" ;\
 fn_decl      → "fn" function ;\
 var_decl     → "let" IDENTIFIER ( "=" expression )? ";" ;\
