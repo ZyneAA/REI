@@ -5,13 +5,21 @@ make a source: Vec<char> so that it wont be O(n) because of unicode-8 encoding
 Instead they are array of bytes, u8). So instant lookup time would be much better in the future.
 
 // Comeback later
-in parser::Parser::primary(), add a proper error handling for else case
+in parser::Parser::primary(), add a proper error handling for else case (done)
 
-// uhmm print and println impl??
+// uhmm print and println impl?? (done)
 
 // Error Synchronization improvement
 instead of exiting the process, make a better error handling
-make batshit crazy error reports
+make crazy error reports (kinda)
 
 // To add later maybe?
 add support for comparing of different types
+
+// GOING BATSHIT CRAZY
+- OWN VIRTUAL ENV FOR CODE EXECUTION
+- MANUAL MEMORY ALLOCATION
+- INVOKING C LIBRARY FOR FUN???
+- NO GC
+- jit compiler?
+

@@ -48,12 +48,65 @@ impl Parser {
         else if self.rmatch(&[TokenType::LeftBrace])? {
             self.block()
         }
+        else if self.rmatch(&[TokenType::For])? {
+            self.for_statement()
+        }
         else if self.rmatch(&[TokenType::If])? {
             self.if_statement()
         }
         else {
             self.expression_statement()
         }
+
+    }
+
+    fn for_statement(&mut self) -> Result<Stmt, ParseError> {
+
+        self.consume(&TokenType::LeftParen, "Expected a '(' after 'for'")?;
+
+        let initializer = if self.rmatch(&[TokenType::Semicolon])? {
+            None
+        }
+        else if self.rmatch(&[TokenType::Let])? {
+            Some(self.var_declaration()?)
+        }
+        else {
+            Some(self.expression_statement()?)
+        };
+
+        let condition = if !self.check(&TokenType::Semicolon) {
+            Some(self.expression()?)
+        }
+        else { None };
+
+        self.consume(&TokenType::Semicolon, "Expected a ';'")?;
+
+        let increment = if !self.check(&TokenType::RightParen) {
+            Some(self.expression()?)
+        }
+        else { None };
+
+        self.consume(&TokenType::RightParen, "Expect ')' after for clauses.")?;
+
+        let mut body = self.statement()?;
+        if let Some(inc) = increment {
+            body = Stmt::Block {
+                statements: vec![body, Stmt::Expression { expression: Box::new(inc) }]
+            }
+        };
+
+        let cond_expr = condition.unwrap_or(expr::Expr::Literal { value: Object::Bool(true) });
+        body = Stmt::While{
+            condition: Box::new(cond_expr), body: Box::new(body)
+        };
+
+        if let Some(init) = initializer {
+            body = Stmt::Block {
+                statements: vec![init, body,]
+            }
+        };
+
+        Ok(body)
 
     }
 
