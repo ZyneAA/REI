@@ -3,7 +3,7 @@ declaration  → classDecl| funDecl | varDecl | statement ;\\
 class_decl   → "class" IDENTIFIER ( "<" IDENTIFIER )? 
                "{" function* "}" ;\
 fn_decl      → "fn" function ;\
-var_decl     → "let" IDENTIFIER ( "=" expression )? ";" ;\
+var_decl     → "let" IDENTIFIER ( "=" expression )? ";" ;
 
 ## Statements
 statement    → expr_stmt
@@ -26,7 +26,7 @@ return_stmt  → "return" expression? ";" ;\
 while_stmt   → "while" "(" expression ")" statement );\
 loop_stmt    → "loop" "(" ver_decl ";" expression | Digit ".." expression | Digit ")"
                statement;\
-block        → "{" declaration* "}" ;\
+block        → "{" declaration* "}" ;
 
 ## Expressions
 expression   → assignment ;\
@@ -40,12 +40,12 @@ term         → factor ( ( "-" | "+" ) factor )* ;\
 factor       → unary ( ( "/" | "*" ) unary )* ;\
 unary        → ( "!" | "-" ) unary | call ;\
 call         → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;\
-primary      → "true" | "false" | "null" | "base"\
-              | NUMBER | STRING | IDENTIFIER\
+primary      → "true" | "false" | "null" | "base"
+              | NUMBER | STRING | IDENTIFIER
 
 ## Lexical Grammar
 Number       → DIGIT+ ( "." DIGIT+ )? ;\
 String       → "\"" <any char except "\"">* "\"" ;\
 Identifier   → ALPHA ( ALPHA | DIGIT )* ;\
 Alpha        → "a" ... "z" | "A" ... "Z" | "_" ;\
-Digit        → "0" ... "9" ;\
+Digit        → "0" ... "9" ;
