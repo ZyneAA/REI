@@ -1,8 +1,3 @@
-{
-    let a = 12;
-    let b = 1;
-    let c = a + b;
-    println c;
+loop(let a; 0..12) {
+    println a;
 }
-
-print c;
