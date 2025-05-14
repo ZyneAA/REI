@@ -51,6 +51,9 @@ impl Parser {
         else if self.rmatch(&[TokenType::For])? {
             self.for_statement()
         }
+        else if self.rmatch(&[TokenType::Loop])? {
+            self.loop_statement()
+        }
         else if self.rmatch(&[TokenType::If])? {
             self.if_statement()
         }
@@ -102,11 +105,20 @@ impl Parser {
 
         if let Some(init) = initializer {
             body = Stmt::Block {
-                statements: vec![init, body,]
+                statements: vec![init, body]
             }
         };
 
         Ok(body)
+
+    }
+
+    fn loop_statement(&mut self) -> Result<Stmt, ParseError> {
+
+        self.consume(&TokenType::LeftParen, "Expected a '(' after 'for'")?;
+        let initializer = if self.rmatch(&[TokenType::Semicolon])? {
+            None
+        };
 
     }
 

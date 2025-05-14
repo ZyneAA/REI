@@ -20,7 +20,7 @@ pub enum TokenType {
 
     // Keywords
     And, Class, Else, False, Fn, For, If, Null, Or,
-    Print, PrintLn, Return, Base, This, True, Let, While,
+    Print, PrintLn, Return, Base, This, True, Let, While, Loop,
     Eof
 
 }
@@ -138,6 +138,7 @@ impl fmt::Display for TokenType {
             TokenType::This => "IDENTIFIER",
             TokenType::True => "IDENTIFIER",
             TokenType::Let => "IDENTIFIER",
+            TokenType::Loop => "IDENTIFIER",
             TokenType::While => "IDENTIFIER",
 
             TokenType::Eof => "End of File",
