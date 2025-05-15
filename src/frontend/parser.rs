@@ -115,44 +115,63 @@ impl Parser {
 
     fn loop_statement(&mut self) -> Result<Stmt, ParseError> {
 
-        self.consume(&TokenType::LeftParen, "Expected a '(' after 'loop'")?;
+        self.consume(&TokenType::LeftParen, "Expected '(' after 'loop'")?;
+        self.consume(&TokenType::Let, "Expected 'let' in loop declaration")?;
 
-        let mut initializer = if self.rmatch(&[TokenType::Let])? {
-            self.var_declaration()?
-        }
-        else {
-            return Err(ParseError::SyntaxError {
-                token: self.peek().clone(),
-                message: "Expected expression".into(),
-            })
+        let name = self.consume(&TokenType::Identifier, "Expected loop variable name")?.clone();
+
+        self.consume(&TokenType::Equal, "Expected '=' in loop declaration")?;
+
+        let start_expr = self.expression()?;
+
+        self.consume(&TokenType::DotDot, "Expected '..' in loop range")?;
+
+        let end_expr = self.expression()?;
+
+        self.consume(&TokenType::RightParen, "Expected ')' after loop range declaration")?;
+
+        let body = self.statement()?;
+
+        // Same desugaring as `for`: convert to a while
+        let init = Stmt::Let {
+            name: name.clone(),
+            initializer: Box::new(start_expr),
         };
 
-        let start = self.expression()?;
-        self.consume(&TokenType::Dot, "Expected a '.'")?;
-        self.consume(&TokenType::Dot, "Expected a '.'")?;
-        let end = self.expression()?;
-
-        initializer = match initializer {
-            Stmt::Let { name, initializer } => {
-                Stmt::Let {
-                    name,
-                    initializer: Box::new(start)
-                }
-            },
-            _ => {
-                return Err(ParseError::SyntaxError {
-                    token: self.peek().clone(),
-                    message: "Expected expression".into(),
-                })
-            }
+        let condition = expr::Expr::Binary {
+            left: Box::new(expr::Expr::Variable { name: name.clone() }),
+            operator: Token::fake(TokenType::Less),
+            right: Box::new(end_expr),
         };
 
-        self.consume(&TokenType::RightParen, "Expected a ')'")?;
-        let mut body = self.statement()?;
+        let increment = Stmt::Expression {
+            expression: Box::new(expr::Expr::Assign {
+                name: name.clone(),
+                value: Box::new(expr::Expr::Binary {
+                    left: Box::new(expr::Expr::Variable { name: name.clone() }),
+                    operator: Token::fake(TokenType::Plus),
+                    right: Box::new(expr::Expr::Literal {
+                        value: Object::Number(1.0),
+                    }),
+                }),
+            }),
+        };
 
-        Ok(body)
+        let while_body = Stmt::Block {
+            statements: vec![body, increment],
+        };
+
+        let while_stmt = Stmt::While {
+            condition: Box::new(condition),
+            body: Box::new(while_body),
+        };
+
+        Ok(Stmt::Block {
+            statements: vec![init, while_stmt],
+        })
 
     }
+
 
     fn while_statement(&mut self) -> Result<Stmt, ParseError> {
 
@@ -223,8 +242,26 @@ impl Parser {
     fn print_statement(&mut self) -> Result<Stmt, ParseError> {
 
         let value = self.expression()?;
+
+        if self.peek().token_type == TokenType::DotDot {
+
+            self.consume(&TokenType::DotDot, "Expected '.' in Range")?;
+            let end = self.expression()?;
+            self.consume(&TokenType::Semicolon, "Expect ';' after variable declaration")?;
+
+            let range = expr::Expr::Range {
+                start: Box::new(value),
+                end: Box::new(end)
+            };
+            return Ok(Stmt::Print {
+                expression: Box::new(range)
+            })
+        }
+
         match self.consume(&TokenType::Semicolon, "Expected ; after value") {
-            Ok(_) => Ok(Stmt::Print { expression: Box::new(value) }),
+            Ok(_) => {
+                Ok(Stmt::Print { expression: Box::new(value) })
+            },
             Err(e) => {
                 self.synchronize();
                 Err(e)
@@ -236,8 +273,26 @@ impl Parser {
     fn println_statement(&mut self) -> Result<Stmt, ParseError> {
 
         let value = self.expression()?;
+
+        if self.peek().token_type == TokenType::DotDot {
+
+            self.consume(&TokenType::DotDot, "Expected '.' in Range")?;
+            let end = self.expression()?;
+            self.consume(&TokenType::Semicolon, "Expect ';' after variable declaration")?;
+
+            let range = expr::Expr::Range {
+                start: Box::new(value),
+                end: Box::new(end)
+            };
+            return Ok(Stmt::PrintLn {
+                expression: Box::new(range)
+            })
+        }
+
         match self.consume(&TokenType::Semicolon, "Expected ; after value") {
-            Ok(_) => Ok(Stmt::PrintLn { expression: Box::new(value) }),
+            Ok(_) => {
+                Ok(Stmt::PrintLn { expression: Box::new(value) })
+            }
             Err(e) => {
                 self.synchronize();
                 Err(e)
@@ -256,6 +311,24 @@ impl Parser {
         else {
             None
         };
+
+        if self.peek().token_type == TokenType::DotDot {
+            let initializer = initializer.unwrap();
+            self.consume(&TokenType::DotDot, "Expect '..' for Range type")?;
+            let end = self.expression()?;
+            self.consume(&TokenType::Semicolon, "Expect ';' after variable declaration")?;
+
+            let range = Stmt::Let {
+                name,
+                initializer: Box::new(expr::Expr::Range {
+                    start: Box::new(initializer),
+                    end: Box::new(end)
+                })
+            };
+
+            return Ok(range);
+
+        }
 
         self.consume(&TokenType::Semicolon, "Expect ';' after variable declaration")?;
 
@@ -454,6 +527,15 @@ impl Parser {
         if self.rmatch(&[TokenType::Null])? {
             return Ok(expr::Expr::Literal {
                 value: Object::Null,
+            });
+        }
+
+        if self.rmatch(&[TokenType::DotDot])? {
+            let start = self.expression()?;
+            let end = self.expression()?;
+            return Ok(expr::Expr::Range {
+                start: Box::new(start),
+                end: Box::new(end),
             });
         }
 

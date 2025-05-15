@@ -67,7 +67,15 @@ impl<'a> Lexer<'a> {
             '{' => self.add_token(TokenType::LeftBrace, Object::Null),
             '}' => self.add_token(TokenType::RightBrace, Object::Null),
             ',' => self.add_token(TokenType::Comma, Object::Null),
-            '.' => self.add_token(TokenType::Dot, Object::Null),
+            '.' => {
+                if self.peek() == '.' {
+                    self.advance();
+                    self.add_token(TokenType::DotDot, Object::Null)
+                }
+                else {
+                    self.add_token(TokenType::Dot, Object::Null)
+                }
+            }
             '-' => self.add_token(TokenType::Minus, Object::Null),
             '+' => self.add_token(TokenType::Plus, Object::Null),
             ';' => self.add_token(TokenType::Semicolon, Object::Null),

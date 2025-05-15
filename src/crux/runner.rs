@@ -17,14 +17,14 @@ impl Runner {
         let tokens = lexer.scan_tokens();
 
         let mut parser = Parser::new(tokens);
-        let location =  util::red_colored(&format!("Error in{}", location));
+        let location =  util::red_colored(&format!("Error in {}", location));
 
         match parser.parse() {
 
             Ok(statements) => {
                 let mut interpreter = Interpreter::new();
                 if let Err(e) = interpreter.interpret(statements) {
-                    eprintln!("{}\n{}", source, e);
+                    eprintln!("{}", e);
                 }
             }
             Err(e) => {

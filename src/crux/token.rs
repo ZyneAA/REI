@@ -7,7 +7,7 @@ pub enum TokenType {
 
     // Single-character tokens.
     LeftParen, RightParen, LeftBrace, RightBrace,
-    Comma, Dot, Minus, Plus, Semicolon, Slash, Star,
+    Comma, Dot, DotDot, Minus, Plus, Semicolon, Slash, Star,
 
     // One or two characters token
     Bang, BangEqual,
@@ -16,7 +16,7 @@ pub enum TokenType {
     Less, LessEqual,
 
     // Literals
-    Identifier, String, Number,
+    Identifier, String, Number, Range,
 
     // Keywords
     And, Class, Else, False, Fn, For, If, Null, Or,
@@ -45,6 +45,8 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("true", TokenType::True);
     map.insert("let", TokenType::Let);
     map.insert("while", TokenType::While);
+    map.insert("loop", TokenType::Loop);
+
     map
 
 });
@@ -56,11 +58,12 @@ pub enum Object {
     Number(f64),
     Str(String),
     Bool(bool),
+    Range(f64, f64),
+    Dummy,
     Null,
     // Arr(Vec<Object>)
 
 }
-
 
 impl fmt::Display for Object {
 
@@ -69,13 +72,14 @@ impl fmt::Display for Object {
             Object::Number(n) => write!(f, "{}", n),
             Object::Str(s) => write!(f, "{}", s),
             Object::Bool(b) => write!(f, "{}", b),
+            Object::Range(s, e) => write!(f, "{}:{}", s, e),
+            Object::Dummy => write!(f, "Dummy"),
             Object::Null => write!(f, "Null"),
             // Object::Arr(v) => write!(f, "{:?}", v)
         }
     }
 
 }
-
 
 #[derive(Clone)]
 pub struct Token {
@@ -100,6 +104,7 @@ impl fmt::Display for TokenType {
             TokenType::RightBrace => "Right Brace",
             TokenType::Comma => "Comma",
             TokenType::Dot => "Dot",
+            TokenType::DotDot => "DotDot",
             TokenType::Minus => "Minus",
             TokenType::Plus => "Plus",
             TokenType::Semicolon => "Semicolon",
@@ -120,6 +125,7 @@ impl fmt::Display for TokenType {
             TokenType::Identifier => "Identifier",
             TokenType::String => "STRING",
             TokenType::Number => "NUMBER",
+            TokenType::Range => "RANGE",
 
             // Keywords
             TokenType::And => "IDENTIFIER",
@@ -160,6 +166,18 @@ impl Token {
             literal,
             line,
             place
+        }
+
+    }
+
+    pub fn fake(token_type: TokenType) -> Self {
+
+        Token {
+            token_type,
+            lexeme: format!("{:?}", token_type),
+            literal: Object::Null,
+            line: 0,
+            place: 0,
         }
 
     }

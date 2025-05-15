@@ -124,6 +124,24 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
 
     }
 
+    fn visit_range_expr(&mut self, start: &expr::Expr, end: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
+
+        let start = self.evaluate(start)?;
+        let end = self.evaluate(end)?;
+        match (start, end) {
+            (Object::Number(s), Object::Number(e)) => {
+                if e < s {
+                    Err(RuntimeError::InvalidRange)
+                }
+                else {
+                    Ok(Object::Range(s, e))
+                }
+            },
+            _ => Err(RuntimeError::InvalidRangeType)
+        }
+
+    }
+
 }
 
 impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
@@ -246,7 +264,11 @@ impl Interpreter {
                 }
                 s
             },
+            Object::Range(s, e) => {
+                format!("Range {}:{}", s, e)
+            }
             Object::Bool(b) => b.to_string(),
+            Object::Dummy => "dummy".to_string(),
             Object::Str(s) => s.clone(),
         }
 

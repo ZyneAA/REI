@@ -6,7 +6,7 @@ use crate::crux::runner;
 #[test]
 pub fn ast_test() {
 
-    let test_file_location = "./src/tests/code/1.reix";
+    let test_file_location = "./src/tests/code/2.reix";
     let source = runner::Runner::read_file(test_file_location)
         .unwrap_or_else(|_| {
         process::exit(65);

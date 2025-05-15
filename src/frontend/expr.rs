@@ -10,6 +10,7 @@ pub trait Visitor<T> {
     fn visit_logical_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> T;
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> T;
     fn visit_variable_expr(&mut self, name: &Token) -> T;
+    fn visit_range_expr(&mut self, start: &Expr, end: &Expr) -> T;
 
 }
 
@@ -50,6 +51,11 @@ pub enum Expr {
         name: Token,
     },
 
+    Range {
+        start: Box<Expr>,
+        end: Box<Expr>,
+    },
+
 }
 
 impl Expr {
@@ -64,6 +70,7 @@ impl Expr {
             Expr::Logical { left, operator, right } => visitor.visit_logical_expr(left, operator, right),
             Expr::Unary { operator, right } => visitor.visit_unary_expr(operator, right),
             Expr::Variable { name } => visitor.visit_variable_expr(name),
+            Expr::Range { start, end } => visitor.visit_range_expr(start, end),
         }
 
     }

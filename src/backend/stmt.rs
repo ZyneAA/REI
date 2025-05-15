@@ -14,7 +14,7 @@ pub trait Visitor<T> {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Stmt {
 
     Block {

@@ -23,7 +23,9 @@ pub enum RuntimeError<T>
     },
     InvalidOperator {
         token: T
-    }
+    },
+    InvalidRange,
+    InvalidRangeType
 
 }
 
@@ -34,6 +36,8 @@ where T: fmt::Debug + fmt::Display
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
         match self {
+            RuntimeError::InvalidRangeType => write!(f, "{}", util::red_colored("Invalid Range types | Both the start and the end must be Numbers")),
+            RuntimeError::InvalidRange => write!(f, "{}", util::red_colored("Invalid Range | The start point is bigger than the end point")),
             RuntimeError::InvalidOperator { token } => write!(f, "{} | {}", util::red_colored("Invalid operator") ,token),
             RuntimeError::UnexpectedBinaryOperation { token } => write!(f, "{} | {}", util::red_colored("Unexpected binary operation"), token),
             RuntimeError::TypeMismatch { token } => write!(f, "{} | {}", util::red_colored("Type mismatch, both operands must be same type"), token),
