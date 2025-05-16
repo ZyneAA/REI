@@ -130,6 +130,9 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
         let end = self.evaluate(end)?;
         match (start, end) {
             (Object::Number(s), Object::Number(e)) => {
+                if s.fract() != 0.0 || e.fract() != 0.0 {
+                    return Err(RuntimeError::InvalidRangeType)
+                }
                 if e < s {
                     Err(RuntimeError::InvalidRange)
                 }
@@ -207,11 +210,23 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
             if !self.is_truthy(&cond) {
                 break;
             }
-            // println!("{:?}", &condition);
-            self.execute(body)?;
+            match self.execute(body) {
+                Ok(_) => {},
+                Err(RuntimeError::Break) => break,
+                Err(RuntimeError::Continue) => continue,
+                Err(e) => return Err(e),
+            }
         }
         Ok(())
 
+    }
+
+    fn visit_break_stmt(&mut self) -> Result<(), RuntimeError<Token>> {
+        Err(RuntimeError::Break)
+    }
+
+    fn visit_continue_stmt(&mut self) -> Result<(), RuntimeError<Token>> {
+        Err(RuntimeError::Continue)
     }
 
 }

@@ -1,4 +1,4 @@
-let i = 1..10;
-loop (i) {
+loop (let i = 0..11) {
+    println "hello";
     println i;
 }

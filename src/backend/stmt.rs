@@ -11,6 +11,8 @@ pub trait Visitor<T> {
     fn visit_println_stmt(&mut self, expression: &Expr) -> T;
     fn visit_let_stmt(&mut self, name: &Token, initializer: &Expr) -> T;
     fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> T;
+    fn visit_break_stmt(&mut self) -> T;
+    fn visit_continue_stmt(&mut self) -> T;
 
 }
 
@@ -49,6 +51,8 @@ pub enum Stmt {
         body: Box<Stmt>,
     },
 
+    Break, Continue
+
 }
 
 impl Stmt {
@@ -63,9 +67,11 @@ impl Stmt {
             Stmt::PrintLn { expression } => visitor.visit_println_stmt(expression),
             Stmt::Let { name, initializer } => visitor.visit_let_stmt(name, initializer),
             Stmt::While { condition, body } => visitor.visit_while_stmt(condition, body),
+            Stmt::Break => visitor.visit_break_stmt(),
+            Stmt::Continue => visitor.visit_continue_stmt(),
+
         }
 
     }
 
 }
-

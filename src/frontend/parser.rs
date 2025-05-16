@@ -57,9 +57,29 @@ impl Parser {
         else if self.rmatch(&[TokenType::If])? {
             self.if_statement()
         }
+        else if self.rmatch(&[TokenType::Break])? {
+            self.break_statement()
+        }
+        else if self.rmatch(&[TokenType::Continue])? {
+            self.continue_statement()
+        }
         else {
             self.expression_statement()
         }
+
+    }
+
+    fn break_statement(&mut self) -> Result<Stmt, ParseError> {
+
+        self.consume(&TokenType::Semicolon, "Expected ','")?;
+        Ok(Stmt::Break)
+
+    }
+
+    fn continue_statement(&mut self) -> Result<Stmt, ParseError> {
+
+        self.consume(&TokenType::Semicolon, "Expected ','")?;
+        Ok(Stmt::Continue)
 
     }
 
@@ -117,17 +137,11 @@ impl Parser {
 
         self.consume(&TokenType::LeftParen, "Expected '(' after 'loop'")?;
         self.consume(&TokenType::Let, "Expected 'let' in loop declaration")?;
-
         let name = self.consume(&TokenType::Identifier, "Expected loop variable name")?.clone();
-
         self.consume(&TokenType::Equal, "Expected '=' in loop declaration")?;
-
         let start_expr = self.expression()?;
-
         self.consume(&TokenType::DotDot, "Expected '..' in loop range")?;
-
         let end_expr = self.expression()?;
-
         self.consume(&TokenType::RightParen, "Expected ')' after loop range declaration")?;
 
         let body = self.statement()?;
@@ -169,9 +183,7 @@ impl Parser {
         Ok(Stmt::Block {
             statements: vec![init, while_stmt],
         })
-
     }
-
 
     fn while_statement(&mut self) -> Result<Stmt, ParseError> {
 
@@ -650,5 +662,6 @@ impl Parser {
     fn previous(&self) -> &Token {
         self.tokens.get(self.current - 1).unwrap()
     }
+
 
 }

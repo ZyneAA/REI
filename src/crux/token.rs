@@ -21,6 +21,7 @@ pub enum TokenType {
     // Keywords
     And, Class, Else, False, Fn, For, If, Null, Or,
     Print, PrintLn, Return, Base, This, True, Let, While, Loop,
+    Break, Continue,
     Eof
 
 }
@@ -46,6 +47,8 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("let", TokenType::Let);
     map.insert("while", TokenType::While);
     map.insert("loop", TokenType::Loop);
+    map.insert("break", TokenType::Break);
+    map.insert("continue", TokenType::Continue);
 
     map
 
@@ -146,6 +149,8 @@ impl fmt::Display for TokenType {
             TokenType::Let => "IDENTIFIER",
             TokenType::Loop => "IDENTIFIER",
             TokenType::While => "IDENTIFIER",
+            TokenType::Break => "IDENTIFIER",
+            TokenType::Continue => "IDENTIFIER",
 
             TokenType::Eof => "End of File",
         };
@@ -196,7 +201,6 @@ impl fmt::Display for Token {
     }
 
 }
-
 
 impl fmt::Debug for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

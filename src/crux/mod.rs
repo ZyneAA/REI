@@ -43,7 +43,7 @@ impl Rei {
                     "Print : Expr expression",
                     "PrintLn : Expr expression",
                     "Let : Token name, Expr initializer",
-                    "While: Expr condition, Box<Stmt> body"
+                    "While: Expr condition, Box<Stmt> body",
                 ])?;
             }
             else {
