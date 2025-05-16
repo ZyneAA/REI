@@ -198,11 +198,41 @@ impl<'a> Lexer<'a> {
         }
 
         self.advance();
-        let sub_string = self.source[self.start + 1..self.current -1].to_string();
-        self.add_token(TokenType::String, Object::Str(sub_string));
+        let unescaped = self.unescape_string(&self.source[self.start + 1..self.current -1]);
+        self.add_token(TokenType::String, Object::Str(unescaped));
 
     }
 
+    fn unescape_string(&mut self, s: &str) -> String {
+
+        let mut result = String::new();
+        let mut chars = s.chars().peekable();
+
+        while let Some(c) = chars.next() {
+            if c == '\\' {
+                if let Some(next) = chars.next() {
+                    match next {
+                        'n' => result.push('\n'),
+                        't' => result.push('\t'),
+                        'r' => result.push('\r'),
+                        '\\' => result.push('\\'),
+                        '"' => result.push('"'),
+                        '\'' => result.push('\''),
+                        _ => {
+                            result.push('\\');
+                            result.push(next);
+                        }
+                    }
+                } else {
+                    result.push('\\');
+                }
+            } else {
+                result.push(c);
+            }
+        }
+
+        result
+    }
     fn is_end(&self) -> bool {
         self.current >= self.length
     }

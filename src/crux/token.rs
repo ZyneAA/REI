@@ -180,7 +180,7 @@ impl Token {
         Token {
             token_type,
             lexeme: format!("{:?}", token_type),
-            literal: Object::Null,
+            literal: Object::Dummy,
             line: 0,
             place: 0,
         }
@@ -203,6 +203,7 @@ impl fmt::Display for Token {
 }
 
 impl fmt::Debug for Token {
+
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Token")
          .field("token_type", &self.token_type)
@@ -211,4 +212,5 @@ impl fmt::Debug for Token {
          .field("line", &self.line)
          .finish()
     }
+
 }
