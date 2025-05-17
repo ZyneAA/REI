@@ -265,10 +265,13 @@ impl Interpreter {
 
     pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) -> Result<(), RuntimeError<Token>> {
 
-        println!("{:?}", self.environment);
+        println!("B ---- {:?}", self.environment);
         for stmt in statements {
+            println!("I ---- {:?}", self.environment);
             self.execute(&stmt)?;
         }
+        println!("A ---- {:?}", self.environment);
+
         Ok(())
 
     }

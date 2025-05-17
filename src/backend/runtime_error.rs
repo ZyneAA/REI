@@ -27,7 +27,8 @@ pub enum RuntimeError<T>
     InvalidRange,
     InvalidRangeType,
     Break, Continue,
-    NotCallable, InvalidArguments { token: T}
+    NotCallable, InvalidArguments { token: T},
+    ErrorInNativeFn { msg: String }
 
 }
 
@@ -38,6 +39,7 @@ where T: fmt::Debug + fmt::Display
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
         match self {
+            RuntimeError::ErrorInNativeFn { msg } => write!(f, "{} | {}", util::red_colored("Error In Native Function"), msg),
             RuntimeError::InvalidArguments { token} => write!(f, "{} | {}", util::red_colored("Invalid Callable Argument Number | Argument don't match the callable's parameters"), token),
             RuntimeError::NotCallable => write!(f, "{}", util::red_colored("Invalid Callable | Can only call functions and classes")),
             RuntimeError::Break => write!(f, "{}", util::red_colored("Invalid Range Types | Both the start and the end must be Numbers and also must not be Floats")),

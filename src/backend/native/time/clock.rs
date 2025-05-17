@@ -15,14 +15,14 @@ impl ReiCallable for TimeNow {
         0
     }
     fn call(&self, interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, RuntimeError<Token>> {
-        Ok(self.time_now().unwrap())
+        Ok(self.time_now()?)
     }
 }
 impl TimeNow {
-    fn time_now(&self) -> Result<Object, String> {
+    fn time_now(&self) -> Result<Object, RuntimeError<Token>> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|e| e.to_string())?
+            .map_err(|e| RuntimeError::ErrorInNativeFn { msg: e.to_string() })?
             .as_secs_f64();
         Ok(Object::Number(now))
     }
@@ -30,9 +30,8 @@ impl TimeNow {
 
 pub fn register(env: &mut Environment) -> Result<(), RuntimeError<Token>> {
 
-    let time_now = TimeNow;
-    let callable: Rc<dyn ReiCallable> = Rc::new(time_now.clone());
+    let callable: Rc<dyn ReiCallable> = Rc::new(TimeNow);
     let callable = Object::Callable(callable);
-    env.define("time_now".to_string(), callable)
+    env.define("<time_now>".to_string(), callable)
 
 }
