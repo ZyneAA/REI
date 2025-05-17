@@ -10,7 +10,8 @@ loop (let i = 0..n) {
 
     say("ok", "pro");
     println a + " ";
-    _C_sleep(1000);
+    _C_sleep(5000);
+    _M_alloc(50 * 1024 * 1024);
 
     let temp = b;
     b = a + b;
