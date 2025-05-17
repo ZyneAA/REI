@@ -2,8 +2,13 @@ let n = 3;
 let a = 0;
 let b = 1;
 
+fn say(ok, pro) {
+    println "HI MAATE" + ok + pro;
+}
+
 loop (let i = 0..n) {
 
+    say("ok", "pro");
     println a + " ";
 
     let temp = b;

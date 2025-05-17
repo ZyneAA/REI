@@ -1,9 +1,13 @@
+use std::rc::Rc;
+
 use crate::crux::token::{ Object, Token, TokenType };
 use crate::frontend::expr;
 use crate::backend::stmt;
+use crate::backend::rei_callable::ReiCallable;
 use crate::backend::environment::{ Environment, EnvRef };
 use super::runtime_error::RuntimeError;
 use super::native;
+use super::rei_function::ReiFunction;
 
 pub struct Interpreter {
 
@@ -225,7 +229,7 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     }
 
-   fn visit_while_stmt(&mut self, condition: &expr::Expr, body: &stmt::Stmt) -> Result<(), RuntimeError<Token>> {
+    fn visit_while_stmt(&mut self, condition: &expr::Expr, body: &stmt::Stmt) -> Result<(), RuntimeError<Token>> {
 
         loop {
             let cond = self.evaluate(condition)?;
@@ -249,6 +253,15 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     fn visit_continue_stmt(&mut self) -> Result<(), RuntimeError<Token>> {
         Err(RuntimeError::Continue)
+    }
+
+    fn visit_function_stmt(&mut self, name: &Token, params: &Vec<Token>, body: &Vec<stmt::Stmt>) -> Result<(), RuntimeError<Token>> {
+
+        let function = ReiFunction::new(name.clone(), params.clone(), body.clone());
+        let callable: Rc<dyn ReiCallable> = Rc::new(function);
+        self.environment.borrow_mut().define(name.lexeme.clone(), Object::Callable(callable))?;
+        Ok(())
+
     }
 
 }
@@ -280,7 +293,7 @@ impl Interpreter {
         statement.accept(self)
     }
 
-    fn execute_block(&mut self, statements: &Vec<stmt::Stmt>, env: EnvRef) -> Result<(), RuntimeError<Token>> {
+    pub fn execute_block(&mut self, statements: &Vec<stmt::Stmt>, env: EnvRef) -> Result<(), RuntimeError<Token>> {
 
         let previous = self.environment.clone();
         self.environment = env;

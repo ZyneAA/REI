@@ -4,6 +4,9 @@ make a source: Vec<char> so that it wont be O(n) because of unicode-8 encoding
 (This is kinda on Rust part. Because Rust's &str are not array of char.
 Instead they are array of bytes, u8). So instant lookup time would be much better in the future.
 
+// Important kinda
+Lifetimes are rlly pain in the as* when it comes to dealing with function in REI. Now it it cloning every thing on function.
+
 // Comeback later
 in parser::Parser::primary(), add a proper error handling for else case (done)
 

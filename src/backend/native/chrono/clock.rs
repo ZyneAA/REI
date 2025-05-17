@@ -23,6 +23,9 @@ impl ReiCallable for TimeNow {
             .as_secs_f64();
         Ok(Object::Number(now))
     }
+    fn to_string(&self) -> String {
+        String::from("<fn>time_now")
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -31,7 +34,6 @@ impl ReiCallable for Sleep {
     fn arity(&self) -> usize {
         1
     }
-
     fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, RuntimeError<Token>> {
         let duration = match &arguments[0] {
             Object::Number(ms) => *ms,
@@ -42,6 +44,9 @@ impl ReiCallable for Sleep {
 
         thread::sleep(Duration::from_millis(duration as u64));
         Ok(Object::Null)
+    }
+    fn to_string(&self) -> String {
+        String::from("<fn>sleep")
     }
 }
 

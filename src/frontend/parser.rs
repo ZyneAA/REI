@@ -237,17 +237,69 @@ impl Parser {
 
     fn declaration(&mut self) -> Result<stmt::Stmt, ParseError> {
 
-        match self.rmatch(&[TokenType::Let]) {
-            Ok(true) => Ok(self.var_declaration()?),
-            Ok(false) => Ok(self.statement()?),
-            Err(_) => {
+        let res = (|| {
+
+            if self.rmatch(&[TokenType::Fn])? {
+                return self.function("function");
+            }
+            if self.rmatch(&[TokenType::Let])? {
+                return self.var_declaration();
+            }
+
+            self.statement()
+        })();
+
+        match res {
+            Ok(stmt) => Ok(stmt),
+            Err(err) => {
                 self.synchronize();
-                Err(ParseError::SyntaxError {
-                    token: self.peek().clone(),
-                    message: "Expected expression".into(),
-                })
+                Err(err)
             }
         }
+
+    }
+
+    fn function(&mut self, kind: &str) -> Result<stmt::Stmt, ParseError> {
+
+        let err = format!("Expect {} name", kind);
+        let err1 = format!("Expect '(' {} name", kind);
+        let err2 = format!("Expect '{{' before {} name", kind);
+
+        let name = self.consume(&TokenType::Identifier, &err)?.clone();
+        self.consume(&TokenType::LeftParen, &err1)?;
+
+        let mut parameters = vec![];
+        if !self.check(&TokenType::RightParen) {
+            loop {
+                if parameters.len() >= 255 {
+                    return Err(ParseError::SyntaxError {
+                        token: self.peek().clone(),
+                        message: "Can't have more than 255 parameters".into()
+                    })
+                }
+
+                let param = self.consume(&TokenType::Identifier, "Expect parameter name.")?;
+                parameters.push(param.clone());
+
+                if !self.rmatch(&[TokenType::Comma])? {
+                    break;
+                }
+            }
+        }
+
+        self.consume(&TokenType::RightParen, &err2)?;
+        let body = match self.block()? {
+            stmt::Stmt::Block { statements } => statements,
+            _ => {
+                panic!("AHHHHHHHHH");
+            }
+        };
+
+        Ok(stmt::Stmt::Function {
+            name: name.clone(),
+            params: parameters,
+            body
+        })
 
     }
 

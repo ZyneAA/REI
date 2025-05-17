@@ -8,9 +8,6 @@ pub trait ReiCallable: Debug {
 
     fn arity(&self) -> usize;
     fn call(&self, interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, RuntimeError<Token>>;
-
-    fn to_string(&self) -> String {
-        "<fn>".to_string()
-    }
+    fn to_string(&self) -> String;
 
 }
