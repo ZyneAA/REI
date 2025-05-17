@@ -69,9 +69,9 @@ impl Stmt {
             Stmt::While { condition, body } => visitor.visit_while_stmt(condition, body),
             Stmt::Break => visitor.visit_break_stmt(),
             Stmt::Continue => visitor.visit_continue_stmt(),
-
         }
 
     }
 
 }
+

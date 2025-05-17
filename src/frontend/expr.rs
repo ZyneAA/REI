@@ -5,6 +5,7 @@ pub trait Visitor<T> {
 
     fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> T;
     fn visit_binary_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> T;
+    fn visit_call_expr(&mut self, callee: &Expr, paren: &Token, arguments: &Vec<Expr>) -> T;
     fn visit_grouping_expr(&mut self, expression: &Expr) -> T;
     fn visit_literal_expr(&mut self, value: &Object) -> T;
     fn visit_logical_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> T;
@@ -26,6 +27,12 @@ pub enum Expr {
         left: Box<Expr>,
         operator: Token,
         right: Box<Expr>,
+    },
+
+    Call {
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>,
     },
 
     Grouping {
@@ -65,6 +72,7 @@ impl Expr {
         match self {
             Expr::Assign { name, value } => visitor.visit_assign_expr(name, value),
             Expr::Binary { left, operator, right } => visitor.visit_binary_expr(left, operator, right),
+            Expr::Call { callee, paren, arguments } => visitor.visit_call_expr(callee, paren, arguments),
             Expr::Grouping { expression } => visitor.visit_grouping_expr(expression),
             Expr::Literal { value } => visitor.visit_literal_expr(value),
             Expr::Logical { left, operator, right } => visitor.visit_logical_expr(left, operator, right),

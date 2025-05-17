@@ -3,7 +3,7 @@ use std::result::Result;
 use crate::crux::error::ParseError;
 use crate::crux::token::{ Token, TokenType, Object };
 use super::expr;
-use crate::backend::stmt::Stmt;
+use crate::backend::stmt;
 
 pub struct Parser {
 
@@ -18,7 +18,7 @@ impl Parser {
         Parser { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Stmt>, ParseError> {
+    pub fn parse(&mut self) -> Result<Vec<stmt::Stmt>, ParseError> {
 
         let mut statements = Vec::new();
         while !self.is_end() {
@@ -34,7 +34,7 @@ impl Parser {
 
     }
 
-    fn statement(&mut self) -> Result<Stmt, ParseError> {
+    fn statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         if self.rmatch(&[TokenType::Print])? {
             self.print_statement()
@@ -69,21 +69,21 @@ impl Parser {
 
     }
 
-    fn break_statement(&mut self) -> Result<Stmt, ParseError> {
+    fn break_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         self.consume(&TokenType::Semicolon, "Expected ','")?;
-        Ok(Stmt::Break)
+        Ok(stmt::Stmt::Break)
 
     }
 
-    fn continue_statement(&mut self) -> Result<Stmt, ParseError> {
+    fn continue_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         self.consume(&TokenType::Semicolon, "Expected ','")?;
-        Ok(Stmt::Continue)
+        Ok(stmt::Stmt::Continue)
 
     }
 
-    fn for_statement(&mut self) -> Result<Stmt, ParseError> {
+    fn for_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         self.consume(&TokenType::LeftParen, "Expected a '(' after 'for'")?;
 
@@ -113,18 +113,18 @@ impl Parser {
 
         let mut body = self.statement()?;
         if let Some(inc) = increment {
-            body = Stmt::Block {
-                statements: vec![body, Stmt::Expression { expression: Box::new(inc) }]
+            body = stmt::Stmt::Block {
+                statements: vec![body, stmt::Stmt::Expression { expression: Box::new(inc) }]
             }
         };
 
         let cond_expr = condition.unwrap_or(expr::Expr::Literal { value: Object::Bool(true) });
-        body = Stmt::While {
+        body = stmt::Stmt::While {
             condition: Box::new(cond_expr), body: Box::new(body)
         };
 
         if let Some(init) = initializer {
-            body = Stmt::Block {
+            body = stmt::Stmt::Block {
                 statements: vec![init, body]
             }
         };
@@ -133,7 +133,7 @@ impl Parser {
 
     }
 
-    fn loop_statement(&mut self) -> Result<Stmt, ParseError> {
+    fn loop_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         self.consume(&TokenType::LeftParen, "Expected '(' after 'loop'")?;
         self.consume(&TokenType::Let, "Expected 'let' in loop declaration")?;
@@ -147,7 +147,7 @@ impl Parser {
         let body = self.statement()?;
 
         // Same desugaring as `for`: convert to a while
-        let init = Stmt::Let {
+        let init = stmt::Stmt::Let {
             name: name.clone(),
             initializer: Box::new(start_expr),
         };
@@ -158,7 +158,7 @@ impl Parser {
             right: Box::new(end_expr),
         };
 
-        let increment = Stmt::Expression {
+        let increment = stmt::Stmt::Expression {
             expression: Box::new(expr::Expr::Assign {
                 name: name.clone(),
                 value: Box::new(expr::Expr::Binary {
@@ -171,35 +171,35 @@ impl Parser {
             }),
         };
 
-        let while_body = Stmt::Block {
+        let while_body = stmt::Stmt::Block {
             statements: vec![body, increment],
         };
 
-        let while_stmt = Stmt::While {
+        let while_stmt = stmt::Stmt::While {
             condition: Box::new(condition),
             body: Box::new(while_body),
         };
 
-        Ok(Stmt::Block {
+        Ok(stmt::Stmt::Block {
             statements: vec![init, while_stmt],
         })
     }
 
-    fn while_statement(&mut self) -> Result<Stmt, ParseError> {
+    fn while_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         self.consume(&TokenType::LeftParen, "Expected a '(' after 'while'")?;
         let condition = self.expression()?;
         self.consume(&TokenType::RightParen, "Expected a ')' after condition")?;
         let body = self.statement()?;
 
-        Ok(Stmt::While {
+        Ok(stmt::Stmt::While {
             condition: Box::new(condition),
             body: Box::new(body)
         })
 
     }
 
-    fn if_statement(&mut self) -> Result<Stmt, ParseError> {
+    fn if_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         self.consume(&TokenType::LeftParen, "Expected ')' after 'if'")?;
         let condition = self.expression()?;
@@ -213,7 +213,7 @@ impl Parser {
         else {
             None
         };
-        Ok(Stmt::If {
+        Ok(stmt::Stmt::If {
             condition: Box::new(condition),
             then_branch: Box::new(then_branch),
             else_branch
@@ -221,21 +221,21 @@ impl Parser {
 
     }
 
-    fn block(&mut self) -> Result<Stmt, ParseError> {
+    fn block(&mut self) -> Result<stmt::Stmt, ParseError> {
 
-        let mut statements: Vec<Stmt> = Vec::new();
+        let mut statements: Vec<stmt::Stmt> = Vec::new();
         while !self.check(&TokenType::RightBrace) && !self.is_end() {
             statements.push(self.declaration()?);
         }
 
         self.consume(&TokenType::RightBrace, "Expected a } after block")?;
-        Ok(Stmt::Block {
+        Ok(stmt::Stmt::Block {
             statements
         })
 
     }
 
-    fn declaration(&mut self) -> Result<Stmt, ParseError> {
+    fn declaration(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         match self.rmatch(&[TokenType::Let]) {
             Ok(true) => Ok(self.var_declaration()?),
@@ -251,7 +251,7 @@ impl Parser {
 
     }
 
-    fn print_statement(&mut self) -> Result<Stmt, ParseError> {
+    fn print_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         let value = self.expression()?;
 
@@ -265,14 +265,14 @@ impl Parser {
                 start: Box::new(value),
                 end: Box::new(end)
             };
-            return Ok(Stmt::Print {
+            return Ok(stmt::Stmt::Print {
                 expression: Box::new(range)
             })
         }
 
         match self.consume(&TokenType::Semicolon, "Expected ; after value") {
             Ok(_) => {
-                Ok(Stmt::Print { expression: Box::new(value) })
+                Ok(stmt::Stmt::Print { expression: Box::new(value) })
             },
             Err(e) => {
                 self.synchronize();
@@ -282,7 +282,7 @@ impl Parser {
 
     }
 
-    fn println_statement(&mut self) -> Result<Stmt, ParseError> {
+    fn println_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         let value = self.expression()?;
 
@@ -296,14 +296,14 @@ impl Parser {
                 start: Box::new(value),
                 end: Box::new(end)
             };
-            return Ok(Stmt::PrintLn {
+            return Ok(stmt::Stmt::PrintLn {
                 expression: Box::new(range)
             })
         }
 
         match self.consume(&TokenType::Semicolon, "Expected ; after value") {
             Ok(_) => {
-                Ok(Stmt::PrintLn { expression: Box::new(value) })
+                Ok(stmt::Stmt::PrintLn { expression: Box::new(value) })
             }
             Err(e) => {
                 self.synchronize();
@@ -313,7 +313,7 @@ impl Parser {
 
     }
 
-    fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
+    fn var_declaration(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         let name = self.consume(&TokenType::Identifier, "Expect variable name")?.clone();
 
@@ -330,7 +330,7 @@ impl Parser {
             let end = self.expression()?;
             self.consume(&TokenType::Semicolon, "Expect ';' after variable declaration")?;
 
-            let range = Stmt::Let {
+            let range = stmt::Stmt::Let {
                 name,
                 initializer: Box::new(expr::Expr::Range {
                     start: Box::new(initializer),
@@ -344,7 +344,7 @@ impl Parser {
 
         self.consume(&TokenType::Semicolon, "Expect ';' after variable declaration")?;
 
-        Ok(Stmt::Let {
+        Ok(stmt::Stmt::Let {
             name,
             initializer: Box::new(initializer.unwrap_or(expr::Expr::Literal {
                 value: Object::Null,
@@ -353,11 +353,11 @@ impl Parser {
 
     }
 
-    fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
+    fn expression_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         let expr = self.expression()?;
         match self.consume(&TokenType::Semicolon, "Expected ; after expression") {
-            Ok(_) => Ok(Stmt::Expression { expression: Box::new(expr) }),
+            Ok(_) => Ok(stmt::Stmt::Expression { expression: Box::new(expr) }),
             Err(e) => {
                 self.synchronize();
                 Err(e)
@@ -511,14 +511,60 @@ impl Parser {
         if self.rmatch(&[TokenType::Bang, TokenType::Minus])? {
             let operator= self.previous().clone();
             let right = Box::new(self.unary()?);
-            Ok(expr::Expr::Unary {
+            return Ok(expr::Expr::Unary {
                 operator,
                 right
             })
         }
-        else {
-            self.primary()
+
+        self.call()
+
+    }
+
+    fn call(&mut self)-> Result<expr::Expr, ParseError> {
+
+        let mut expr = self.primary()?;
+
+        loop {
+            if self.rmatch(&[TokenType::LeftParen])? {
+                expr = self.finish_call(&expr)?;
+            }
+            else {
+                break;
+            }
         }
+
+        Ok(expr)
+
+    }
+
+    fn finish_call(&mut self, callee: &expr::Expr) -> Result<expr::Expr, ParseError> {
+
+        let mut arguments = vec![];
+
+        if !self.check(&TokenType::RightParen) {
+            loop {
+
+                if arguments.len() > 255 {
+                    return Err(ParseError::SyntaxError {
+                        token: self.peek().clone(),
+                        message: "Can't have more than 255 arguments.".into(),
+                    })
+                }
+                arguments.push(self.expression().unwrap());
+                if !self.rmatch(&[TokenType::Comma])? {
+                    break;
+                }
+
+            }
+        }
+
+        let paren = self.consume(&TokenType::RightParen, "Expect ')' after arguments.")?.clone();
+        Ok(expr::Expr::Call {
+            callee: Box::new(callee.clone()),
+            paren,
+            arguments,
+        })
 
     }
 

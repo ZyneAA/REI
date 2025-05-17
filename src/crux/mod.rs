@@ -26,6 +26,7 @@ impl Rei {
                 vec![
                     "Assign: Token name, Expr value",
                     "Binary : Expr left, Token operator, Expr right",
+                    "Call : Expr callee, Token paren, Vec<Expr> arguments",
                     "Grouping : Expr expression",
                     "Literal : Object value",
                     "Logical : Expr left, Token operator, Expr right",

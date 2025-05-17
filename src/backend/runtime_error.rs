@@ -26,7 +26,8 @@ pub enum RuntimeError<T>
     },
     InvalidRange,
     InvalidRangeType,
-    Break, Continue
+    Break, Continue,
+    NotCallable, InvalidArguments { token: T}
 
 }
 
@@ -37,15 +38,17 @@ where T: fmt::Debug + fmt::Display
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
         match self {
-            RuntimeError::Break => write!(f, "{}", util::red_colored("Invalid Range types | Both the start and the end must be Numbers and also must not be Floats")),
-            RuntimeError::Continue => write!(f, "{}", util::red_colored("Invalid Range types | Both the start and the end must be Numbers")),
+            RuntimeError::InvalidArguments { token} => write!(f, "{} | {}", util::red_colored("Invalid Callable Argument Number | Argument don't match the callable's parameters"), token),
+            RuntimeError::NotCallable => write!(f, "{}", util::red_colored("Invalid Callable | Can only call functions and classes")),
+            RuntimeError::Break => write!(f, "{}", util::red_colored("Invalid Range Types | Both the start and the end must be Numbers and also must not be Floats")),
+            RuntimeError::Continue => write!(f, "{}", util::red_colored("Invalid Range Types | Both the start and the end must be Numbers")),
             RuntimeError::InvalidRange => write!(f, "{}", util::red_colored("Invalid Range | The starting point must be samller than the ending point")),
-            RuntimeError::InvalidRangeType => write!(f, "{}", util::red_colored("Invalid Range types | Both the start and the end must be Numbers")),
-            RuntimeError::InvalidOperator { token } => write!(f, "{} | {}", util::red_colored("Invalid operator") ,token),
-            RuntimeError::UnexpectedBinaryOperation { token } => write!(f, "{} | {}", util::red_colored("Unexpected binary operation"), token),
-            RuntimeError::TypeMismatch { token } => write!(f, "{} | {}", util::red_colored("Type mismatch, both operands must be same type"), token),
-            RuntimeError::UndefinedVariable { token } => write!(f, "{} | {}", util::red_colored("Undefined variable"), token),
-            RuntimeError::DividedByZero { token } => write!(f, "{} | {}", util::red_colored("Divided by zero"), token),
+            RuntimeError::InvalidRangeType => write!(f, "{}", util::red_colored("Invalid Range Types | Both the start and the end must be Numbers")),
+            RuntimeError::InvalidOperator { token } => write!(f, "{} | {}", util::red_colored("Invalid Operator") ,token),
+            RuntimeError::UnexpectedBinaryOperation { token } => write!(f, "{} | {}", util::red_colored("Unexpected Binary Operation"), token),
+            RuntimeError::TypeMismatch { token } => write!(f, "{} | {}", util::red_colored("Type Mismatch | Both operands must be same type"), token),
+            RuntimeError::UndefinedVariable { token } => write!(f, "{} | {}", util::red_colored("Undefined Variable"), token),
+            RuntimeError::DividedByZero { token } => write!(f, "{} | {}", util::red_colored("Divided By Zero"), token),
             RuntimeError::OperandMustBeNumber { token } => write!(f, "{} | {}", util::red_colored("Operand must be a number"), token),
         }
 

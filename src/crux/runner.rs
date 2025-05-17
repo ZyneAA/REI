@@ -22,7 +22,10 @@ impl Runner {
         match parser.parse() {
 
             Ok(statements) => {
-                let mut interpreter = Interpreter::new();
+                let mut interpreter =  match Interpreter::new() {
+                    Ok(i) => i,
+                    Err(e) => { eprintln!("{}", e); panic!(); }
+                };
                 if let Err(e) = interpreter.interpret(statements) {
                     eprintln!("{}", e);
                 }

@@ -7,7 +7,7 @@ use super::runtime_error::RuntimeError;
 
 pub type EnvRef = Rc<RefCell<Environment>>;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub struct Environment {
 
     values: HashMap<String, Object>,

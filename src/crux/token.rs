@@ -1,6 +1,9 @@
 use std::fmt;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::rc::Rc;
+
+use crate::backend::rei_callable::ReiCallable;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenType {
@@ -64,6 +67,7 @@ pub enum Object {
     Range(f64, f64),
     Dummy,
     Null,
+    Callable(Rc<dyn ReiCallable>)
     // Arr(Vec<Object>)
 
 }
@@ -77,6 +81,7 @@ impl fmt::Display for Object {
             Object::Bool(b) => write!(f, "{}", b),
             Object::Range(s, e) => write!(f, "{}:{}", s, e),
             Object::Dummy => write!(f, "Dummy"),
+            Object::Callable(_) => write!(f, "Callable"),
             Object::Null => write!(f, "Null"),
             // Object::Arr(v) => write!(f, "{:?}", v)
         }

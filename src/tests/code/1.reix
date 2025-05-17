@@ -1,4 +1,13 @@
-loop (let i = 0..10.1) {
-    println "hello\n";
-    println i;
+let n = 3;
+let a = 0;
+let b = 1;
+
+loop (let i = 0..n) {
+
+    println a + " ";
+
+    let temp = b;
+    b = a + b;
+    a = temp;
+
 }

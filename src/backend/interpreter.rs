@@ -3,6 +3,7 @@ use crate::frontend::expr;
 use crate::backend::stmt;
 use crate::backend::environment::{ Environment, EnvRef };
 use super::runtime_error::RuntimeError;
+use super::native;
 
 pub struct Interpreter {
 
@@ -145,6 +146,27 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
 
     }
 
+    fn visit_call_expr(&mut self, callee: &expr::Expr, paren: &Token, arguments: &Vec<expr::Expr>) -> Result<Object, RuntimeError<Token>> {
+
+        let callee= self.evaluate(callee)?;
+        let mut args = vec![];
+        for arg in arguments {
+            args.push(self.evaluate(&arg)?);
+        }
+
+        match callee {
+            Object::Callable(ref function) => {
+                if arguments.len() != function.arity() {
+                    return Err(RuntimeError:: InvalidArguments { token: paren.clone() })
+                }
+                function.call(self, &args)
+            }
+            _ => Err(RuntimeError::NotCallable)
+        }
+
+    }
+
+
 }
 
 impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
@@ -203,7 +225,7 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     }
 
-    fn visit_while_stmt(&mut self, condition: &expr::Expr, body: &stmt::Stmt) -> Result<(), RuntimeError<Token>> {
+   fn visit_while_stmt(&mut self, condition: &expr::Expr, body: &stmt::Stmt) -> Result<(), RuntimeError<Token>> {
 
         loop {
             let cond = self.evaluate(condition)?;
@@ -233,15 +255,17 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
 impl Interpreter {
 
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
 
         let environment = Environment::global();
-        Interpreter { environment }
+        native::register_all_native_fns(environment.borrow_mut())?;
+        Ok(Interpreter { environment })
 
     }
 
     pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) -> Result<(), RuntimeError<Token>> {
 
+        println!("{:?}", self.environment);
         for stmt in statements {
             self.execute(&stmt)?;
         }
@@ -285,6 +309,7 @@ impl Interpreter {
             Object::Bool(b) => b.to_string(),
             Object::Dummy => "dummy".to_string(),
             Object::Str(s) => s.clone(),
+            Object::Callable(c) => c.to_string()
         }
 
     }
