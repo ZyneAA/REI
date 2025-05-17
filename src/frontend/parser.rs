@@ -288,6 +288,7 @@ impl Parser {
         }
 
         self.consume(&TokenType::RightParen, &err2)?;
+        self.consume(&TokenType::LeftBrace, &err2)?;
         let body = match self.block()? {
             stmt::Stmt::Block { statements } => statements,
             _ => {
