@@ -20,7 +20,7 @@ impl<'a> ReiCallable for ReiFunction {
         let env = Environment::from_enclosing(interpreter.environment.clone());
 
         for (param, arg) in self.params.iter().zip(arguments.iter()) {
-            env.borrow_mut().define(param.lexeme.clone(), arg.clone());
+            env.borrow_mut().define(param.lexeme.clone(), arg.clone())?;
         }
 
         interpreter.execute_block(&self.body, env)?;
@@ -33,7 +33,7 @@ impl<'a> ReiCallable for ReiFunction {
     }
 
     fn to_string(&self) -> String {
-        format!("(fn){}", self.name.lexeme)
+        format!("<fn>{}", self.name.lexeme)
     }
 
 }

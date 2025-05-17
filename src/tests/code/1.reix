@@ -1,15 +1,16 @@
-let n = 3;
+let n = 10;
 let a = 0;
 let b = 1;
 
 fn say(ok, pro) {
-    println "HI MAATE" + ok + pro;
+    println "HI MATE" + ok + pro;
 }
 
 loop (let i = 0..n) {
 
     say("ok", "pro");
     println a + " ";
+    _C_sleep(1000);
 
     let temp = b;
     b = a + b;

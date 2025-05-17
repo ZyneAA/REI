@@ -24,7 +24,7 @@ impl ReiCallable for TimeNow {
         Ok(Object::Number(now))
     }
     fn to_string(&self) -> String {
-        String::from("<fn>time_now")
+        String::from("<native_fn>time_now")
     }
 }
 
@@ -46,17 +46,17 @@ impl ReiCallable for Sleep {
         Ok(Object::Null)
     }
     fn to_string(&self) -> String {
-        String::from("<fn>sleep")
+        String::from("<native_fn>sleep")
     }
 }
 
 pub fn register(env: &mut Environment) -> Result<(), RuntimeError<Token>> {
 
     let callable: Rc<dyn ReiCallable> = Rc::new(TimeNow);
-    env.define("<time_now>".to_string(), Object::Callable(callable))?;
+    env.define("_C_time_now".to_string(), Object::Callable(callable))?;
 
     let sleep_fn: Rc<dyn ReiCallable> = Rc::new(Sleep);
-    env.define("<sleep>".to_string(), Object::Callable(sleep_fn))?;
+    env.define("_C_sleep".to_string(), Object::Callable(sleep_fn))?;
 
     Ok(())
 
