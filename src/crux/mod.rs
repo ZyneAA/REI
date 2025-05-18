@@ -41,11 +41,12 @@ impl Rei {
                     "Block: Vec<Stmt> statements",
                     "Expression : Expr expression",
                     "Function : Token name, Vec<Token> params, Vec<Stmt> body",
-                    "If : Expr condition, Box<Stmt> then_branch, Option<Box<Stmt>> else_branch",
+                    "If : Expr condition, Stmt then_branch, Option<Box<Stmt>> else_branch",
                     "Print : Expr expression",
+                    "Return : Token keyword, Option<Box<Expr>> value",
                     "PrintLn : Expr expression",
                     "Let : Token name, Expr initializer",
-                    "While: Expr condition, Box<Stmt> body",
+                    "While: Expr condition, Stmt body",
                 ])?;
             }
             else {

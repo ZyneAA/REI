@@ -5,9 +5,11 @@ use crate::frontend::expr;
 use crate::backend::stmt;
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::environment::{ Environment, EnvRef };
-use super::runtime_error::RuntimeError;
 use super::native;
 use super::rei_function::ReiFunction;
+use super::exec_signal::ExecSignal;
+use super::exec_signal::runtime_error::RuntimeError;
+use super::exec_signal::control_flow::ControlFlow;
 
 pub struct Interpreter {
 
@@ -15,17 +17,17 @@ pub struct Interpreter {
 
 }
 
-impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
+impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
-    fn visit_literal_expr(&mut self, value: &Object) -> Result<Object, RuntimeError<Token>> {
+    fn visit_literal_expr(&mut self, value: &Object) -> Result<Object, ExecSignal> {
         Ok(value.clone())
     }
 
-    fn visit_grouping_expr(&mut self, expression: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
+    fn visit_grouping_expr(&mut self, expression: &expr::Expr) -> Result<Object, ExecSignal> {
         self.evaluate(expression)
     }
 
-    fn visit_unary_expr(&mut self, operator: &Token, expression: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
+    fn visit_unary_expr(&mut self, operator: &Token, expression: &expr::Expr) -> Result<Object, ExecSignal> {
 
         let right = self.evaluate(expression)?;
 
@@ -40,16 +42,16 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
             TokenType::Bang => {
                 Ok(Object::Bool(!self.is_truthy(&right)))
             },
-            _ => Err(RuntimeError::InvalidOperator { token: operator.clone() })
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::InvalidOperator { token: operator.clone() }))
         }
 
     }
 
-    fn visit_variable_expr(&mut self, name: &Token) -> Result<Object, RuntimeError<Token>> {
+    fn visit_variable_expr(&mut self, name: &Token) -> Result<Object, ExecSignal> {
         self.environment.borrow_mut().get(name)
     }
 
-    fn visit_binary_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
+    fn visit_binary_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> Result<Object, ExecSignal> {
 
         let left = self.evaluate(left)?;
         let right = self.evaluate(right)?;
@@ -61,7 +63,7 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
                 (Object::Str(a), Object::Str(b)) => Ok(Object::Str(a + &b)),
                 (Object::Str(a), b) => Ok(Object::Str(a + &b.to_string())),
                 (a, Object::Str(b)) => Ok(Object::Str(a.to_string() + &b)),
-                _ => Err(RuntimeError::TypeMismatch { token: operator.clone() })
+                _ => Err(ExecSignal::RuntimeError(RuntimeError::TypeMismatch { token: operator.clone() }))
             },
             TokenType::Minus => {
                 self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
@@ -96,13 +98,13 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
             TokenType::EqualEqual => Ok(Object::Bool(self.is_equal(left, right))),
             TokenType::BangEqual => Ok(Object::Bool(!self.is_equal(left, right))),
 
-            _ => Err(RuntimeError::UnexpectedBinaryOperation { token: operator.clone() })
+            _ => Err( ExecSignal::RuntimeError(RuntimeError::UnexpectedBinaryOperation { token: operator.clone() }))
 
         }
 
     }
 
-    fn visit_assign_expr(&mut self, name: &Token, value: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
+    fn visit_assign_expr(&mut self, name: &Token, value: &expr::Expr) -> Result<Object, ExecSignal> {
 
         let value = self.evaluate(value)?;
         self.environment.borrow_mut().assign(name, value.clone())?;
@@ -110,7 +112,7 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
 
     }
 
-    fn visit_logical_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
+    fn visit_logical_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> Result<Object, ExecSignal> {
 
         let left = self.evaluate(left)?;
 
@@ -129,28 +131,28 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
 
     }
 
-    fn visit_range_expr(&mut self, start: &expr::Expr, end: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
+    fn visit_range_expr(&mut self, start: &expr::Expr, end: &expr::Expr) -> Result<Object, ExecSignal> {
 
         let start = self.evaluate(start)?;
         let end = self.evaluate(end)?;
         match (start, end) {
             (Object::Number(s), Object::Number(e)) => {
                 if s.fract() != 0.0 || e.fract() != 0.0 {
-                    return Err(RuntimeError::InvalidRangeType)
+                    return Err(ExecSignal::RuntimeError(RuntimeError::InvalidRangeType))
                 }
                 if e < s {
-                    Err(RuntimeError::InvalidRange)
+                    Err(ExecSignal::RuntimeError(RuntimeError::InvalidRange))
                 }
                 else {
                     Ok(Object::Range(s, e))
                 }
             },
-            _ => Err(RuntimeError::InvalidRangeType)
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::InvalidRangeType))
         }
 
     }
 
-    fn visit_call_expr(&mut self, callee: &expr::Expr, paren: &Token, arguments: &Vec<expr::Expr>) -> Result<Object, RuntimeError<Token>> {
+    fn visit_call_expr(&mut self, callee: &expr::Expr, paren: &Token, arguments: &Vec<expr::Expr>) -> Result<Object, ExecSignal> {
 
         let callee= self.evaluate(callee)?;
         let mut args = vec![];
@@ -161,11 +163,11 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
         match callee {
             Object::Callable(ref function) => {
                 if arguments.len() != function.arity() {
-                    return Err(RuntimeError:: InvalidArguments { token: paren.clone() })
+                    return Err(ExecSignal::RuntimeError(RuntimeError:: InvalidArguments { token: paren.clone() }))
                 }
                 function.call(self, &args)
             }
-            _ => Err(RuntimeError::NotCallable)
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::NotCallable))
         }
 
     }
@@ -173,16 +175,16 @@ impl expr::Visitor<Result<Object, RuntimeError<Token>>> for Interpreter {
 
 }
 
-impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
+impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
-    fn visit_expression_stmt(&mut self, expression: &expr::Expr) -> Result<(), RuntimeError<Token>> {
+    fn visit_expression_stmt(&mut self, expression: &expr::Expr) -> Result<(), ExecSignal> {
 
         self.evaluate(expression)?;
         Ok(())
 
     }
 
-    fn visit_print_stmt(&mut self, expression: &expr::Expr) -> Result<(), RuntimeError<Token>> {
+    fn visit_print_stmt(&mut self, expression: &expr::Expr) -> Result<(), ExecSignal> {
 
         let value = self.evaluate(expression)?;
         print!("{}", self.stringify(&value));
@@ -190,7 +192,7 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     }
 
-    fn visit_println_stmt(&mut self, expression: &expr::Expr) -> Result<(), RuntimeError<Token>> {
+    fn visit_println_stmt(&mut self, expression: &expr::Expr) -> Result<(), ExecSignal> {
 
         let value = self.evaluate(expression)?;
         println!("{}", self.stringify(&value));
@@ -198,7 +200,7 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     }
 
-    fn visit_let_stmt(&mut self, name: &Token, initializer: &expr::Expr) -> Result<(), RuntimeError<Token>> {
+    fn visit_let_stmt(&mut self, name: &Token, initializer: &expr::Expr) -> Result<(), ExecSignal> {
 
         let value = self.evaluate(initializer)?;
         self.environment.borrow_mut().define(name.lexeme.clone(), value)?;
@@ -206,14 +208,14 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     }
 
-    fn visit_block_stmt(&mut self, statements: &Vec<stmt::Stmt>) -> Result<(), RuntimeError<Token>> {
+    fn visit_block_stmt(&mut self, statements: &Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
 
         let new_env = Environment::from_enclosing(self.environment.clone());
         self.execute_block(statements, new_env)
 
     }
 
-    fn visit_if_stmt(&mut self, condition: &expr::Expr, then_branch: &stmt::Stmt, else_branch: &Option<Box<stmt::Stmt>>) -> Result<(), RuntimeError<Token>> {
+    fn visit_if_stmt(&mut self, condition: &expr::Expr, then_branch: &stmt::Stmt, else_branch: &Option<Box<stmt::Stmt>>) -> Result<(), ExecSignal> {
 
         let obj = self.evaluate(condition)?;
 
@@ -229,7 +231,7 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     }
 
-    fn visit_while_stmt(&mut self, condition: &expr::Expr, body: &stmt::Stmt) -> Result<(), RuntimeError<Token>> {
+    fn visit_while_stmt(&mut self, condition: &expr::Expr, body: &stmt::Stmt) -> Result<(), ExecSignal> {
 
         loop {
             let cond = self.evaluate(condition)?;
@@ -238,8 +240,8 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
             }
             match self.execute(body) {
                 Ok(_) => {},
-                Err(RuntimeError::Break) => break,
-                Err(RuntimeError::Continue) => continue,
+                Err(ExecSignal::ControlFlow(ControlFlow::Break)) => break,
+                Err(ExecSignal::ControlFlow(ControlFlow::Continue)) => continue,
                 Err(e) => return Err(e),
             }
         }
@@ -247,20 +249,30 @@ impl stmt::Visitor<Result<(), RuntimeError<Token>>> for Interpreter {
 
     }
 
-    fn visit_break_stmt(&mut self) -> Result<(), RuntimeError<Token>> {
-        Err(RuntimeError::Break)
+    fn visit_break_stmt(&mut self) -> Result<(), ExecSignal> {
+        Err(ExecSignal::ControlFlow(ControlFlow::Break))
     }
 
-    fn visit_continue_stmt(&mut self) -> Result<(), RuntimeError<Token>> {
-        Err(RuntimeError::Continue)
+    fn visit_continue_stmt(&mut self) -> Result<(), ExecSignal> {
+        Err(ExecSignal::ControlFlow(ControlFlow::Continue))
     }
 
-    fn visit_function_stmt(&mut self, name: &Token, params: &Vec<Token>, body: &Vec<stmt::Stmt>) -> Result<(), RuntimeError<Token>> {
+    fn visit_function_stmt(&mut self, name: &Token, params: &Vec<Token>, body: &Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
 
         let function = ReiFunction::new(name.clone(), params.clone(), body.clone());
         let callable: Rc<dyn ReiCallable> = Rc::new(function);
         self.environment.borrow_mut().define(name.lexeme.clone(), Object::Callable(callable))?;
         Ok(())
+
+    }
+
+    fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Box<expr::Expr>>) -> Result<(), ExecSignal> {
+
+        let value = match value {
+            Some(v) => self.evaluate(v)?,
+            None => Object::Null
+        };
+        Err(ExecSignal::ControlFlow(ControlFlow::Return(value)))
 
     }
 
@@ -276,7 +288,7 @@ impl Interpreter {
 
     }
 
-    pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) -> Result<(), RuntimeError<Token>> {
+    pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
 
         for stmt in statements {
             self.execute(&stmt)?;
@@ -285,11 +297,11 @@ impl Interpreter {
 
     }
 
-    fn execute(&mut self, statement: &stmt::Stmt) -> Result<(), RuntimeError<Token>> {
+    fn execute(&mut self, statement: &stmt::Stmt) -> Result<(), ExecSignal> {
         statement.accept(self)
     }
 
-    pub fn execute_block(&mut self, statements: &Vec<stmt::Stmt>, env: EnvRef) -> Result<(), RuntimeError<Token>> {
+    pub fn execute_block(&mut self, statements: &Vec<stmt::Stmt>, env: EnvRef) -> Result<(), ExecSignal> {
 
         let previous = self.environment.clone();
         self.environment = env;
@@ -326,7 +338,7 @@ impl Interpreter {
 
     }
 
-    fn evaluate(&mut self, expression: &expr::Expr) -> Result<Object, RuntimeError<Token>> {
+    fn evaluate(&mut self, expression: &expr::Expr) -> Result<Object, ExecSignal> {
         expression.accept(self)
     }
 
@@ -340,20 +352,20 @@ impl Interpreter {
 
     }
 
-    fn check_number_operand(&self, operator: Token, operand: Object) -> Result<(), RuntimeError<Token>> {
+    fn check_number_operand(&self, operator: Token, operand: Object) -> Result<(), ExecSignal> {
 
         match operand {
             Object::Number(_) => { Ok(()) },
-            _ => Err(RuntimeError::OperandMustBeNumber { token: operator })
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber { token: operator }))
         }
 
     }
 
-    fn check_number_operands(&self, operator: Token, a: Object, b: Object) -> Result<(), RuntimeError<Token>> {
+    fn check_number_operands(&self, operator: Token, a: Object, b: Object) -> Result<(), ExecSignal> {
 
         match (a, b) {
             (Object::Number(_), Object::Number(_)) => { Ok(()) },
-            _ => Err(RuntimeError::OperandMustBeNumber { token: operator})
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber { token: operator}))
         }
 
     }
@@ -370,28 +382,28 @@ impl Interpreter {
 
     }
 
-    pub fn binary_number_operation<T>(&self, a: Object, b: Object, token: Token, op: T) -> Result<Object, RuntimeError<Token>>
+    pub fn binary_number_operation<T>(&self, a: Object, b: Object, token: Token, op: T) -> Result<Object, ExecSignal>
     where T: Fn(f64, f64) -> f64,
     {
         match (a, b) {
             (Object::Number(x), Object::Number(y)) => {
                 if token.token_type == TokenType::Slash && y == 0.0 {
-                    Err(RuntimeError::DividedByZero { token })
+                    Err(ExecSignal::RuntimeError(RuntimeError::DividedByZero { token }))
                 }
                 else {
                     Ok(Object::Number(op(x, y)))
                 }
             }
-            _ => Err(RuntimeError::OperandMustBeNumber{ token }),
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber{ token })),
         }
     }
 
-    fn compare_number_operation<F>(&self, a: Object, b: Object, token: Token, op: F) -> Result<Object, RuntimeError<Token>>
+    fn compare_number_operation<F>(&self, a: Object, b: Object, token: Token, op: F) -> Result<Object, ExecSignal>
     where F: Fn(f64, f64) -> bool,
     {
         match (a, b) {
             (Object::Number(x), Object::Number(y)) => Ok(Object::Bool(op(x, y))),
-            _ => Err(RuntimeError::OperandMustBeNumber{ token })
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber{ token }))
         }
     }
 

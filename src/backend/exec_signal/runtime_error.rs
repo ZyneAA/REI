@@ -26,7 +26,6 @@ pub enum RuntimeError<T>
     },
     InvalidRange,
     InvalidRangeType,
-    Break, Continue,
     NotCallable, InvalidArguments { token: T},
     ErrorInNativeFn { msg: String }
 
@@ -42,8 +41,6 @@ where T: fmt::Debug + fmt::Display
             RuntimeError::ErrorInNativeFn { msg } => write!(f, "{} | {}", util::red_colored("Error In Native Function"), msg),
             RuntimeError::InvalidArguments { token} => write!(f, "{} | {}", util::red_colored("Invalid Callable Argument Number | Argument don't match the callable's parameters"), token),
             RuntimeError::NotCallable => write!(f, "{}", util::red_colored("Invalid Callable | Can only call functions and classes")),
-            RuntimeError::Break => write!(f, "{}", util::red_colored("Invalid Range Types | Both the start and the end must be Numbers and also must not be Floats")),
-            RuntimeError::Continue => write!(f, "{}", util::red_colored("Invalid Range Types | Both the start and the end must be Numbers")),
             RuntimeError::InvalidRange => write!(f, "{}", util::red_colored("Invalid Range | The starting point must be samller than the ending point")),
             RuntimeError::InvalidRangeType => write!(f, "{}", util::red_colored("Invalid Range Types | Both the start and the end must be Numbers")),
             RuntimeError::InvalidOperator { token } => write!(f, "{} | {}", util::red_colored("Invalid Operator") ,token),

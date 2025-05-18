@@ -1,4 +1,5 @@
 use std::boxed::Box;
+
 use crate::crux::token::Token;
 use crate::frontend::expr::Expr;
 
@@ -12,6 +13,7 @@ pub trait Visitor<T> {
     fn visit_println_stmt(&mut self, expression: &Expr) -> T;
     fn visit_let_stmt(&mut self, name: &Token, initializer: &Expr) -> T;
     fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> T;
+    fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Box<Expr>>) -> T;
     fn visit_break_stmt(&mut self) -> T;
     fn visit_continue_stmt(&mut self) -> T;
 
@@ -44,6 +46,11 @@ pub enum Stmt {
         expression: Box<Expr>,
     },
 
+    Return {
+        keyword: Token,
+        value: Option<Box<Expr>>,
+    },
+
     PrintLn {
         expression: Box<Expr>,
     },
@@ -72,6 +79,7 @@ impl Stmt {
             Stmt::Function { name, params, body } => visitor.visit_function_stmt(name, params, body),
             Stmt::If { condition, then_branch, else_branch } => visitor.visit_if_stmt(condition, then_branch, else_branch),
             Stmt::Print { expression } => visitor.visit_print_stmt(expression),
+            Stmt::Return { keyword, value } => visitor.visit_return_stmt(keyword, value),
             Stmt::PrintLn { expression } => visitor.visit_println_stmt(expression),
             Stmt::Let { name, initializer } => visitor.visit_let_stmt(name, initializer),
             Stmt::While { condition, body } => visitor.visit_while_stmt(condition, body),

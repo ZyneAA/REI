@@ -4,9 +4,10 @@ use std::rc::Rc;
 use std::thread;
 use std::time::Duration;
 
-use crate::crux::token::{ Token, Object };
+use crate::crux::token::Object;
 use crate::backend::interpreter::Interpreter;
-use crate::backend::runtime_error::RuntimeError;
+use crate::backend::exec_signal::ExecSignal;
+use crate::backend::exec_signal::runtime_error::RuntimeError;
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::environment::Environment;
 
@@ -16,10 +17,10 @@ impl ReiCallable for TimeNow {
     fn arity(&self) -> usize {
         0
     }
-    fn call(&self, _interpreter: &mut Interpreter, _arguments: &Vec<Object>) -> Result<Object, RuntimeError<Token>> {
+    fn call(&self, _interpreter: &mut Interpreter, _arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|e| RuntimeError::ErrorInNativeFn { msg: e.to_string() })?
+            .map_err(|e| (ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn { msg: e.to_string() })))?
             .as_secs_f64();
         Ok(Object::Number(now))
     }
@@ -34,12 +35,12 @@ impl ReiCallable for Sleep {
     fn arity(&self) -> usize {
         1
     }
-    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, RuntimeError<Token>> {
+    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
         let duration = match &arguments[0] {
             Object::Number(ms) => *ms,
-            _ => return Err(RuntimeError::ErrorInNativeFn {
+            _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                 msg: "Expected number (milliseconds) as argument to <sleep>".to_string(),
-            }),
+            })),
         };
 
         thread::sleep(Duration::from_millis(duration as u64));
@@ -50,7 +51,7 @@ impl ReiCallable for Sleep {
     }
 }
 
-pub fn register(env: &mut Environment) -> Result<(), RuntimeError<Token>> {
+pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
 
     let callable: Rc<dyn ReiCallable> = Rc::new(TimeNow);
     env.define("_C_time_now".to_string(), Object::Callable(callable))?;

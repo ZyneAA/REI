@@ -1,7 +1,7 @@
 use super::interpreter::Interpreter;
 use super::rei_callable::ReiCallable;
 use super::stmt;
-use super::runtime_error::RuntimeError;
+use super::exec_signal::ExecSignal;
 use super::environment::Environment;
 use crate::crux::token::{ Token, Object };
 
@@ -15,7 +15,7 @@ pub struct ReiFunction {
 
 impl<'a> ReiCallable for ReiFunction {
 
-    fn call(&self, interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, RuntimeError<Token>> {
+    fn call(&self, interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
 
         let env = Environment::from_enclosing(interpreter.environment.clone());
 

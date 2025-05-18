@@ -2,9 +2,10 @@
 use std::alloc::{alloc, Layout};
 use std::rc::Rc;
 
-use crate::crux::token::{Token, Object};
+use crate::crux::token::Object;
 use crate::backend::interpreter::Interpreter;
-use crate::backend::runtime_error::RuntimeError;
+use crate::backend::exec_signal::ExecSignal;
+use crate::backend::exec_signal::runtime_error::RuntimeError;
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::environment::Environment;
 
@@ -15,26 +16,26 @@ impl ReiCallable for ReiMalloc {
         1
     }
 
-    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, RuntimeError<Token>> {
+    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
         let size = match arguments.get(0) {
             Some(Object::Number(n)) => *n as usize,
             _ => {
-                return Err(RuntimeError::ErrorInNativeFn {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                     msg: "malloc: expected 1 number argument".to_string(),
-                });
+                }));
             }
         };
 
-        let layout = Layout::from_size_align(size, 8).map_err(|e| RuntimeError::ErrorInNativeFn {
+        let layout = Layout::from_size_align(size, 8).map_err(|e| ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
             msg: format!("malloc: invalid layout: {}", e),
-        })?;
+        }))?;
 
         unsafe {
             let ptr = alloc(layout);
             if ptr.is_null() {
-                return Err(RuntimeError::ErrorInNativeFn {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                     msg: "malloc: allocation failed".to_string(),
-                });
+                }));
             }
 
             // We'll return the raw address as a number for now
@@ -49,7 +50,7 @@ impl ReiCallable for ReiMalloc {
     }
 }
 
-pub fn register(env: &mut Environment) -> Result<(), RuntimeError<Token>> {
+pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
 
     let callable: Rc<dyn ReiCallable> = Rc::new(ReiMalloc);
     env.define("_M_alloc".to_string(), Object::Callable(callable))?;

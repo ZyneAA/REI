@@ -42,8 +42,11 @@ impl Parser {
         else if self.rmatch(&[TokenType::PrintLn])? {
             self.println_statement()
         }
+        else if self.rmatch(&[TokenType::Return])? {
+            self.println_statement()
+        }
         else if self.rmatch(&[TokenType::While])? {
-            self.while_statement()
+            self.return_statement()
         }
         else if self.rmatch(&[TokenType::LeftBrace])? {
             self.block()
@@ -66,6 +69,24 @@ impl Parser {
         else {
             self.expression_statement()
         }
+
+    }
+
+    fn return_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
+
+        let keyword = self.previous().clone();
+        let value = if !self.check(&TokenType::Semicolon) {
+            Some(Box::new(self.expression()?))
+        }
+        else {
+            None
+        };
+
+        self.consume(&TokenType::Semicolon, "Expect ';' after return value.")?;
+        Ok(stmt::Stmt::Return {
+            keyword: keyword.clone(),
+            value
+        })
 
     }
 
@@ -761,6 +782,5 @@ impl Parser {
     fn previous(&self) -> &Token {
         self.tokens.get(self.current - 1).unwrap()
     }
-
 
 }

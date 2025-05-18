@@ -3,7 +3,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::crux::token::{ Object, Token };
-use super::runtime_error::RuntimeError;
+use super::exec_signal::ExecSignal;
+use super::exec_signal::runtime_error::RuntimeError;
 
 pub type EnvRef = Rc<RefCell<Environment>>;
 
@@ -35,14 +36,14 @@ impl Environment {
 
     }
 
-    pub fn define(&mut self, name: String, value: Object) -> Result<(), RuntimeError<Token>>{
+    pub fn define(&mut self, name: String, value: Object) -> Result<(), ExecSignal>{
 
         self.values.insert(name, value);
         Ok(())
 
     }
 
-    pub fn get(&mut self, name: &Token) -> Result<Object, RuntimeError<Token>> {
+    pub fn get(&mut self, name: &Token) -> Result<Object, ExecSignal> {
 
         if let Some(value) = self.values.get(&name.lexeme) {
             Ok(value.clone())
@@ -51,14 +52,14 @@ impl Environment {
             env.borrow_mut().get(name)
         }
         else {
-            Err(RuntimeError::UndefinedVariable {
+            Err(ExecSignal::RuntimeError(RuntimeError::UndefinedVariable {
                 token: name.clone(),
-            })
+            }))
         }
 
     }
 
-    pub fn assign(&mut self, name: &Token, value: Object) -> Result<(), RuntimeError<Token>> {
+    pub fn assign(&mut self, name: &Token, value: Object) -> Result<(), ExecSignal> {
 
         if self.values.contains_key(&name.lexeme) {
             self.values.insert(name.lexeme.clone(), value);
@@ -68,9 +69,9 @@ impl Environment {
             env.borrow_mut().assign(name, value)
         }
         else {
-            Err(RuntimeError::UndefinedVariable {
+            Err(ExecSignal::RuntimeError(RuntimeError::UndefinedVariable {
             token: name.clone(),
-            })
+            }))
         }
     }
 
