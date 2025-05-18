@@ -307,7 +307,13 @@ impl Interpreter {
         self.environment = env;
 
         for stmt in statements {
-            self.execute(stmt)?;
+            match self.execute(stmt) {
+                Ok(_) => {},
+                Err(ExecSignal::ControlFlow(ControlFlow::Return(value))) => {
+                    return Err(ExecSignal::ControlFlow(ControlFlow::Return(value)));
+                },
+                Err(other) => return Err(other),
+            }
         }
 
         self.environment = previous;

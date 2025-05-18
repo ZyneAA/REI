@@ -1,5 +1,7 @@
-let a = 21 + 23 + 1..1000;
+fn fib(n) {
+    return n;
+}
 
-loop(a) {
-    println a;
+loop (let i = 0..5) {
+    println fib(i);
 }

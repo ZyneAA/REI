@@ -2,6 +2,7 @@ use super::interpreter::Interpreter;
 use super::rei_callable::ReiCallable;
 use super::stmt;
 use super::exec_signal::ExecSignal;
+use super::exec_signal::control_flow::ControlFlow;
 use super::environment::Environment;
 use crate::crux::token::{ Token, Object };
 
@@ -23,8 +24,11 @@ impl<'a> ReiCallable for ReiFunction {
             env.borrow_mut().define(param.lexeme.clone(), arg.clone())?;
         }
 
-        interpreter.execute_block(&self.body, env)?;
-        Ok(Object::Null)
+        match interpreter.execute_block(&self.body, env) {
+            Ok(_) => Ok(Object::Null),
+            Err(ExecSignal::ControlFlow(ControlFlow::Return(value))) => Ok(value),
+            Err(err) => Err(err),
+        }
 
     }
 

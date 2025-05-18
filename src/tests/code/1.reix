@@ -12,6 +12,9 @@ loop (let i = 0..n) {
     println a + " ";
     _C_sleep(5000);
     _M_alloc(50 * 1024 * 1024);
+    if (i == 1) {
+        break;
+    }
 
     let temp = b;
     b = a + b;
