@@ -56,6 +56,8 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
         let left = self.evaluate(left)?;
         let right = self.evaluate(right)?;
 
+        println!("{:?} {:?}", &left, &right);
+
         match operator.token_type {
 
             TokenType::Plus => match (left, right) {
@@ -63,6 +65,9 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                 (Object::Str(a), Object::Str(b)) => Ok(Object::Str(a + &b)),
                 (Object::Str(a), b) => Ok(Object::Str(a + &b.to_string())),
                 (a, Object::Str(b)) => Ok(Object::Str(a.to_string() + &b)),
+                (Object::Callable(_), _) | (_, Object::Callable(_)) => {
+        Err(ExecSignal::RuntimeError(RuntimeError::TypeMismatch { token: operator.clone() }))
+    },
                 _ => Err(ExecSignal::RuntimeError(RuntimeError::TypeMismatch { token: operator.clone() }))
             },
             TokenType::Minus => {
@@ -266,12 +271,13 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
     }
 
-    fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Box<expr::Expr>>) -> Result<(), ExecSignal> {
+    fn visit_return_stmt(&mut self, _keyword: &Token, value: &Option<Box<expr::Expr>>) -> Result<(), ExecSignal> {
 
         let value = match value {
             Some(v) => self.evaluate(v)?,
             None => Object::Null
         };
+        println!("{:?}", value);
         Err(ExecSignal::ControlFlow(ControlFlow::Return(value)))
 
     }
@@ -293,6 +299,10 @@ impl Interpreter {
         for stmt in statements {
             self.execute(&stmt)?;
         }
+        for (key, value) in self.environment.borrow().values.iter() {
+            println!("{key}: {value:?}");
+        }
+
         Ok(())
 
     }
@@ -307,17 +317,10 @@ impl Interpreter {
         self.environment = env;
 
         for stmt in statements {
-            match self.execute(stmt) {
-                Ok(_) => {},
-                Err(ExecSignal::ControlFlow(ControlFlow::Return(value))) => {
-                    return Err(ExecSignal::ControlFlow(ControlFlow::Return(value)));
-                },
-                Err(other) => return Err(other),
-            }
+            self.execute(stmt)?;
         }
 
         self.environment = previous;
-
         Ok(())
 
     }

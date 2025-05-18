@@ -1,5 +1,1 @@
-let a = 0;
-for (let b = 1; b <= 10000; b = b + 1) {
-    a = a + 1;
-    println a;
-}
+

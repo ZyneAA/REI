@@ -36,20 +36,27 @@ impl Parser {
 
     fn statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
+        // std out
         if self.rmatch(&[TokenType::Print])? {
             self.print_statement()
         }
         else if self.rmatch(&[TokenType::PrintLn])? {
             self.println_statement()
         }
+
+        // Return
         else if self.rmatch(&[TokenType::Return])? {
-            self.println_statement()
-        }
-        else if self.rmatch(&[TokenType::While])? {
             self.return_statement()
         }
+
+        // Block
         else if self.rmatch(&[TokenType::LeftBrace])? {
             self.block()
+        }
+
+        // Looping
+        else if self.rmatch(&[TokenType::While])? {
+            self.while_statement()
         }
         else if self.rmatch(&[TokenType::For])? {
             self.for_statement()
@@ -57,9 +64,13 @@ impl Parser {
         else if self.rmatch(&[TokenType::Loop])? {
             self.loop_statement()
         }
+
+        // Condition
         else if self.rmatch(&[TokenType::If])? {
             self.if_statement()
         }
+
+        // Control Signal
         else if self.rmatch(&[TokenType::Break])? {
             self.break_statement()
         }
@@ -222,7 +233,7 @@ impl Parser {
 
     fn if_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
-        self.consume(&TokenType::LeftParen, "Expected ')' after 'if'")?;
+        self.consume(&TokenType::LeftParen, "Expected '(' after 'if'")?;
         let condition = self.expression()?;
         self.consume(&TokenType::RightParen, "Expected ')' after if condition")?;
 

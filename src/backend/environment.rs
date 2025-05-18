@@ -11,7 +11,7 @@ pub type EnvRef = Rc<RefCell<Environment>>;
 #[derive(Clone, Debug)]
 pub struct Environment {
 
-    values: HashMap<String, Object>,
+    pub values: HashMap<String, Object>,
     enclosing: Option<EnvRef>
 
 }
@@ -43,13 +43,13 @@ impl Environment {
 
     }
 
-    pub fn get(&mut self, name: &Token) -> Result<Object, ExecSignal> {
+    pub fn get(&self, name: &Token) -> Result<Object, ExecSignal> {
 
         if let Some(value) = self.values.get(&name.lexeme) {
             Ok(value.clone())
         }
         else if let Some(ref env) = self.enclosing {
-            env.borrow_mut().get(name)
+            env.borrow().get(name)
         }
         else {
             Err(ExecSignal::RuntimeError(RuntimeError::UndefinedVariable {
