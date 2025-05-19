@@ -325,7 +325,10 @@ impl Interpreter {
                 s
             },
             Object::Range(s, e) => {
-                format!("Range {}:{}", s, e)
+                format!("<Range | {}..{}>", s, e)
+            }
+            Object::MBlock(p, s) => {
+                format!("<MBlock | ptr: {:p} size: {}>", p, s)
             }
             Object::Bool(b) => b.to_string(),
             Object::Dummy => "dummy".to_string(),

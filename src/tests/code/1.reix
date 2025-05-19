@@ -26,17 +26,19 @@ fn both_fib_call() {
 fn main() {
 
     // allocating 10 bytes of memory
-    let alloc = _M_alloc(10);
+    let alloc = _M_alloc(100);
+    println alloc;
 
     // writing to memory blocks manually
-    _M_write(alloc, 0, 30); // writes 30 at first byte
-    _M_write(alloc, 1, 10); // write 1 at second byte
+    _M_write(alloc, 0, false);
+    _M_write(alloc, 8, "hello mate");
 
-    let get_0 = _M_read(alloc, 0); // getting the first byte
-    let get_1 = _M_read(alloc, 1); // getting the second byte
+    let get_0 = _M_read(alloc, 0, 1, true);
+    let get_1 = _M_read(alloc, 8, 10, false);
 
     // printing out values
-    println "the allocated values are: " + get_0 + " and " + get_1 + "\n";
+    println "the allocated value: " + get_0;
+    println "the allocated value: " + get_1;
 
     // free allocated memory
     _M_free(alloc);

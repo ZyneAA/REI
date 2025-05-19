@@ -67,7 +67,8 @@ pub enum Object {
     Range(f64, f64),
     Dummy,
     Null,
-    Callable(Rc<dyn ReiCallable>)
+    Callable(Rc<dyn ReiCallable>),
+    MBlock(*mut u8, usize),
     // Arr(Vec<Object>)
 
 }
@@ -82,6 +83,7 @@ impl fmt::Display for Object {
             Object::Range(s, e) => write!(f, "{}:{}", s, e),
             Object::Dummy => write!(f, "Dummy"),
             Object::Callable(_) => write!(f, "Callable"),
+            Object::MBlock(p, s) => write!(f, "{:p} {}", p, s),
             Object::Null => write!(f, "Null"),
             // Object::Arr(v) => write!(f, "{:?}", v)
         }
