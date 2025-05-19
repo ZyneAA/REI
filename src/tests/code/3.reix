@@ -1,1 +1,11 @@
+fn num() {
+    return 10;
+}
+
+fn add_sum() {
+    return num() + num();
+}
+
+let a = add_sum();
+println a;
 

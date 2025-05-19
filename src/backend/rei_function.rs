@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use super::interpreter::Interpreter;
 use super::rei_callable::ReiCallable;
 use super::stmt;
@@ -6,7 +8,7 @@ use super::exec_signal::control_flow::ControlFlow;
 use super::environment::Environment;
 use crate::crux::token::{ Token, Object };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ReiFunction {
     name: Token,
     params: Vec<Token>,
@@ -14,11 +16,15 @@ pub struct ReiFunction {
 }
 
 
-impl<'a> ReiCallable for ReiFunction {
+impl ReiCallable for ReiFunction {
 
     fn call(&self, interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
 
         let env = Environment::from_enclosing(interpreter.environment.clone());
+        env.borrow_mut().define(
+            self.name.lexeme.clone(),
+            Object::Callable(Rc::new(self.clone()) as Rc<dyn ReiCallable>)
+        )?;
 
         for (param, arg) in self.params.iter().zip(arguments.iter()) {
             env.borrow_mut().define(param.lexeme.clone(), arg.clone())?;

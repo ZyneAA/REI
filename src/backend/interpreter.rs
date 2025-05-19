@@ -56,8 +56,6 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
         let left = self.evaluate(left)?;
         let right = self.evaluate(right)?;
 
-        println!("{:?} {:?}", &left, &right);
-
         match operator.token_type {
 
             TokenType::Plus => match (left, right) {
@@ -65,9 +63,6 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                 (Object::Str(a), Object::Str(b)) => Ok(Object::Str(a + &b)),
                 (Object::Str(a), b) => Ok(Object::Str(a + &b.to_string())),
                 (a, Object::Str(b)) => Ok(Object::Str(a.to_string() + &b)),
-                (Object::Callable(_), _) | (_, Object::Callable(_)) => {
-        Err(ExecSignal::RuntimeError(RuntimeError::TypeMismatch { token: operator.clone() }))
-    },
                 _ => Err(ExecSignal::RuntimeError(RuntimeError::TypeMismatch { token: operator.clone() }))
             },
             TokenType::Minus => {
@@ -277,7 +272,6 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
             Some(v) => self.evaluate(v)?,
             None => Object::Null
         };
-        println!("{:?}", value);
         Err(ExecSignal::ControlFlow(ControlFlow::Return(value)))
 
     }
@@ -297,10 +291,10 @@ impl Interpreter {
     pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
 
         for stmt in statements {
+            for (key, value) in self.environment.borrow().values.iter() {
+                println!("{key}");
+            }
             self.execute(&stmt)?;
-        }
-        for (key, value) in self.environment.borrow().values.iter() {
-            println!("{key}: {value:?}");
         }
 
         Ok(())
@@ -313,15 +307,12 @@ impl Interpreter {
 
     pub fn execute_block(&mut self, statements: &Vec<stmt::Stmt>, env: EnvRef) -> Result<(), ExecSignal> {
 
-        let previous = self.environment.clone();
-        self.environment = env;
-
-        for stmt in statements {
-            self.execute(stmt)?;
-        }
-
-        self.environment = previous;
-        Ok(())
+        self.with_env(env, |interpreter| {
+            for stmt in statements {
+                interpreter.execute(stmt)?;
+            }
+            Ok(())
+        })
 
     }
 
@@ -414,6 +405,16 @@ impl Interpreter {
             (Object::Number(x), Object::Number(y)) => Ok(Object::Bool(op(x, y))),
             _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber{ token }))
         }
+    }
+
+    pub fn with_env<F, R>(&mut self, env: EnvRef, f: F) -> R
+    where F: FnOnce(&mut Interpreter) -> R,
+    {
+        let previous = self.environment.clone();
+        self.environment = env;
+        let result = f(self);
+        self.environment = previous;
+        result
     }
 
 }
