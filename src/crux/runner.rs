@@ -15,6 +15,9 @@ impl Runner {
 
         let lexer = lexer::Lexer::new(source);
         let tokens = lexer.scan_tokens();
+        for i in &tokens {
+            println!("{:?}", i);
+        }
 
         let mut parser = Parser::new(tokens);
         let location =  util::red_colored(&format!("Error in {}", location));

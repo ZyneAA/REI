@@ -171,9 +171,17 @@ impl Parser {
         self.consume(&TokenType::Let, "Expected 'let' in loop declaration")?;
         let name = self.consume(&TokenType::Identifier, "Expected loop variable name")?.clone();
         self.consume(&TokenType::Equal, "Expected '=' in loop declaration")?;
-        let start_expr = self.expression()?;
-        self.consume(&TokenType::DotDot, "Expected '..' in loop range")?;
-        let end_expr = self.expression()?;
+        let range_expr = self.expression()?;
+
+        let (start_expr, end_expr) = match range_expr {
+            expr::Expr::Range { start, end } => (*start, *end),
+            _ => {
+                return Err(ParseError::SyntaxError {
+                    token: self.peek().clone(),
+                    message: "Expected range expression (like 0..10) in loop declaration".into(),
+                });
+            }
+        };
         self.consume(&TokenType::RightParen, "Expected ')' after loop range declaration")?;
 
         let body = self.statement()?;
@@ -452,7 +460,22 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<expr::Expr, ParseError> {
-        self.assignment()
+        self.range()
+    }
+
+    fn range(&mut self) -> Result<expr::Expr, ParseError> {
+
+        let mut expr = self.assignment()?;
+
+        while self.rmatch(&[TokenType::DotDot])? {
+            let right = self.equality()?;
+            expr = expr::Expr::Range {
+                start: Box::new(expr),
+                end: Box::new(right),
+            };
+        }
+
+        Ok(expr)
     }
 
     fn assignment(&mut self) -> Result<expr::Expr, ParseError> {
@@ -636,6 +659,9 @@ impl Parser {
                         message: "Can't have more than 255 arguments.".into(),
                     })
                 }
+                if self.peek().token_type == TokenType::DotDot {
+                    println!("321313123");
+                }
                 arguments.push(self.expression().unwrap());
                 if !self.rmatch(&[TokenType::Comma])? {
                     break;
@@ -644,7 +670,7 @@ impl Parser {
             }
         }
 
-        let paren = self.consume(&TokenType::RightParen, "Expect ')' after arguments.")?.clone();
+        let paren = self.consume(&TokenType::RightParen, "Expect ')' after arguments")?.clone();
         Ok(expr::Expr::Call {
             callee: Box::new(callee.clone()),
             paren,
@@ -670,15 +696,6 @@ impl Parser {
         if self.rmatch(&[TokenType::Null])? {
             return Ok(expr::Expr::Literal {
                 value: Object::Null,
-            });
-        }
-
-        if self.rmatch(&[TokenType::DotDot])? {
-            let start = self.expression()?;
-            let end = self.expression()?;
-            return Ok(expr::Expr::Range {
-                start: Box::new(start),
-                end: Box::new(end),
             });
         }
 

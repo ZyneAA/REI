@@ -41,7 +41,8 @@ fn main() {
     println "the allocated value: " + get_1;
 
     // free allocated memory
-    _M_free(alloc);
+    let a = 12..90;
+    _M_free(alloc, a);
 
     println "time spent executing both fib: " + _C_measure(both_fib_call) + "\n";
     println "current time: " + _C_format_time();
