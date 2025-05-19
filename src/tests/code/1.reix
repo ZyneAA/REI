@@ -1,19 +1,50 @@
-let n = 10;
-let a = 0;
-let b = 1;
+fn fib(n) {
 
-
-loop (let i = 0..n) {
-
-    let time = _C_time_now();
-    println time;
-    _M_alloc(50 * 1024 * 1024);
-    if (i == 1) {
-        break;
+    let a = 0;
+    let b = 1;
+    loop (let i = 0..n) {
+        let tmp = a;
+        a = b;
+        b = tmp + b;
     }
-
-    let temp = b;
-    b = a + b;
-    a = temp;
+    return a;
 
 }
+
+fn rec_fib(n) {
+
+    if (n <= 1) return n;
+    return rec_fib(n - 1) + rec_fib(n -2);
+
+}
+
+fn both_fib_call() {
+    println "iterative: " + fib(10) + "\nrecursive: " + fib(10) + "\n";
+}
+
+// Entry point
+fn main() {
+
+    // allocating 10 bytes of memory
+    let alloc = _M_alloc(10);
+
+    // writing to memory blocks manually
+    _M_write(alloc, 0, 30); // writes 30 at first byte
+    _M_write(alloc, 1, 10); // write 1 at second byte
+
+    let get_0 = _M_read(alloc, 0); // getting the first byte
+    let get_1 = _M_read(alloc, 1); // getting the second byte
+
+    // printing out values
+    println "the allocated values are: " + get_0 + " and " + get_1 + "\n";
+
+    // free allocated memory
+    _M_free(alloc);
+
+    println "time spent executing both fib: " + _C_measure(both_fib_call) + "\n";
+    println "current time: " + _C_format_time();
+
+}
+
+println "total time spent executing: " + _C_measure(main);
+

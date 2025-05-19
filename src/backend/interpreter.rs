@@ -291,9 +291,6 @@ impl Interpreter {
     pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
 
         for stmt in statements {
-            for (key, value) in self.environment.borrow().values.iter() {
-                println!("{key}");
-            }
             self.execute(&stmt)?;
         }
 
