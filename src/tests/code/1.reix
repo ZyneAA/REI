@@ -30,19 +30,19 @@ fn main() {
     println alloc;
 
     // writing to memory blocks manually
-    _M_write(alloc, 0, false);
-    _M_write(alloc, 8, "hello mate");
+    _M_write(alloc, 0, 321312);
+    _M_write(alloc, 8, 232);
 
-    let get_0 = _M_read(alloc, 0, 1, true);
-    let get_1 = _M_read(alloc, 8, 10, false);
+    // reading from allocated memory
+    let get_0 = _M_read(alloc, 0, 8, true);
+    let get_1 = _M_read(alloc, 8, 8, true);
 
     // printing out values
     println "the allocated value: " + get_0;
     println "the allocated value: " + get_1;
 
     // free allocated memory
-    let a = 12..90;
-    _M_free(alloc, a);
+    _M_free(alloc);
 
     println "time spent executing both fib: " + _C_measure(both_fib_call) + "\n";
     println "current time: " + _C_format_time();

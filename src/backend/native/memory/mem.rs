@@ -235,7 +235,7 @@ pub struct ReiFree;
 impl ReiCallable for ReiFree {
 
     fn arity(&self) -> usize {
-        2
+        1
     }
 
     fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
@@ -247,36 +247,12 @@ impl ReiCallable for ReiFree {
             })),
         };
 
-        let (start, end) = match arguments.get(1) {
-            Some(Object::Range(start, end)) => {
-                let start = *start as usize;
-                let end = *end as usize;
-                if start > end || end > size {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                        msg: format!("invalid free range: {}..{}", start, end),
-                    }));
-                }
-                (start, end)
-            }
-            Some(Object::Null) => {
-                (0, size)
-            }
-            _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "second argument must be a positive number or null to free all".to_string(),
-                }))
-            }
-        };
-
-        let offset_ptr = unsafe { ptr.add(start) };
-        let len = end - start;
-
-        let layout = Layout::from_size_align(len, 8).map_err(|e| ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+        let layout = Layout::from_size_align(size, 8).map_err(|e| ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
             msg: format!("invalid layout: {}", e),
         }))?;
 
         unsafe {
-            dealloc(offset_ptr, layout);
+            dealloc(ptr, layout);
         }
 
         Ok(Object::Null)

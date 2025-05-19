@@ -1,17 +1,22 @@
-fn fib(n) {
+fn main() {
 
-    if (n <= 1) return n;
-    return fib(n-2) + fib(n-1);
+    let alloc = _M_alloc(10 * 8);
+    let counter = 0;
+
+    loop (let i = 0..10; 1) {
+        _M_write(alloc, counter, i);
+        counter = counter + 8;
+    }
+
+    counter = 0;
+
+    loop (let i = 0..10; 1) {
+        println _M_read(alloc, counter, 8, true);
+        counter = counter + 8;
+    }
+
+    _M_free(alloc);
 
 }
 
-fn fac(n) {
-
-    if (n <= 1) return 1;
-    return n * fac(n - 1);
-
-}
-
-let a = fib(8);
-println a;
-
+main();

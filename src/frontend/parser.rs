@@ -172,6 +172,8 @@ impl Parser {
         let name = self.consume(&TokenType::Identifier, "Expected loop variable name")?.clone();
         self.consume(&TokenType::Equal, "Expected '=' in loop declaration")?;
         let range_expr = self.expression()?;
+        self.consume(&TokenType::Semicolon, "Expected ; for skipping")?;
+        let times = self.expression()?;
 
         let (start_expr, end_expr) = match range_expr {
             expr::Expr::Range { start, end } => (*start, *end),
@@ -192,9 +194,16 @@ impl Parser {
             initializer: Box::new(start_expr),
         };
 
+        let direction = match times {
+            expr::Expr::Literal { value: Object::Number(_) } => {
+                TokenType::Less
+            }
+            _ => TokenType::Greater
+        };
+
         let condition = expr::Expr::Binary {
             left: Box::new(expr::Expr::Variable { name: name.clone() }),
-            operator: Token::fake(TokenType::Less),
+            operator: Token::fake(direction),
             right: Box::new(end_expr),
         };
 
@@ -204,9 +213,7 @@ impl Parser {
                 value: Box::new(expr::Expr::Binary {
                     left: Box::new(expr::Expr::Variable { name: name.clone() }),
                     operator: Token::fake(TokenType::Plus),
-                    right: Box::new(expr::Expr::Literal {
-                        value: Object::Number(1.0),
-                    }),
+                    right: Box::new(times),
                 }),
             }),
         };
