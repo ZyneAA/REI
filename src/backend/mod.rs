@@ -6,7 +6,7 @@ pub mod rei_function;
 pub mod native;
 pub mod rei_return;
 pub mod exec_signal;
-
+pub mod resolver;
 
 // pub mod ir;
 // pub mod jit;

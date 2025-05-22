@@ -2,7 +2,7 @@ fn fib(n) {
 
     let a = 0;
     let b = 1;
-    loop (let i = 0..n) {
+    loop (let i = 0..n; 1) {
         let tmp = a;
         a = b;
         b = tmp + b;
@@ -19,7 +19,7 @@ fn rec_fib(n) {
 }
 
 fn both_fib_call() {
-    println "iterative: " + fib(10) + "\nrecursive: " + fib(10) + "\n";
+    println "iterative: " + fib(10) + "\nrecursive: " + rec_fib(10) + "\n";
 }
 
 // Entry point

@@ -15,6 +15,9 @@ pub trait Visitor<T> {
 
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ExprId(pub usize);
+
 #[derive(Clone, Debug)]
 pub enum Expr {
 

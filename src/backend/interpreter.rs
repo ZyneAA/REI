@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::collections::HashMap;
 
 use crate::crux::token::{ Object, Token, TokenType };
 use crate::frontend::expr;
@@ -14,6 +15,7 @@ use super::exec_signal::control_flow::ControlFlow;
 pub struct Interpreter {
 
     pub environment: EnvRef
+    locals: HashMap<ExprId, usize>,
 
 }
 
@@ -259,7 +261,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
     fn visit_function_stmt(&mut self, name: &Token, params: &Vec<Token>, body: &Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
 
-        let function = ReiFunction::new(name.clone(), params.clone(), body.clone());
+        let function = ReiFunction::new(name.clone(), params.clone(), body.clone(), self.environment.clone());
         let callable: Rc<dyn ReiCallable> = Rc::new(function);
         self.environment.borrow_mut().define(name.lexeme.clone(), Object::Callable(callable))?;
         Ok(())
@@ -300,6 +302,10 @@ impl Interpreter {
 
     fn execute(&mut self, statement: &stmt::Stmt) -> Result<(), ExecSignal> {
         statement.accept(self)
+    }
+
+    pub fn resolve(&mut self, expression: &expr::Expr, depth: usize) {
+
     }
 
     pub fn execute_block(&mut self, statements: &Vec<stmt::Stmt>, env: EnvRef) -> Result<(), ExecSignal> {

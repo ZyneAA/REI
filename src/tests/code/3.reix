@@ -1,3 +1,2 @@
-loop (let i = 10..0; -1) {
-    println i;
-}
+let x;
+println x;
