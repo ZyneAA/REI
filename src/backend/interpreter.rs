@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use crate::crux::token::{ Object, Token, TokenType };
 use crate::frontend::expr;
+use crate::frontend::expr::ExprId;
 use crate::backend::stmt;
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::environment::{ Environment, EnvRef };
@@ -14,7 +15,7 @@ use super::exec_signal::control_flow::ControlFlow;
 
 pub struct Interpreter {
 
-    pub environment: EnvRef
+    pub environment: EnvRef,
     locals: HashMap<ExprId, usize>,
 
 }
@@ -49,8 +50,8 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
     }
 
-    fn visit_variable_expr(&mut self, name: &Token) -> Result<Object, ExecSignal> {
-        self.environment.borrow_mut().get(name)
+    fn visit_variable_expr(&mut self, id: ExprId, name: &Token) -> Result<Object, ExecSignal> {
+        self.look_up_variable(id, name)
     }
 
     fn visit_binary_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> Result<Object, ExecSignal> {
@@ -106,10 +107,16 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
     }
 
-    fn visit_assign_expr(&mut self, name: &Token, value: &expr::Expr) -> Result<Object, ExecSignal> {
+    fn visit_assign_expr(&mut self, id: ExprId, name: &Token, value: &expr::Expr) -> Result<Object, ExecSignal> {
 
         let value = self.evaluate(value)?;
-        self.environment.borrow_mut().assign(name, value.clone())?;
+        if let Some(distance) = self.locals.get(&id) {
+            Environment::assign_at(&self.environment, distance.clone(), name, value.clone());
+        }
+        else {
+            self.environment.borrow_mut().assign(name, value.clone())?;
+        }
+
         Ok(value)
 
     }
@@ -285,8 +292,9 @@ impl Interpreter {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
 
         let environment = Environment::global();
+        let locals = HashMap::new();
         native::register_all_native_fns(environment.borrow_mut())?;
-        Ok(Interpreter { environment })
+        Ok(Interpreter { environment, locals })
 
     }
 
@@ -304,7 +312,9 @@ impl Interpreter {
         statement.accept(self)
     }
 
-    pub fn resolve(&mut self, expression: &expr::Expr, depth: usize) {
+    pub fn resolve(&mut self, expression_id: ExprId, depth: usize) {
+
+        self.locals.insert(expression_id, depth);
 
     }
 
@@ -357,6 +367,18 @@ impl Interpreter {
         }
 
     }
+
+    fn look_up_variable(&self, expr_id: ExprId, name: &Token) -> Result<Object, ExecSignal> {
+
+        if let Some(&distance) = self.locals.get(&expr_id) {
+            Environment::get_at(&self.environment, distance, &name.lexeme)
+        }
+        else {
+            self.environment.borrow_mut().get(name)
+        }
+
+    }
+
 
     fn check_number_operand(&self, operator: Token, operand: Object) -> Result<(), ExecSignal> {
 

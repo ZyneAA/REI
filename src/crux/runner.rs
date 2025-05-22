@@ -6,6 +6,7 @@ use crate::frontend::lexer;
 use crate::frontend::parser::Parser;
 
 use crate::backend::interpreter::Interpreter;
+use crate::backend::resolver::Resolver;
 
 pub struct Runner;
 
@@ -26,6 +27,8 @@ impl Runner {
                     Ok(i) => i,
                     Err(e) => { eprintln!("{}", e); panic!(); }
                 };
+                let mut resolver = Resolver::new(&mut interpreter);
+                resolver.resolve(&statements);
                 if let Err(e) = interpreter.interpret(statements) {
                     eprintln!("{}", e);
                 }

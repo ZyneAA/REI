@@ -59,6 +59,35 @@ impl Environment {
 
     }
 
+    pub fn ancestor(env: &EnvRef, distance: usize) -> EnvRef {
+
+        let mut current = Rc::clone(env);
+        for _ in 0..distance {
+            let next = current
+                .borrow()
+                .enclosing
+                .as_ref()
+                .cloned()
+                .expect("No enclosing env at distance");
+            current = next;
+        }
+        current
+
+    }
+
+    pub fn get_at(env: &EnvRef, distance: usize, name: &str) -> Result<Object, ExecSignal> {
+
+        let ancestor_env = Environment::ancestor(env, distance);
+        let obj = ancestor_env
+            .borrow()
+            .values
+            .get(name)
+            .cloned()
+            .expect("Undefined variable.");
+        Ok(obj)
+
+    }
+
     pub fn assign(&mut self, name: &Token, value: Object) -> Result<(), ExecSignal> {
 
         if self.values.contains_key(&name.lexeme) {
@@ -74,5 +103,13 @@ impl Environment {
             }))
         }
     }
+
+    pub fn assign_at(env: &EnvRef, distance: usize, name: &Token, value: Object) {
+
+        let ancestor = Environment::ancestor(env, distance);
+        ancestor.borrow_mut().values.insert(name.lexeme.clone(), value);
+
+    }
+
 
 }

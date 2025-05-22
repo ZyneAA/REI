@@ -3,19 +3,21 @@ use std::result::Result;
 use crate::crux::error::ParseError;
 use crate::crux::token::{ Token, TokenType, Object };
 use super::expr;
+use super::expr::ExprId;
 use crate::backend::stmt;
 
 pub struct Parser {
 
     tokens: Vec<Token>,
     current: usize,
+    id_counter: usize
 
 }
 
 impl Parser {
 
     pub fn new(tokens: Vec<Token>) -> Self {
-        Parser { tokens, current: 0 }
+        Parser { tokens, current: 0, id_counter: 0 }
     }
 
     pub fn parse(&mut self) -> Result<Vec<stmt::Stmt>, ParseError> {
@@ -150,7 +152,7 @@ impl Parser {
             }
         };
 
-        let cond_expr = condition.unwrap_or(expr::Expr::Literal { value: Object::Bool(true) });
+        let cond_expr = condition.unwrap_or(expr::Expr::Literal { id: self.next_id(), value: Object::Bool(true) });
         body = stmt::Stmt::While {
             condition: Box::new(cond_expr), body: Box::new(body)
         };
@@ -176,7 +178,7 @@ impl Parser {
         let times = self.expression()?;
 
         let (start_expr, end_expr) = match range_expr {
-            expr::Expr::Range { start, end } => (*start, *end),
+            expr::Expr::Range { id: _, start, end } => (*start, *end),
             _ => {
                 return Err(ParseError::SyntaxError {
                     token: self.peek().clone(),
@@ -195,23 +197,26 @@ impl Parser {
         };
 
         let direction = match times {
-            expr::Expr::Literal { value: Object::Number(_) } => {
+            expr::Expr::Literal { id: _, value: Object::Number(_) } => {
                 TokenType::Less
             }
             _ => TokenType::Greater
         };
 
         let condition = expr::Expr::Binary {
-            left: Box::new(expr::Expr::Variable { name: name.clone() }),
+            id: self.next_id(),
+            left: Box::new(expr::Expr::Variable { id: self.next_id(), name: name.clone() }),
             operator: Token::fake(direction),
             right: Box::new(end_expr),
         };
 
         let increment = stmt::Stmt::Expression {
             expression: Box::new(expr::Expr::Assign {
+                id: self.next_id(),
                 name: name.clone(),
                 value: Box::new(expr::Expr::Binary {
-                    left: Box::new(expr::Expr::Variable { name: name.clone() }),
+                    id: self.next_id(),
+                    left: Box::new(expr::Expr::Variable { id: self.next_id(), name: name.clone() }),
                     operator: Token::fake(TokenType::Plus),
                     right: Box::new(times),
                 }),
@@ -362,6 +367,7 @@ impl Parser {
             self.consume(&TokenType::Semicolon, "Expect ';' after variable declaration")?;
 
             let range = expr::Expr::Range {
+                id: self.next_id(),
                 start: Box::new(value),
                 end: Box::new(end)
             };
@@ -393,6 +399,7 @@ impl Parser {
             self.consume(&TokenType::Semicolon, "Expect ';' after variable declaration")?;
 
             let range = expr::Expr::Range {
+                id: self.next_id(),
                 start: Box::new(value),
                 end: Box::new(end)
             };
@@ -433,6 +440,7 @@ impl Parser {
             let range = stmt::Stmt::Let {
                 name,
                 initializer: Box::new(expr::Expr::Range {
+                    id: self.next_id(),
                     start: Box::new(initializer),
                     end: Box::new(end)
                 })
@@ -447,6 +455,7 @@ impl Parser {
         Ok(stmt::Stmt::Let {
             name,
             initializer: Box::new(initializer.unwrap_or(expr::Expr::Literal {
+                id: self.next_id(),
                 value: Object::Null,
             })),
         })
@@ -477,6 +486,7 @@ impl Parser {
         while self.rmatch(&[TokenType::DotDot])? {
             let right = self.equality()?;
             expr = expr::Expr::Range {
+                id: self.next_id(),
                 start: Box::new(expr),
                 end: Box::new(right),
             };
@@ -494,8 +504,9 @@ impl Parser {
             let value = self.assignment()?;
 
             match expr {
-                expr::Expr::Variable { name } => {
+                expr::Expr::Variable { id: _, name } => {
                     Ok(expr::Expr::Assign {
+                        id: self.next_id(),
                         name,
                         value: Box::new(value),
                     })
@@ -521,6 +532,7 @@ impl Parser {
             let operator = self.previous().clone();
             let right = self.and()?;
             expr = expr::Expr::Logical {
+                id: self.next_id(),
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right)
@@ -539,6 +551,7 @@ impl Parser {
             let operator = self.previous().clone();
             let right = self.equality()?;
             expr = expr::Expr::Logical {
+                id: self.next_id(),
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right)
@@ -557,6 +570,7 @@ impl Parser {
             let operator = self.previous().clone();
             let right = Box::new(self.comparison()?);
             expr = expr::Expr::Binary {
+                id: self.next_id(),
                 left: Box::new(expr),
                 operator,
                 right
@@ -575,6 +589,7 @@ impl Parser {
             let operator = self.previous().clone();
             let right = Box::new(self.term()?);
             expr = expr::Expr::Binary {
+                id: self.next_id(),
                 left: Box::new(expr),
                 operator,
                 right
@@ -593,6 +608,7 @@ impl Parser {
             let operator = self.previous().clone();
             let right = Box::new(self.factor()?);
             expr = expr::Expr::Binary {
+                id: self.next_id(),
                 left: Box::new(expr),
                 operator,
                 right
@@ -611,6 +627,7 @@ impl Parser {
             let operator = self.previous().clone();
             let right = Box::new(self.unary()?);
             expr = expr::Expr::Binary {
+                id: self.next_id(),
                 left: Box::new(expr),
                 operator,
                 right
@@ -627,6 +644,7 @@ impl Parser {
             let operator= self.previous().clone();
             let right = Box::new(self.unary()?);
             return Ok(expr::Expr::Unary {
+                id: self.next_id(),
                 operator,
                 right
             })
@@ -679,6 +697,7 @@ impl Parser {
 
         let paren = self.consume(&TokenType::RightParen, "Expect ')' after arguments")?.clone();
         Ok(expr::Expr::Call {
+            id: self.next_id(),
             callee: Box::new(callee.clone()),
             paren,
             arguments,
@@ -690,30 +709,35 @@ impl Parser {
 
         if self.rmatch(&[TokenType::False])? {
             return Ok(expr::Expr::Literal {
+                id: self.next_id(),
                 value: Object::Bool(false),
             });
         }
 
         if self.rmatch(&[TokenType::True])? {
             return Ok(expr::Expr::Literal {
+                id: self.next_id(),
                 value: Object::Bool(true),
             });
         }
 
         if self.rmatch(&[TokenType::Null])? {
             return Ok(expr::Expr::Literal {
+                id: self.next_id(),
                 value: Object::Null,
             });
         }
 
         if self.rmatch(&[TokenType::Number, TokenType::String])? {
             return Ok(expr::Expr::Literal {
+                id: self.next_id(),
                 value: self.previous().literal.clone(),
             });
         }
 
         if self.rmatch(&[TokenType::Identifier])? {
             return Ok(expr::Expr::Variable {
+                id: self.next_id(),
                 name: self.previous().clone()
             });
         }
@@ -722,6 +746,7 @@ impl Parser {
             let expr = self.expression()?;
             self.consume(&TokenType::RightParen, "Expected ) after expression")?;
             return Ok(expr::Expr::Grouping {
+                id: self.next_id(),
                 expression: Box::new(expr),
             });
         }
@@ -816,6 +841,14 @@ impl Parser {
 
     fn previous(&self) -> &Token {
         self.tokens.get(self.current - 1).unwrap()
+    }
+
+    fn next_id(&mut self) -> ExprId {
+
+        let id = self.id_counter;
+        self.id_counter += 1;
+        ExprId(id)
+
     }
 
 }
