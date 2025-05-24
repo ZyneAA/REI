@@ -31,14 +31,15 @@ impl Rei {
                     "Literal : Object value",
                     "Logical : Expr left, Token operator, Expr right",
                     "Unary : Token operator, Expr right",
-                    "Variable: Token name",
-                    "Range: Expr start, Expr end"
+                    "Variable : Token name",
+                    "Range : Expr start, Expr end"
                 ])?;
                 tools::ast_generator::define_ast(
                 "./src/backend",
                 "Stmt",
                 vec![
-                    "Block: Vec<Stmt> statements",
+                    "Block : Vec<Stmt> statements",
+                    "Class : Token name, Vec<Function> methods",
                     "Expression : Expr expression",
                     "Function : Token name, Vec<Token> params, Vec<Stmt> body",
                     "If : Expr condition, Stmt then_branch, Option<Box<Stmt>> else_branch",
@@ -46,7 +47,7 @@ impl Rei {
                     "Return : Token keyword, Option<Box<Expr>> value",
                     "PrintLn : Expr expression",
                     "Let : Token name, Expr initializer",
-                    "While: Expr condition, Stmt body",
+                    "While : Expr condition, Stmt body",
                 ])?;
             }
             else {

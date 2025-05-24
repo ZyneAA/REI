@@ -44,6 +44,10 @@ impl<'a> Resolver<'a> {
                 self.resolve(statements);
                 self.end_scope();
             }
+            Stmt::Class { name, methods: _ } => {
+                self.declare(name);
+                self.define(name);
+            }
             Stmt::Expression { expression } => {
                 self.resolve_expr(expression);
             }

@@ -379,7 +379,6 @@ impl Interpreter {
 
     }
 
-
     fn check_number_operand(&self, operator: Token, operand: Object) -> Result<(), ExecSignal> {
 
         match operand {

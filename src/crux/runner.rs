@@ -20,23 +20,23 @@ impl Runner {
         let mut parser = Parser::new(tokens);
         let location =  util::red_colored(&format!("Error in {}", location));
 
-        match parser.parse() {
+        let stmts = parser.parse();
 
-            Ok(statements) => {
-                let mut interpreter =  match Interpreter::new() {
-                    Ok(i) => i,
-                    Err(e) => { eprintln!("{}", e); panic!(); }
-                };
-                let mut resolver = Resolver::new(&mut interpreter);
-                resolver.resolve(&statements);
-                if let Err(e) = interpreter.interpret(statements) {
-                    eprintln!("{}", e);
-                }
+        if parser.is_error {
+            for i in parser.errors {
+                println!("{}\n{}\n", location, i);
             }
-            Err(e) => {
-                eprintln!("{}\n{}", location, e);
-            }
+            return;
+        }
 
+        let mut interpreter = match Interpreter::new() {
+            Ok(i) => i,
+            Err(e) => { eprintln!("{}", e); panic!(); }
+        };
+        let mut resolver = Resolver::new(&mut interpreter);
+        resolver.resolve(&stmts);
+        if let Err(e) = interpreter.interpret(stmts) {
+            eprintln!("{}", e);
         }
 
     }

@@ -102,6 +102,7 @@ impl Environment {
             token: name.clone(),
             }))
         }
+
     }
 
     pub fn assign_at(env: &EnvRef, distance: usize, name: &Token, value: Object) {

@@ -10,29 +10,33 @@ pub struct Parser {
 
     tokens: Vec<Token>,
     current: usize,
-    id_counter: usize
+    id_counter: usize,
+    pub is_error: bool,
+    pub errors: Vec<ParseError>
 
 }
 
 impl Parser {
 
     pub fn new(tokens: Vec<Token>) -> Self {
-        Parser { tokens, current: 0, id_counter: 0 }
+        Parser { tokens, current: 0, id_counter: 0, is_error: false, errors: vec![] }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<stmt::Stmt>, ParseError> {
+    pub fn parse(&mut self) -> Vec<stmt::Stmt> {
 
         let mut statements = Vec::new();
         while !self.is_end() {
             match self.declaration() {
                 Ok(stmt) => statements.push(stmt),
                 Err(e) => {
-                    return Err(e);
+                    self.is_error = true;
+                    self.errors.push(e);
+                    self.synchronize();
                 }
             }
         }
 
-        Ok(statements)
+        statements
 
     }
 
@@ -79,9 +83,34 @@ impl Parser {
         else if self.rmatch(&[TokenType::Continue])? {
             self.continue_statement()
         }
+
+        // Class
+        else if self.rmatch(&[TokenType::Class])? {
+            self.class_declaration()
+        }
         else {
             self.expression_statement()
         }
+
+    }
+
+    fn class_declaration(&mut self) -> Result<stmt::Stmt, ParseError> {
+
+        let name = self.consume(&TokenType::Identifier, "Expected a class name")?.clone();
+        self.consume(&TokenType::LeftBrace, "Expected { before class body")?;
+
+        let mut methods = vec![];
+        while !self.check(&TokenType::RightBrace) && !self.is_end() {
+            methods.push(self.function("function")?);
+        }
+
+        self.consume(&TokenType::RightBrace, "EXpected } after class body")?;
+        let class = stmt::Stmt::Class {
+            name,
+            methods
+        };
+
+        Ok(class)
 
     }
 
@@ -299,6 +328,7 @@ impl Parser {
             }
 
             self.statement()
+
         })();
 
         match res {
@@ -752,7 +782,7 @@ impl Parser {
         }
 
         Err(ParseError::SyntaxError {
-            token: self.peek().clone(),
+            token: self.previous().clone(),
             message: "Expected expression".into(),
         })
 
@@ -770,6 +800,7 @@ impl Parser {
                 | TokenType::Fn
                 | TokenType::Let
                 | TokenType::For
+                | TokenType::Loop
                 | TokenType::If
                 | TokenType::While
                 | TokenType::Print

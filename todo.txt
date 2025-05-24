@@ -10,6 +10,8 @@ Lifetimes are rlly pain in the as* when it comes to dealing with function in REI
 // Comeback later
 in parser::Parser::primary(), add a proper error handling for else case (done)
 
+// Proper error report in resolver.rs
+
 // uhmm print and println impl?? (done)
 
 // Error Synchronization improvement

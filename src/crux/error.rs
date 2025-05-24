@@ -13,7 +13,7 @@ pub trait ReiError<T> {
 
 pub struct SyntaxError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ParseError {
 
     SyntaxError {
