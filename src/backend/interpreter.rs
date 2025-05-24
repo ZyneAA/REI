@@ -225,7 +225,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
                 _ => {}
             }
         }
-        let klass = ReiClass::new(name.lexeme.clone());
+        let klass = ReiClass::new(name.lexeme.clone(), klass_methods);
         let callable: Rc<dyn ReiCallable> = Rc::new(klass);
 
         self.environment.borrow_mut().assign(name, Object::Callable(callable))

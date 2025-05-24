@@ -1,8 +1,13 @@
-class Animal{}
+class Animal{
+    make_sound() {
+        println "brrrrr";
+    }
+}
 
 let cat = Animal();
 cat <- sound = "meow";
 cat.sec_sound = "lol";
+cat->make_sound();
 
 println cat.sound;
 println cat -> sec_sound;
