@@ -1,41 +1,58 @@
+use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use super::interpreter::Interpreter;
 use super::environment::Environment;
 use super::rei_callable::ReiCallable;
 use super::rei_class::ReiClass;
 use super::exec_signal::control_flow::ControlFlow;
 use super::exec_signal::ExecSignal;
-use crate::crux::token::Object;
+use super::exec_signal::runtime_error::RuntimeError;
+use crate::crux::token::{ Object, Token };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ReiInstance {
 
-    class: ReiClass
+    class: Rc<ReiClass>,
+    pub fields: HashMap<String, Object>,
 
 }
 
 impl ReiInstance {
 
     pub fn new(class: ReiClass) -> Self {
-        ReiInstance { class }
+        let class = Rc::new(class);
+        ReiInstance {
+            class,
+            fields: HashMap::new()
+        }
     }
 
-}
+    pub fn get(&self, name: &Token) -> Result<Object, ExecSignal> {
 
-impl ReiCallable for ReiInstance {
+        if let Some(value) = self.fields.get(&name.lexeme) {
+            return Ok(value.clone());
+        }
 
-    fn call(&self, interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
+       // if let Some(method) = self.class.find_method(&name.lexeme) {
+       //     return Ok(Object::Callable(Rc::new(method.bind(Rc::new(RefCell::new(self.clone()))))));
+       // }
 
-        let value = Object::Str(self.to_string());
-        Ok(value)
+        Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty{ token: name.clone() }))
 
     }
 
-    fn arity(&self) -> usize {
-        0
+    pub fn set(&mut self, name: &str, value: Object) {
+        self.fields.insert(name.to_string(), value);
     }
 
-    fn to_string(&self) -> String {
-        format!("<instance of {}>", self.class.to_string())
+    pub fn call(&self) -> Result<Object, ExecSignal> {
+        Ok(Object::Instance(Rc::new(RefCell::new(self.clone()))))
+    }
+
+    pub fn to_string(&self) -> String {
+        format!("<Instance of {}>", self.class.to_string())
     }
 
 }

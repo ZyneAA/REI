@@ -2,8 +2,10 @@ use std::fmt;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::cell::RefCell;
 
 use crate::backend::rei_callable::ReiCallable;
+use crate::backend::rei_instance::ReiInstance;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenType {
@@ -22,7 +24,7 @@ pub enum TokenType {
     Identifier, String, Number, Range,
 
     // Keywords
-    And, Class, Else, False, Fn, For, If, Null, Or,
+    And, Class, Setter, Getter, Else, False, Fn, For, If, Null, Or,
     Print, PrintLn, Return, Base, This, True, Let, While, Loop,
     Break, Continue,
     Eof
@@ -68,6 +70,7 @@ pub enum Object {
     Dummy,
     Null,
     Callable(Rc<dyn ReiCallable>),
+    Instance(Rc<RefCell<ReiInstance>>),
     MBlock(*mut u8, usize),
     // Arr(Vec<Object>)
 
@@ -83,6 +86,7 @@ impl fmt::Display for Object {
             Object::Range(s, e) => write!(f, "{}:{}", s, e),
             Object::Dummy => write!(f, "Dummy"),
             Object::Callable(c) => write!(f, "{}", c.to_string()),
+            Object::Instance(i) => write!(f, "{}", i.borrow().to_string()),
             Object::MBlock(p, s) => write!(f, "{:p} {}", p, s),
             Object::Null => write!(f, "Null"),
             // Object::Arr(v) => write!(f, "{:?}", v)
@@ -130,6 +134,9 @@ impl fmt::Display for TokenType {
             TokenType::GreaterEqual => "Greater Equal",
             TokenType::Less => "Less",
             TokenType::LessEqual => "Less Equal",
+            TokenType::Getter => "Getter",
+            TokenType::Setter => "Setter",
+
 
             // Literals
             TokenType::Identifier => "Identifier",

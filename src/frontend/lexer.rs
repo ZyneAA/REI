@@ -76,7 +76,15 @@ impl<'a> Lexer<'a> {
                     self.add_token(TokenType::Dot, Object::Null)
                 }
             }
-            '-' => self.add_token(TokenType::Minus, Object::Null),
+            '-' => {
+                if self.peek() == '>' {
+                    self.advance();
+                    self.add_token(TokenType::Getter, Object::Null)
+                }
+                else {
+                    self.add_token(TokenType::Minus, Object::Null)
+                }
+            }
             '+' => self.add_token(TokenType::Plus, Object::Null),
             ';' => self.add_token(TokenType::Semicolon, Object::Null),
             '*' => self.add_token(TokenType::Star, Object::Null),
@@ -107,6 +115,9 @@ impl<'a> Lexer<'a> {
             '<' => {
                 if self.match_next_char('=') {
                     self.add_token(TokenType::LessEqual, Object::Null)
+                }
+                else if self.match_next_char('-') {
+                    self.add_token(TokenType::Setter, Object::Null)
                 }
                 else {
                     self.add_token(TokenType::Less, Object::Null)

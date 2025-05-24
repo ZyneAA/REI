@@ -182,6 +182,31 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
     }
 
+    fn visit_get_expr(&mut self, object: &Box<expr::Expr>, name: &Token) -> Result<Object, ExecSignal> {
+
+        let object = self.evaluate(object)?;
+        match object {
+            Object::Instance(ref instance) => {
+                instance.borrow().get(name)
+            }
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty { token: name.clone() }))
+        }
+
+    }
+
+    fn visit_set_expr(&mut self, object: &expr::Expr, name: &Token, value: &expr::Expr) -> Result<Object, ExecSignal> {
+
+        let object = self.evaluate(object)?;
+        match object {
+            Object::Instance(ref instance) => {
+                let value = self.evaluate(value)?;
+                instance.borrow_mut().set(&name.lexeme, value.clone());
+                Ok(value)
+            },
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::PropertyError))
+        }
+
+    }
 
 }
 
@@ -360,7 +385,9 @@ impl Interpreter {
             Object::Bool(b) => b.to_string(),
             Object::Dummy => "dummy".to_string(),
             Object::Str(s) => s.clone(),
-            Object::Callable(c) => c.to_string()
+            Object::Callable(c) => c.to_string(),
+            Object::Instance(i) => i.borrow().to_string()
+
         }
 
     }
