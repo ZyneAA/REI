@@ -14,7 +14,7 @@ pub struct Resolver<'a> {
 }
 
 #[derive(Clone, Debug)]
-enum FunctionType { None, Function }
+enum FunctionType { None, Function, Method }
 
 impl<'a> Resolver<'a> {
 
@@ -44,9 +44,21 @@ impl<'a> Resolver<'a> {
                 self.resolve(statements);
                 self.end_scope();
             }
-            Stmt::Class { name, methods: _ } => {
+            Stmt::Class { name, methods } => {
                 self.declare(name);
                 self.define(name);
+
+                for method in methods {
+
+                    match method {
+                        Stmt::Function { name: _, params, body } => {
+                            self.resolve_function(params, body, FunctionType::Method);
+                        },
+                        _ => {}
+                    }
+
+                }
+
             }
             Stmt::Expression { expression } => {
                 self.resolve_expr(expression);
@@ -76,18 +88,7 @@ impl<'a> Resolver<'a> {
                 self.declare(name);
                 self.define(name);
 
-                let enclosing = self.current_function.clone();
-                self.current_function = FunctionType::Function;
-                self.begin_scope();
-                for param in params {
-                    self.declare(param);
-                    self.define(param);
-                }
-
-                self.resolve(body);
-                self.end_scope();
-                self.current_function = enclosing;
-
+                self.resolve_function(params, body, FunctionType::Function);
             }
 
             Stmt::Return { keyword: _, value } => {
@@ -199,6 +200,23 @@ impl<'a> Resolver<'a> {
             return;
         }
         self.scopes.last_mut().unwrap().insert(name.lexeme.clone(), true);
+
+    }
+
+    fn resolve_function(&mut self, params: &Vec<Token>, body: &Vec<Stmt>, ty: FunctionType) {
+
+        let enclosing_function = self.current_function.clone();
+        self.current_function = ty;
+
+        self.begin_scope();
+        for param in params {
+            self.declare(param);
+            self.define(param);
+        }
+        self.resolve(body);
+        self.end_scope();
+
+        self.current_function = enclosing_function;
 
     }
 

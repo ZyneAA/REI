@@ -5,6 +5,7 @@ use std::cell::RefCell;
 use super::interpreter::Interpreter;
 use super::environment::Environment;
 use super::rei_callable::ReiCallable;
+use super::rei_function::ReiFunction;
 use super::rei_class::ReiClass;
 use super::exec_signal::control_flow::ControlFlow;
 use super::exec_signal::ExecSignal;
@@ -35,9 +36,10 @@ impl ReiInstance {
             return Ok(value.clone());
         }
 
-       // if let Some(method) = self.class.find_method(&name.lexeme) {
-       //     return Ok(Object::Callable(Rc::new(method.bind(Rc::new(RefCell::new(self.clone()))))));
-       // }
+        if let Some(method) = self.class.find_method(&name.lexeme) {
+            let method: Rc<dyn ReiCallable> = Rc::new(method);
+            return Ok(Object::Callable(method))
+        }
 
         Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty{ token: name.clone() }))
 
