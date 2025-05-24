@@ -9,12 +9,16 @@ pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
     scopes: Vec<HashMap<String, bool>>, // stack of scopes
     current_function: FunctionType,
+    current_class: ClassType,
     loop_depth: usize,
 
 }
 
 #[derive(Clone, Debug)]
-enum FunctionType { None, Function, Method }
+enum FunctionType { None, Function, Method, Initializer }
+
+#[derive(Clone, Debug)]
+enum ClassType { None, Class }
 
 impl<'a> Resolver<'a> {
 
@@ -24,6 +28,7 @@ impl<'a> Resolver<'a> {
             interpreter,
             scopes: Vec::new(),
             current_function: FunctionType::None,
+            current_class: ClassType::None,
             loop_depth: 0,
         }
 
@@ -45,20 +50,31 @@ impl<'a> Resolver<'a> {
                 self.end_scope();
             }
             Stmt::Class { name, methods } => {
+                let enclosing_class = self.current_class.clone();
+                self.current_class = ClassType::Class;
+
                 self.declare(name);
                 self.define(name);
 
-                for method in methods {
+                self.begin_scope();
+                if let Some(scope) = self.scopes.last_mut() {
+                    scope.insert("this".to_string(), true);
+                }
 
+                for method in methods {
+                    let mut declaration = FunctionType::Method;
                     match method {
-                        Stmt::Function { name: _, params, body } => {
-                            self.resolve_function(params, body, FunctionType::Method);
+                        Stmt::Function { name, params, body } => {
+                            if &name.lexeme == "init" {
+                                declaration = FunctionType::Initializer;
+                            }
+                            self.resolve_function(params, body, declaration);
                         },
                         _ => {}
                     }
 
                 }
-
+                self.current_class = enclosing_class;
             }
             Stmt::Expression { expression } => {
                 self.resolve_expr(expression);
@@ -96,6 +112,12 @@ impl<'a> Resolver<'a> {
                     panic!("Cannot return from top-level code.");
                 }
                 if let Some(val) = value {
+                    match self.current_function {
+                        FunctionType::Initializer => {
+                            panic!("aaARRRRR")
+                        }
+                        _ => {}
+                    }
                     self.resolve_expr(val);
                 }
             }
@@ -143,6 +165,14 @@ impl<'a> Resolver<'a> {
                 for arg in arguments {
                     self.resolve_expr(arg);
                 }
+            }
+            Expr::This { id: _, keyword } => {
+                match self.current_class {
+                    ClassType::None => panic!(), // Bad Code, add a custom error thrower for this
+                                                 // one
+                    ClassType::Class => {}
+                }
+                self.resolve_local(expr, keyword);
             }
             Expr::Get { id: _, object, name: _ } => {
                 self.resolve_expr(object);

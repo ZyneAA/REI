@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use super::interpreter::Interpreter;
-use super::environment::Environment;
 use super::rei_callable::ReiCallable;
 use super::rei_instance::ReiInstance;
 use super::rei_function::ReiFunction;
@@ -12,7 +11,7 @@ use crate::crux::token::Object;
 pub struct ReiClass {
 
     name: String,
-    methods: HashMap<String, ReiFunction>
+    pub methods: HashMap<String, ReiFunction>
 
 }
 
@@ -40,12 +39,29 @@ impl ReiCallable for ReiClass {
     fn call(&self, interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
 
         let instance = ReiInstance::new(self.clone());
+
+        let init = self.find_method("init");
+        match init {
+            Some(i) => {
+                i.bind(instance.clone())?.call(interpreter, arguments)?;
+            },
+            None => {}
+        }
+
         instance.call()
 
     }
 
     fn arity(&self) -> usize {
-        0
+
+        let init = self.find_method("init");
+        match init {
+            Some(i) => {
+                i.arity()
+            },
+            None => 0
+        }
+
     }
 
     fn to_string(&self) -> String {

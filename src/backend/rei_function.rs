@@ -1,7 +1,9 @@
 use std::rc::Rc;
+use std::cell::RefCell;
 
 use super::interpreter::Interpreter;
 use super::rei_callable::ReiCallable;
+use super::rei_instance::ReiInstance;
 use super::stmt;
 use super::exec_signal::ExecSignal;
 use super::exec_signal::control_flow::ControlFlow;
@@ -14,6 +16,7 @@ pub struct ReiFunction {
     name: Token,
     params: Vec<Token>,
     body: Vec<stmt::Stmt>,
+    is_initializer: bool,
     closure: EnvRef
 
 }
@@ -34,8 +37,22 @@ impl ReiCallable for ReiFunction {
         }
 
         match interpreter.execute_block(&self.body, env) {
-            Ok(_) => Ok(Object::Null),
-            Err(ExecSignal::ControlFlow(ControlFlow::Return(value))) => Ok(value),
+            Ok(_) => {
+                if self.is_initializer {
+                    Environment::get_at(&self.closure, 0, "this")
+                }
+                else {
+                    Ok(Object::Null)
+                }
+            },
+            Err(ExecSignal::ControlFlow(ControlFlow::Return(value))) => {
+                if self.is_initializer {
+                    Environment::get_at(&self.closure, 0, "this")
+                }
+                else {
+                    Ok(value)
+                }
+            },
             Err(err) => Err(err),
         }
 
@@ -53,9 +70,25 @@ impl ReiCallable for ReiFunction {
 
 impl ReiFunction {
 
-    pub fn new(name: Token, params: Vec<Token>, body: Vec<stmt::Stmt>, closure: EnvRef) -> Self {
+    pub fn new(name: Token, params: Vec<Token>, body: Vec<stmt::Stmt>, closure: EnvRef, is_initializer: bool) -> Self {
 
-        Self { name, params, body, closure }
+        Self { name, params, body, closure, is_initializer }
+
+    }
+
+    pub fn bind(&self, instance: ReiInstance) -> Result<ReiFunction, ExecSignal> {
+
+        let env = Environment::from_enclosing(self.closure.clone());
+        let instance = Rc::new(RefCell::new(instance));
+        env.borrow_mut().define("this".to_string(), Object::Instance(instance))?;
+
+        Ok(ReiFunction {
+            name: self.name.clone(),
+            params: self.params.clone(),
+            body: self.body.clone(),
+            closure: env,
+            is_initializer: self.is_initializer
+        })
 
     }
 

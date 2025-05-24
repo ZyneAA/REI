@@ -796,6 +796,13 @@ impl Parser {
             });
         }
 
+        if self.rmatch(&[TokenType::This])? {
+            return Ok(expr::Expr::This {
+                id: self.next_id(),
+                keyword: self.previous().clone()
+            });
+        }
+
         if self.rmatch(&[TokenType::Identifier])? {
             return Ok(expr::Expr::Variable {
                 id: self.next_id(),
