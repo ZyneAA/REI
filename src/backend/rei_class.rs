@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use super::interpreter::Interpreter;
-use super::environment::Environment;
 use super::rei_callable::ReiCallable;
 use super::rei_instance::ReiInstance;
 use super::rei_function::ReiFunction;

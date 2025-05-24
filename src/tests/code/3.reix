@@ -1,16 +1,13 @@
 class Animal{
 
-    init(kind, legs) {
+    init(kind, legs, sound) {
         this <- kind = kind;
         this <- legs = legs;
+        this <- sound = sound;
     }
 
-    make_sound(sound) {
-        println sound;
-    }
-
-    purr() {
-        println "PURRINGGGG";
+    make_sound() {
+        return this -> sound;
     }
 
     me() {
@@ -19,6 +16,6 @@ class Animal{
 
 }
 
-let cat = Animal("car", 4);
-println cat -> kind;
+let cat = Animal("cat", 4, "meow");
+println cat -> make_sound();
 

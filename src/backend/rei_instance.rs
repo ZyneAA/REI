@@ -2,12 +2,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use super::interpreter::Interpreter;
-use super::environment::Environment;
 use super::rei_callable::ReiCallable;
-use super::rei_function::ReiFunction;
 use super::rei_class::ReiClass;
-use super::exec_signal::control_flow::ControlFlow;
 use super::exec_signal::ExecSignal;
 use super::exec_signal::runtime_error::RuntimeError;
 use crate::crux::token::{ Object, Token };
@@ -16,7 +12,7 @@ use crate::crux::token::{ Object, Token };
 pub struct ReiInstance {
 
     class: Rc<ReiClass>,
-    pub fields: HashMap<String, Object>,
+    pub fields: Rc<RefCell<HashMap<String, Object>>>,
 
 }
 
@@ -26,13 +22,13 @@ impl ReiInstance {
         let class = Rc::new(class);
         ReiInstance {
             class,
-            fields: HashMap::new()
+            fields: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
     pub fn get(&self, name: &Token) -> Result<Object, ExecSignal> {
 
-        if let Some(value) = self.fields.get(&name.lexeme) {
+        if let Some(value) = self.fields.borrow().get(&name.lexeme) {
             return Ok(value.clone());
         }
 
@@ -42,12 +38,12 @@ impl ReiInstance {
             return Ok(Object::Callable(method))
         }
 
-        Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty{ token: name.clone() }))
+        Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty { token: name.clone() }))
 
     }
 
     pub fn set(&mut self, name: &str, value: Object) {
-        self.fields.insert(name.to_string(), value);
+        self.fields.borrow_mut().insert(name.to_string(), value);
     }
 
     pub fn call(&self) -> Result<Object, ExecSignal> {
@@ -59,7 +55,7 @@ impl ReiInstance {
         let mut properties = String::new();
         let mut methods = String::new();
 
-        for i in self.fields.keys() {
+        for i in self.fields.borrow().keys() {
             let s = format!(" {} ", i);
             properties.push_str(&s);
         }
