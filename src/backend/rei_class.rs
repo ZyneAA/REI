@@ -12,7 +12,7 @@ use crate::crux::token::Object;
 pub struct ReiClass {
 
     name: String,
-    methods: HashMap<String, ReiFunction>
+    pub methods: HashMap<String, ReiFunction>
 
 }
 
@@ -40,12 +40,29 @@ impl ReiCallable for ReiClass {
     fn call(&self, interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
 
         let instance = ReiInstance::new(self.clone());
+
+        let init = self.find_method("init");
+        match init {
+            Some(i) => {
+                i.bind(instance.clone())?.call(interpreter, arguments)?;
+            },
+            None => {}
+        }
+
         instance.call()
 
     }
 
     fn arity(&self) -> usize {
-        0
+
+        let init = self.find_method("init");
+        match init {
+            Some(i) => {
+                i.arity()
+            },
+            None => 0
+        }
+
     }
 
     fn to_string(&self) -> String {

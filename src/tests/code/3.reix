@@ -1,14 +1,24 @@
 class Animal{
-    make_sound() {
-        println "brrrrr";
+
+    init(kind, legs) {
+        this <- kind = kind;
+        this <- legs = legs;
     }
+
+    make_sound(sound) {
+        println sound;
+    }
+
+    purr() {
+        println "PURRINGGGG";
+    }
+
+    me() {
+        return this;
+    }
+
 }
 
-let cat = Animal();
-cat <- sound = "meow";
-cat.sec_sound = "lol";
-cat->make_sound();
+let cat = Animal("car", 4);
+println cat -> kind;
 
-println cat.sound;
-println cat -> sec_sound;
-println "cat: " + cat;

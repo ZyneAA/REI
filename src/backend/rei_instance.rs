@@ -37,7 +37,8 @@ impl ReiInstance {
         }
 
         if let Some(method) = self.class.find_method(&name.lexeme) {
-            let method: Rc<dyn ReiCallable> = Rc::new(method);
+            let bind = method.bind(self.clone())?;
+            let method: Rc<dyn ReiCallable> = Rc::new(bind);
             return Ok(Object::Callable(method))
         }
 
@@ -54,7 +55,22 @@ impl ReiInstance {
     }
 
     pub fn to_string(&self) -> String {
-        format!("<Instance of {}>", self.class.to_string())
+
+        let mut properties = String::new();
+        let mut methods = String::new();
+
+        for i in self.fields.keys() {
+            let s = format!(" {} ", i);
+            properties.push_str(&s);
+        }
+
+        for i in self.class.methods.keys() {
+            let s = format!(" {}() ", i);
+            methods.push_str(&s);
+        }
+
+        format!("<Instance of {}>\n  properties --> {}\n  methods --> {}", self.class.to_string(), properties, methods)
+
     }
 
 }

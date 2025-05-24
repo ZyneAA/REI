@@ -55,6 +55,10 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
         self.look_up_variable(id, name)
     }
 
+    fn visit_this_expr(&mut self, id: ExprId, keyword: &Token) -> Result<Object, ExecSignal> {
+        self.look_up_variable(id, keyword)
+    }
+
     fn visit_binary_expr(&mut self, left: &expr::Expr, operator: &Token, right: &expr::Expr) -> Result<Object, ExecSignal> {
 
         let left = self.evaluate(left)?;
@@ -219,7 +223,13 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
         for method in methods {
             match method {
                 stmt::Stmt::Function { name, params, body } => {
-                    let function = ReiFunction::new(name.clone(), params.clone(), body.clone(), self.environment.clone());
+                    let is_eq = if &name.lexeme == "init" {
+                        true
+                    }
+                    else {
+                        false
+                    };
+                    let function = ReiFunction::new(name.clone(), params.clone(), body.clone(), self.environment.clone(), is_eq);
                     klass_methods.insert(name.lexeme.clone(), function);
                 },
                 _ => {}
@@ -314,7 +324,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
     fn visit_function_stmt(&mut self, name: &Token, params: &Vec<Token>, body: &Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
 
-        let function = ReiFunction::new(name.clone(), params.clone(), body.clone(), self.environment.clone());
+        let function = ReiFunction::new(name.clone(), params.clone(), body.clone(), self.environment.clone(), false);
         let callable: Rc<dyn ReiCallable> = Rc::new(function);
         self.environment.borrow_mut().define(name.lexeme.clone(), Object::Callable(callable))?;
         Ok(())
