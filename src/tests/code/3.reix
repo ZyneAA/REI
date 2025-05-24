@@ -2,6 +2,6 @@ class Car {}
 
 let bmw = Car();
 let r = 12..1000;
-
+Car();
 println r;
 println bmw;

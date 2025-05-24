@@ -18,10 +18,6 @@ impl ReiClass {
         ReiClass { name }
     }
 
-    fn to_string(&self) -> &str {
-        &self.name
-    }
-
 }
 
 impl ReiCallable for ReiClass {

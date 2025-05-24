@@ -22,7 +22,7 @@ pub enum TokenType {
     Identifier, String, Number, Range,
 
     // Keywords
-    And, Class, Else, False, Fn, For, If, Null, Or,
+    And, Class, Setter, Getter, Else, False, Fn, For, If, Null, Or,
     Print, PrintLn, Return, Base, This, True, Let, While, Loop,
     Break, Continue,
     Eof
@@ -130,6 +130,9 @@ impl fmt::Display for TokenType {
             TokenType::GreaterEqual => "Greater Equal",
             TokenType::Less => "Less",
             TokenType::LessEqual => "Less Equal",
+            TokenType::Getter => "Getter",
+            TokenType::Setter => "Setter",
+
 
             // Literals
             TokenType::Identifier => "Identifier",
