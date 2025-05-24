@@ -692,6 +692,14 @@ impl Parser {
             if self.rmatch(&[TokenType::LeftParen])? {
                 expr = self.finish_call(&expr)?;
             }
+            else if self.rmatch(&[TokenType::Dot, TokenType::Getter])? {
+                let name = self.consume(&TokenType::Identifier, "Expected property name")?.clone();
+                expr = expr::Expr::Get {
+                    id: self.next_id(),
+                    object: Box::new(expr),
+                    name
+                }
+            }
             else {
                 break;
             }

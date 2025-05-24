@@ -143,6 +143,9 @@ impl<'a> Resolver<'a> {
                     self.resolve_expr(arg);
                 }
             }
+            Expr::Get { id: _, object, name: _ } => {
+                self.resolve_expr(object);
+            }
             Expr::Grouping { id: _, expression } => {
                 self.resolve_expr(expression);
             }

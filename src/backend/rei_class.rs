@@ -25,7 +25,7 @@ impl ReiCallable for ReiClass {
     fn call(&self, interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
 
         let instance = ReiInstance::new(self.clone());
-        instance.call(interpreter, arguments)
+        instance.call()
 
     }
 

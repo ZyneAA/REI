@@ -6,6 +6,7 @@ pub trait Visitor<T> {
     fn visit_assign_expr(&mut self, id: ExprId, name: &Token, value: &Expr) -> T;
     fn visit_binary_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> T;
     fn visit_call_expr(&mut self, callee: &Expr, paren: &Token, arguments: &Vec<Expr>) -> T;
+    fn visit_get_expr(&mut self, object: &Box<Expr>, name: &Token) -> T;
     fn visit_grouping_expr(&mut self, expression: &Expr) -> T;
     fn visit_literal_expr(&mut self, value: &Object) -> T;
     fn visit_logical_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> T;
@@ -39,6 +40,12 @@ pub enum Expr {
         callee: Box<Expr>,
         paren: Token,
         arguments: Vec<Expr>,
+    },
+
+    Get {
+        id: ExprId,
+        object: Box<Expr>,
+        name: Token
     },
 
     Grouping {
@@ -85,6 +92,7 @@ impl Expr {
             Expr::Assign { id, .. }
             | Expr::Binary { id, .. }
             | Expr::Call { id, .. }
+            | Expr::Get { id, .. }
             | Expr::Grouping { id, .. }
             | Expr::Literal { id, .. }
             | Expr::Logical { id, .. }
@@ -101,6 +109,7 @@ impl Expr {
             Expr::Assign { id, name, value } => visitor.visit_assign_expr(id.clone(), name, value),
             Expr::Binary { id: _, left, operator, right } => visitor.visit_binary_expr(left, operator, right),
             Expr::Call {  id: _, callee, paren, arguments } => visitor.visit_call_expr(callee, paren, arguments),
+            Expr::Get { id: _, object, name } => visitor.visit_get_expr(object, name),
             Expr::Grouping {  id: _, expression } => visitor.visit_grouping_expr(expression),
             Expr::Literal {  id: _, value } => visitor.visit_literal_expr(value),
             Expr::Logical {  id: _, left, operator, right } => visitor.visit_logical_expr(left, operator, right),

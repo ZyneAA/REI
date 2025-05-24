@@ -12,6 +12,9 @@ pub enum RuntimeError<T>
     UndefinedVariable {
         token: T,
     },
+    UndefinedProperty {
+        token: T,
+    },
     DividedByZero {
         token: T,
     },
@@ -47,6 +50,7 @@ where T: fmt::Debug + fmt::Display
             RuntimeError::UnexpectedBinaryOperation { token } => write!(f, "{} | {}", util::red_colored("Unexpected Binary Operation"), token),
             RuntimeError::TypeMismatch { token } => write!(f, "{} | {}", util::red_colored("Type Mismatch | Both operands must be same type"), token),
             RuntimeError::UndefinedVariable { token } => write!(f, "{} | {}", util::red_colored("Undefined Variable"), token),
+            RuntimeError::UndefinedProperty { token } => write!(f, "{} | {}", util::red_colored("Undefined Property"), token),
             RuntimeError::DividedByZero { token } => write!(f, "{} | {}", util::red_colored("Divided By Zero"), token),
             RuntimeError::OperandMustBeNumber { token } => write!(f, "{} | {}", util::red_colored("Operand must be a number"), token),
         }

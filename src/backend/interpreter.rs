@@ -183,6 +183,18 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
     }
 
 
+    fn visit_get_expr(&mut self, object: &Box<expr::Expr>, name: &Token) -> Result<Object, ExecSignal> {
+
+        let object = self.evaluate(object)?;
+        match object {
+            Object::Instance(ref instance) => {
+                instance.borrow().get(name)
+            }
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::NotCallable))
+
+        }
+
+    }
 }
 
 impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
@@ -360,7 +372,9 @@ impl Interpreter {
             Object::Bool(b) => b.to_string(),
             Object::Dummy => "dummy".to_string(),
             Object::Str(s) => s.clone(),
-            Object::Callable(c) => c.to_string()
+            Object::Callable(c) => c.to_string(),
+            Object::Instance(i) => i.borrow().to_string()
+
         }
 
     }
