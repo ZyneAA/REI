@@ -30,6 +30,7 @@ pub enum RuntimeError<T>
     InvalidRange,
     InvalidRangeType,
     NotCallable, InvalidArguments { token: T},
+    PropertyError,
     ErrorInNativeFn { msg: String }
 
 }
@@ -46,6 +47,7 @@ where T: fmt::Debug + fmt::Display
             RuntimeError::NotCallable => write!(f, "{}", util::red_colored("Invalid Callable | Can only call functions and classes")),
             RuntimeError::InvalidRange => write!(f, "{}", util::red_colored("Invalid Range | The starting point must be samller than the ending point")),
             RuntimeError::InvalidRangeType => write!(f, "{}", util::red_colored("Invalid Range Types | Both the start and the end must be Numbers")),
+            RuntimeError::PropertyError => write!(f, "{}", util::red_colored("Property Error | Can not property")),
             RuntimeError::InvalidOperator { token } => write!(f, "{} | {}", util::red_colored("Invalid Operator") ,token),
             RuntimeError::UnexpectedBinaryOperation { token } => write!(f, "{} | {}", util::red_colored("Unexpected Binary Operation"), token),
             RuntimeError::TypeMismatch { token } => write!(f, "{} | {}", util::red_colored("Type Mismatch | Both operands must be same type"), token),

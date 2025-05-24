@@ -529,6 +529,19 @@ impl Parser {
 
         let expr = self.or()?;
 
+        if self.rmatch(&[TokenType::Setter])? {
+            let name = self.consume(&TokenType::Identifier, "Expect property name after '<-'")?.clone();
+            self.consume(&TokenType::Equal, "Expect '=' after property name")?;
+            let value = self.assignment()?;
+
+            return Ok(expr::Expr::Set {
+                id: self.next_id(),
+                object: Box::new(expr),
+                name,
+                value: Box::new(value)
+            });
+        }
+
         if self.rmatch(&[TokenType::Equal])? {
             let equals = self.previous().clone();
             let value = self.assignment()?;
@@ -541,9 +554,19 @@ impl Parser {
                         value: Box::new(value),
                     })
                 }
-                _ => { Err(ParseError::SyntaxError {
-                    token: equals.clone(),
-                    message: "Invalid assignment target ".into(), })
+                expr::Expr::Get { id: _, object, name } => {
+                    Ok(expr::Expr::Set {
+                        id: self.next_id(),
+                        object,
+                        name,
+                        value: Box::new(value)
+                    })
+                }
+                _ => {
+                    Err(ParseError::SyntaxError {
+                        token: equals.clone(),
+                        message: "Invalid assignment target ".into(), }
+                    )
                 }
             }
 

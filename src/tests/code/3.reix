@@ -1,7 +1,9 @@
-class Car {}
+class Animal{}
 
-let bmw = Car();
-let r = 12..1000;
-Car();
-println r;
-println bmw;
+let cat = Animal();
+cat <- sound = "meow";
+cat.sec_sound = "lol";
+
+println cat.sound;
+println cat -> sec_sound;
+println "cat: " + cat;

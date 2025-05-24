@@ -31,6 +31,7 @@ impl Rei {
                     "Grouping : Expr expression",
                     "Literal : Object value",
                     "Logical : Expr left, Token operator, Expr right",
+                    "Set : Expr object, Token name, Expr value",
                     "Unary : Token operator, Expr right",
                     "Variable : Token name",
                     "Range : Expr start, Expr end"

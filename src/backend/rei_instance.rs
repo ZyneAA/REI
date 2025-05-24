@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::cell::RefCell;
 
 use super::interpreter::Interpreter;
 use super::environment::Environment;
@@ -10,7 +11,7 @@ use super::exec_signal::ExecSignal;
 use super::exec_signal::runtime_error::RuntimeError;
 use crate::crux::token::{ Object, Token };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ReiInstance {
 
     class: Rc<ReiClass>,
@@ -42,11 +43,12 @@ impl ReiInstance {
 
     }
 
+    pub fn set(&mut self, name: &str, value: Object) {
+        self.fields.insert(name.to_string(), value);
+    }
+
     pub fn call(&self) -> Result<Object, ExecSignal> {
-
-        let obj = Object::Str(self.to_string());
-        Ok(obj)
-
+        Ok(Object::Instance(Rc::new(RefCell::new(self.clone()))))
     }
 
     pub fn to_string(&self) -> String {
