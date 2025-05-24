@@ -1,5 +1,7 @@
-loop i=0..23 {
-    pint "s";
-    println a;
-}
+class Car {}
 
+let bmw = Car();
+let r = 12..1000;
+
+println r;
+println bmw;

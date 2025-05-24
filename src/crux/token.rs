@@ -82,7 +82,7 @@ impl fmt::Display for Object {
             Object::Bool(b) => write!(f, "{}", b),
             Object::Range(s, e) => write!(f, "{}:{}", s, e),
             Object::Dummy => write!(f, "Dummy"),
-            Object::Callable(_) => write!(f, "Callable"),
+            Object::Callable(c) => write!(f, "{}", c.to_string()),
             Object::MBlock(p, s) => write!(f, "{:p} {}", p, s),
             Object::Null => write!(f, "Null"),
             // Object::Arr(v) => write!(f, "{:?}", v)

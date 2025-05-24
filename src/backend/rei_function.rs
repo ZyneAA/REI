@@ -46,7 +46,7 @@ impl ReiCallable for ReiFunction {
     }
 
     fn to_string(&self) -> String {
-        format!("<fn>{}", self.name.lexeme)
+        format!("<fn {}>", self.name.lexeme)
     }
 
 }

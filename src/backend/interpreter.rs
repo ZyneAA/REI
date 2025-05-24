@@ -6,6 +6,7 @@ use crate::frontend::expr;
 use crate::frontend::expr::ExprId;
 use crate::backend::stmt;
 use crate::backend::rei_callable::ReiCallable;
+use crate::backend::rei_class::ReiClass;
 use crate::backend::environment::{ Environment, EnvRef };
 use super::native;
 use super::rei_function::ReiFunction;
@@ -186,6 +187,16 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
 impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
+    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
+
+        self.environment.borrow_mut().define(name.lexeme.clone(), Object::Null)?;
+        let klass = ReiClass::new(name.lexeme.clone());
+        let callable: Rc<dyn ReiCallable> = Rc::new(klass);
+
+        self.environment.borrow_mut().assign(name, Object::Callable(callable))
+
+    }
+
     fn visit_expression_stmt(&mut self, expression: &expr::Expr) -> Result<(), ExecSignal> {
 
         self.evaluate(expression)?;
@@ -341,10 +352,10 @@ impl Interpreter {
                 s
             },
             Object::Range(s, e) => {
-                format!("<Range | {}..{}>", s, e)
+                format!("<range | {}..{}>", s, e)
             }
             Object::MBlock(p, s) => {
-                format!("<MBlock | ptr: {:p} size: {}>", p, s)
+                format!("<mblock | ptr: {:p} size: {}>", p, s)
             }
             Object::Bool(b) => b.to_string(),
             Object::Dummy => "dummy".to_string(),
