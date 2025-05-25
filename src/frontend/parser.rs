@@ -101,7 +101,13 @@ impl Parser {
 
         let mut methods = vec![];
         while !self.check(&TokenType::RightBrace) && !self.is_end() {
-            methods.push(self.function("function")?);
+            if self.check(&TokenType::Static) {
+                self.consume(&TokenType::Static, "Expected 'static' keyword for static method")?;
+                methods.push(self.function("sfunction")?);
+            }
+            else {
+                methods.push(self.function("function")?);
+            }
         }
 
         self.consume(&TokenType::RightBrace, "EXpected } after class body")?;

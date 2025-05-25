@@ -14,8 +14,13 @@ class Animal{
         return this;
     }
 
+    static multiply(n) {
+        return n * n;
+    }
+
 }
 
 let cat = Animal("cat", 4, "meow");
 println cat -> make_sound();
+println cat -> me();
 
