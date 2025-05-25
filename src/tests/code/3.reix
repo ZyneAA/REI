@@ -22,5 +22,7 @@ class Animal{
 
 let cat = Animal("cat", 4, "meow");
 println cat -> make_sound();
-println cat -> me();
+println Animal -> multiply(93231);
+
+println cat.legs;
 

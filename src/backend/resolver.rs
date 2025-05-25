@@ -15,7 +15,7 @@ pub struct Resolver<'a> {
 }
 
 #[derive(Clone, Debug)]
-enum FunctionType { None, Function, Method, Initializer }
+enum FunctionType { None, Function, Method, Initializer, Static }
 
 #[derive(Clone, Debug)]
 enum ClassType { None, Class }
@@ -49,7 +49,7 @@ impl<'a> Resolver<'a> {
                 self.resolve(statements);
                 self.end_scope();
             }
-            Stmt::Class { name, methods } => {
+            Stmt::Class { name, methods, static_methods } => {
                 let enclosing_class = self.current_class.clone();
                 self.current_class = ClassType::Class;
 
@@ -74,6 +74,13 @@ impl<'a> Resolver<'a> {
                     }
 
                 }
+
+                for static_method in static_methods {
+                    if let Stmt::Function { name: _, params, body } = static_method {
+                        self.resolve_function(params, body, FunctionType::Static);
+                    }
+                }
+
                 self.current_class = enclosing_class;
             }
             Stmt::Expression { expression } => {

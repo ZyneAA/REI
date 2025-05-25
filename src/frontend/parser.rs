@@ -100,10 +100,12 @@ impl Parser {
         self.consume(&TokenType::LeftBrace, "Expected { before class body")?;
 
         let mut methods = vec![];
+        let mut static_methods = vec![];
+
         while !self.check(&TokenType::RightBrace) && !self.is_end() {
             if self.check(&TokenType::Static) {
                 self.consume(&TokenType::Static, "Expected 'static' keyword for static method")?;
-                methods.push(self.function("sfunction")?);
+                static_methods.push(self.function("sfunction")?);
             }
             else {
                 methods.push(self.function("function")?);
@@ -113,7 +115,8 @@ impl Parser {
         self.consume(&TokenType::RightBrace, "EXpected } after class body")?;
         let class = stmt::Stmt::Class {
             name,
-            methods
+            methods,
+            static_methods
         };
 
         Ok(class)

@@ -192,7 +192,18 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
         match object {
             Object::Instance(ref instance) => {
                 instance.borrow().get(name)
-            }
+            },
+            Object::Callable(ref callable) => {
+                // downcast
+                if let Some(class) = callable.as_any().downcast_ref::<ReiClass>() {
+                    if let Some(method) = class.find_static_method(&name.lexeme) {
+                        let method: Rc<dyn ReiCallable> = Rc::new(method);
+                        return Ok(Object::Callable(method));
+                    }
+                }
+
+                Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty { token: name.clone() }))
+            },
             _ => Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty { token: name.clone() }))
         }
 
@@ -216,9 +227,10 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
 impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
-    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
+    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<stmt::Stmt>, static_methods: &Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
 
         self.environment.borrow_mut().define(name.lexeme.clone(), Object::Null)?;
+
         let mut klass_methods: HashMap<String, ReiFunction> = HashMap::new();
         for method in methods {
             match method {
@@ -235,7 +247,19 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
                 _ => {}
             }
         }
-        let klass = ReiClass::new(name.lexeme.clone(), klass_methods);
+
+        let mut static_klass_methods: HashMap<String, ReiFunction> = HashMap::new();
+        for method in static_methods {
+            match method {
+                stmt::Stmt::Function { name, params, body } => {
+                    let function = ReiFunction::new(name.clone(), params.clone(), body.clone(), self.environment.clone(), false);
+                    static_klass_methods.insert(name.lexeme.clone(), function);
+                },
+                _ => {}
+            }
+        }
+
+        let klass = ReiClass::new(name.lexeme.clone(), klass_methods, static_klass_methods);
         let callable: Rc<dyn ReiCallable> = Rc::new(klass);
 
         self.environment.borrow_mut().assign(name, Object::Callable(callable))

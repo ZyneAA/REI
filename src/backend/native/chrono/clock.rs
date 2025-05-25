@@ -1,4 +1,5 @@
 use std::time::{ SystemTime, UNIX_EPOCH };
+use std::any::Any;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::thread;
@@ -31,6 +32,10 @@ impl ReiCallable for TimeNow {
         String::from("<native_fn>time_now")
     }
 
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
 }
 
 #[derive(Clone, Debug)]
@@ -57,6 +62,10 @@ impl ReiCallable for Sleep {
         String::from("<native_fn>sleep")
     }
 
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
 }
 
 #[derive(Clone, Debug)]
@@ -74,6 +83,10 @@ impl ReiCallable for FormatTime {
 
     fn to_string(&self) -> String {
         "<native_fn>format_time".to_string()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 
 }
@@ -103,6 +116,11 @@ impl ReiCallable for Measure {
     fn to_string(&self) -> String {
         "<native_fn>measure".to_string()
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
 
 }
 

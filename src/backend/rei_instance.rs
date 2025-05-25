@@ -54,6 +54,7 @@ impl ReiInstance {
 
         let mut properties = String::new();
         let mut methods = String::new();
+        let mut static_methods = String::new();
 
         for i in self.fields.borrow().keys() {
             let s = format!(" {} ", i);
@@ -65,7 +66,12 @@ impl ReiInstance {
             methods.push_str(&s);
         }
 
-        format!("<Instance of {}>\n  properties --> {}\n  methods --> {}", self.class.to_string(), properties, methods)
+        for i in self.class.static_methods.keys() {
+            let s = format!(" {}() ", i);
+            static_methods.push_str(&s);
+        }
+
+        format!("<Instance of {}>\n  properties --> {}\n  static methods --> {}\n  methods --> {}", self.class.to_string(), properties, static_methods, methods)
 
     }
 
