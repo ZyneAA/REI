@@ -19,7 +19,7 @@ fn rec_fib(n) {
 }
 
 fn both_fib_call() {
-    println "iterative: " + fib(10) + "\nrecursive: " + rec_fib(10) + "\n";
+    println "iterative: " + fib(10) + "\nrecursive: " + rec_fib(40) + "\n";
 }
 
 // Entry point

@@ -1,5 +1,6 @@
 use std::alloc::{ alloc, dealloc, Layout };
 use std::rc::Rc;
+use std::any::Any;
 
 use crate::crux::token::Object;
 use crate::backend::interpreter::Interpreter;
@@ -42,6 +43,10 @@ impl ReiCallable for ReiMalloc {
 
     fn to_string(&self) -> String {
         "<native_fn>_M_alloc".to_string()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 
 }
@@ -146,6 +151,10 @@ impl ReiCallable for ReiRead {
         "<native_fn>_M_read".to_string()
     }
 
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
 }
 
 #[derive(Clone, Debug)]
@@ -228,6 +237,10 @@ impl ReiCallable for ReiWrite {
         "<native_fn>_M_write".to_string()
     }
 
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
 }
 
 #[derive(Clone, Debug)]
@@ -260,6 +273,10 @@ impl ReiCallable for ReiFree {
 
     fn to_string(&self) -> String {
         "<native_fn>_M_free".to_string()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 
 }

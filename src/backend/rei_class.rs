@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::any::Any;
 
 use super::interpreter::Interpreter;
 use super::rei_callable::ReiCallable;
@@ -11,14 +12,15 @@ use crate::crux::token::Object;
 pub struct ReiClass {
 
     name: String,
-    pub methods: HashMap<String, ReiFunction>
+    pub methods: HashMap<String, ReiFunction>,
+    pub static_methods: HashMap<String, ReiFunction>
 
 }
 
 impl ReiClass {
 
-    pub fn new(name: String, methods: HashMap<String, ReiFunction>) -> Self {
-        ReiClass { name, methods }
+    pub fn new(name: String, methods: HashMap<String, ReiFunction>, static_methods: HashMap<String, ReiFunction>) -> Self {
+        ReiClass { name, methods, static_methods }
     }
 
     pub fn find_method(&self, name: &str) -> Option<ReiFunction> {
@@ -30,6 +32,10 @@ impl ReiClass {
             None
         }
 
+    }
+
+    pub fn find_static_method(&self, name: &str) -> Option<ReiFunction> {
+        self.static_methods.get(name).cloned()
     }
 
 }
@@ -66,6 +72,10 @@ impl ReiCallable for ReiClass {
 
     fn to_string(&self) -> String {
         format!("{}", self.name)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 
 }

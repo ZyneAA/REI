@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::any::Any;
 
 use super::interpreter::Interpreter;
 use super::rei_callable::ReiCallable;
@@ -64,6 +65,10 @@ impl ReiCallable for ReiFunction {
 
     fn to_string(&self) -> String {
         format!("<fn {}>", self.name.lexeme)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 
 }
