@@ -1,4 +1,5 @@
 use std::alloc::{ alloc, dealloc, Layout };
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::any::Any;
 
@@ -6,6 +7,7 @@ use crate::crux::token::Object;
 use crate::backend::interpreter::Interpreter;
 use crate::backend::exec_signal::{ExecSignal, runtime_error::RuntimeError};
 use crate::backend::rei_callable::ReiCallable;
+use crate::backend::rei_instance::ReiInstance;
 use crate::backend::environment::Environment;
 
 #[derive(Clone, Debug)]
@@ -281,6 +283,47 @@ impl ReiCallable for ReiFree {
 
 }
 
+#[derive(Clone, Debug)]
+pub struct ReiSizeOf;
+impl ReiCallable for ReiSizeOf {
+
+    fn arity(&self) -> usize {
+        1
+    }
+
+    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
+
+        let obj = arguments.get(0).ok_or_else(|| ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+            msg: "Expected one argument to _M_sizeof".to_string(),
+        }))?;
+
+        let size = match obj {
+            Object::Number(_) => std::mem::size_of::<f64>(),
+            Object::Str(s) => std::mem::size_of::<String>() + s.len(),
+            Object::Bool(_) => std::mem::size_of::<bool>(),
+            Object::Range(_, _) => std::mem::size_of::<(f64, f64)>(),
+            Object::Dummy => 0,
+            Object::Null => 0,
+            Object::Callable(_) => std::mem::size_of::<Rc<dyn ReiCallable>>(),
+            Object::Instance(_) => std::mem::size_of::<Rc<RefCell<ReiInstance>>>(),
+            Object::MBlock(_, size) => *size,
+        };
+
+        Ok(Object::Number(size as f64))
+
+    }
+
+    fn to_string(&self) -> String {
+        "<native_fn>_M_sizeof".to_string()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+}
+
+
 pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
 
     let malloc: Rc<dyn ReiCallable> = Rc::new(ReiMalloc);
@@ -294,6 +337,9 @@ pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
 
     let free: Rc<dyn ReiCallable> = Rc::new(ReiFree);
     env.define("_M_free".to_string(), Object::Callable(free))?;
+
+    let size_of: Rc<dyn ReiCallable> = Rc::new(ReiSizeOf);
+    env.define("_M_size_of".to_string(), Object::Callable(size_of))?;
 
     Ok(())
 

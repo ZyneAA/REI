@@ -97,6 +97,18 @@ impl Parser {
     fn class_declaration(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         let name = self.consume(&TokenType::Identifier, "Expected a class name")?.clone();
+
+        let mut superclass = None;
+        if self.rmatch(&[TokenType::Less])? {
+            self.consume(&TokenType::Identifier, "Expect superclass name")?;
+            let sc = self.previous().clone();
+            let sc = expr::Expr::Variable {
+                id: self.next_id(),
+                name: sc
+            };
+            superclass = Some(Box::new(sc));
+        }
+
         self.consume(&TokenType::LeftBrace, "Expected { before class body")?;
 
         let mut methods = vec![];
@@ -115,6 +127,7 @@ impl Parser {
         self.consume(&TokenType::RightBrace, "EXpected } after class body")?;
         let class = stmt::Stmt::Class {
             name,
+            superclass,
             methods,
             static_methods
         };

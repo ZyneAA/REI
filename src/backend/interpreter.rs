@@ -194,7 +194,7 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                 instance.borrow().get(name)
             },
             Object::Callable(ref callable) => {
-                // downcast
+            // Downcast to ReiClass to check for static methods
                 if let Some(class) = callable.as_any().downcast_ref::<ReiClass>() {
                     if let Some(method) = class.find_static_method(&name.lexeme) {
                         let method: Rc<dyn ReiCallable> = Rc::new(method);
@@ -227,7 +227,31 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
 impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
-    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<stmt::Stmt>, static_methods: &Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
+    fn visit_class_stmt(&mut self, name: &Token, superclass: &Option<Box<expr::Expr>>, methods: &Vec<stmt::Stmt>, static_methods: &Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
+
+        let mut sc: Option<Rc<ReiClass>> = None;
+
+        if let Some(sup_expr) = superclass {
+
+            let evaluated = self.evaluate(sup_expr)?;
+
+            if let Object::Callable(class) = &evaluated {
+                if let Some(as_class) = class.as_any().downcast_ref::<ReiClass>() {
+                    sc = Some(Rc::new(as_class.clone()));
+                }
+                else {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "Superclass must be a class".to_string(),
+                    }));
+                }
+            }
+            else {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: "Superclass must be a class".to_string(),
+                }));
+            }
+
+        }
 
         self.environment.borrow_mut().define(name.lexeme.clone(), Object::Null)?;
 
@@ -259,7 +283,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
             }
         }
 
-        let klass = ReiClass::new(name.lexeme.clone(), klass_methods, static_klass_methods);
+        let klass = ReiClass::new(name.lexeme.clone(), sc, klass_methods, static_klass_methods);
         let callable: Rc<dyn ReiCallable> = Rc::new(klass);
 
         self.environment.borrow_mut().assign(name, Object::Callable(callable))

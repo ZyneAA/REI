@@ -11,15 +11,8 @@ fn fib(n) {
 
 }
 
-fn rec_fib(n) {
-
-    if (n <= 1) return n;
-    return rec_fib(n - 1) + rec_fib(n -2);
-
-}
-
 fn both_fib_call() {
-    println "iterative: " + fib(10) + "\nrecursive: " + rec_fib(40) + "\n";
+    println "iterative: " + fib(40);
 }
 
 // Entry point

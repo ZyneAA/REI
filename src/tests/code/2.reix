@@ -1,22 +1,22 @@
-fn main() {
+fn fib(n) {
 
-    let alloc = _M_alloc(10 * 8);
-    let counter = 0;
-
-    loop (let i = 0..10; 1) {
-        _M_write(alloc, counter, i);
-        counter = counter + 8;
+    let a = 0;
+    let b = 1;
+    loop (let i = 0..n; 1) {
+        let tmp = a;
+        a = b;
+        b = tmp + b;
     }
-
-    counter = 0;
-
-    loop (let i = 0..10; 1) {
-        println _M_read(alloc, counter, 8, true);
-        counter = counter + 8;
-    }
-
-    _M_free(alloc);
+    return a;
 
 }
 
-main();
+fn main() {
+
+    loop (let i = 0..1000000; 1) {
+        println fib(100);
+    }
+
+}
+
+println "total time spent executing: " + _C_measure(main);

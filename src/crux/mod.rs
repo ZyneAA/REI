@@ -42,7 +42,7 @@ impl Rei {
                 "Stmt",
                 vec![
                     "Block : Vec<Stmt> statements",
-                    "Class : Token name, Vec<Function> methods",
+                    "Class : Token name, Expr superclass, Vec<Function> methods",
                     "Expression : Expr expression",
                     "Function : Token name, Vec<Token> params, Vec<Stmt> body",
                     "If : Expr condition, Stmt then_branch, Option<Box<Stmt>> else_branch",

@@ -49,12 +49,27 @@ impl<'a> Resolver<'a> {
                 self.resolve(statements);
                 self.end_scope();
             }
-            Stmt::Class { name, methods, static_methods } => {
+            Stmt::Class { name, superclass, methods, static_methods } => {
                 let enclosing_class = self.current_class.clone();
                 self.current_class = ClassType::Class;
 
                 self.declare(name);
                 self.define(name);
+
+                if let Some(sup) = superclass {
+                    if let Expr::Variable { id: _, name: super_name } = &**sup {
+                        if name.lexeme == super_name.lexeme {
+                            panic!("dwdwdwdwd")
+                        }
+                    }
+
+                    self.resolve_expr(sup);
+
+                    self.begin_scope();
+                    if let Some(scope) = self.scopes.last_mut() {
+                        scope.insert("super".to_string(), true);
+                    }
+                }
 
                 self.begin_scope();
                 if let Some(scope) = self.scopes.last_mut() {
