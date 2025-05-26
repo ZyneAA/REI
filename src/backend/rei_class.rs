@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::any::Any;
 
 use super::interpreter::Interpreter;
@@ -12,6 +13,7 @@ use crate::crux::token::Object;
 pub struct ReiClass {
 
     name: String,
+    superclass: Option<Rc<ReiClass>>,
     pub methods: HashMap<String, ReiFunction>,
     pub static_methods: HashMap<String, ReiFunction>
 
@@ -19,18 +21,17 @@ pub struct ReiClass {
 
 impl ReiClass {
 
-    pub fn new(name: String, methods: HashMap<String, ReiFunction>, static_methods: HashMap<String, ReiFunction>) -> Self {
-        ReiClass { name, methods, static_methods }
+    pub fn new(name: String, superclass: Option<Rc<ReiClass>>, methods: HashMap<String, ReiFunction>, static_methods: HashMap<String, ReiFunction>) -> Self {
+        ReiClass { name, superclass, methods, static_methods }
     }
 
     pub fn find_method(&self, name: &str) -> Option<ReiFunction> {
 
-        if let Some(value) = self.methods.get(name) {
-            Some(value.clone())
+        if let Some(method) = self.methods.get(name) {
+            return Some(method.clone());
         }
-        else {
-            None
-        }
+
+        self.superclass.as_ref().and_then(|superclass| superclass.find_method(name))
 
     }
 

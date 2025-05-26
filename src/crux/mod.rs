@@ -32,6 +32,7 @@ impl Rei {
                     "Literal : Object value",
                     "Logical : Expr left, Token operator, Expr right",
                     "Set : Expr object, Token name, Expr value",
+                    "Base : Token keyword, Token method",
                     "This: Token keyword",
                     "Unary : Token operator, Expr right",
                     "Variable : Token name",
@@ -42,7 +43,7 @@ impl Rei {
                 "Stmt",
                 vec![
                     "Block : Vec<Stmt> statements",
-                    "Class : Token name, Vec<Function> methods",
+                    "Class : Token name, Expr superclass, Vec<Function> methods",
                     "Expression : Expr expression",
                     "Function : Token name, Vec<Token> params, Vec<Stmt> body",
                     "If : Expr condition, Stmt then_branch, Option<Box<Stmt>> else_branch",

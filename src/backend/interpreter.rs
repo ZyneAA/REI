@@ -168,7 +168,7 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
     fn visit_call_expr(&mut self, callee: &expr::Expr, paren: &Token, arguments: &Vec<expr::Expr>) -> Result<Object, ExecSignal> {
 
-        let callee= self.evaluate(callee)?;
+        let callee = self.evaluate(callee)?;
         let mut args = vec![];
         for arg in arguments {
             args.push(self.evaluate(&arg)?);
@@ -194,7 +194,7 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                 instance.borrow().get(name)
             },
             Object::Callable(ref callable) => {
-                // downcast
+            // Downcast to ReiClass to check for static methods
                 if let Some(class) = callable.as_any().downcast_ref::<ReiClass>() {
                     if let Some(method) = class.find_static_method(&name.lexeme) {
                         let method: Rc<dyn ReiCallable> = Rc::new(method);
@@ -223,47 +223,136 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
     }
 
+    fn visit_base_expr(&mut self, id: ExprId, keyword: &Token, method: &Token) -> Result<Object, ExecSignal> {
+
+        let distance = self.locals.get(&id).copied().ok_or_else(|| {
+            ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: format!("Could not resolve '{}'.", keyword.lexeme),
+            })
+        })?;
+
+        let superclass_obj = Environment::get_at(&self.environment, distance, "base")?;
+
+        let superclass = match &superclass_obj {
+            Object::Callable(c) => {
+                c.as_any()
+                    .downcast_ref::<ReiClass>()
+                    .cloned()
+                    .ok_or_else(|| ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: format!("'{}' must refer to a class.", keyword.lexeme),
+                    }))?
+            }
+            _ => {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: format!("'{}' is not callable.", keyword.lexeme),
+                }));
+            }
+        };
+
+        // 👤 Get "this"
+        let this_obj = Environment::get_at(&self.environment, distance - 1, "this")?;
+
+        let instance = match this_obj {
+            Object::Instance(i) => i,
+            _ => {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: "'this' is not a class instance.".to_string(),
+                }));
+            }
+        };
+
+        // 🔍 Try to find the method in superclass
+        if let Some(method_fn) = superclass.find_method(&method.lexeme) {
+            let bound = method_fn.bind(instance.borrow().clone());
+            let callable: Rc<dyn ReiCallable> = Rc::new(bound.unwrap());
+            Ok(Object::Callable(callable))
+        } else {
+            Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: format!("Undefined property '{}'.", method.lexeme),
+            }))
+        }
+    }
+
 }
 
 impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
-    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<stmt::Stmt>, static_methods: &Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
+    fn visit_class_stmt(
+        &mut self,
+        name: &Token,
+        superclass: &Option<Box<expr::Expr>>,
+        methods: &Vec<stmt::Stmt>,
+        static_methods: &Vec<stmt::Stmt>,
+    ) -> Result<(), ExecSignal> {
+        // 1. Evaluate superclass if exists
+        let mut sc: Option<Rc<ReiClass>> = None;
+        let mut superclass_obj = Object::Null;
 
-        self.environment.borrow_mut().define(name.lexeme.clone(), Object::Null)?;
+        if let Some(sup_expr) = superclass {
+            let evaluated = self.evaluate(sup_expr)?;
 
-        let mut klass_methods: HashMap<String, ReiFunction> = HashMap::new();
+            if let Object::Callable(c) = &evaluated {
+                if let Some(as_class) = c.as_any().downcast_ref::<ReiClass>() {
+                    let class_rc = Rc::new(as_class.clone());
+                    sc = Some(class_rc.clone());
+                    superclass_obj = Object::Callable(Rc::clone(c));
+                } else {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "Superclass must be a class.".to_string(),
+                    }));
+                }
+            } else {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: "Superclass must be a class.".to_string(),
+                }));
+            }
+        }
+
+        // 2. Pre-define class name with null
+        self.environment
+            .borrow_mut()
+            .define(name.lexeme.clone(), Object::Null)?;
+
+        // 3. Create new environment if superclass exists
+        if superclass.is_some() {
+            let env = Environment::from_enclosing(self.environment.clone());
+            env.borrow_mut().define("base".to_string(), superclass_obj)?;
+            self.environment = env;
+        }
+
+        // 4. Collect methods
+        let mut klass_methods = HashMap::new();
         for method in methods {
-            match method {
-                stmt::Stmt::Function { name, params, body } => {
-                    let is_eq = if &name.lexeme == "init" {
-                        true
-                    }
-                    else {
-                        false
-                    };
-                    let function = ReiFunction::new(name.clone(), params.clone(), body.clone(), self.environment.clone(), is_eq);
-                    klass_methods.insert(name.lexeme.clone(), function);
-                },
-                _ => {}
+            if let stmt::Stmt::Function { name: method_name, params, body } = method {
+                let is_init = method_name.lexeme == "init";
+                let func = ReiFunction::new(method_name.clone(), params.clone(), body.clone(), self.environment.clone(), is_init);
+                klass_methods.insert(method_name.lexeme.clone(), func);
             }
         }
 
-        let mut static_klass_methods: HashMap<String, ReiFunction> = HashMap::new();
-        for method in static_methods {
-            match method {
-                stmt::Stmt::Function { name, params, body } => {
-                    let function = ReiFunction::new(name.clone(), params.clone(), body.clone(), self.environment.clone(), false);
-                    static_klass_methods.insert(name.lexeme.clone(), function);
-                },
-                _ => {}
+        // 5. Collect static methods
+        let mut static_klass_methods = HashMap::new();
+        for static_method in static_methods {
+            if let stmt::Stmt::Function { name: method_name, params, body } = static_method {
+                let func = ReiFunction::new(method_name.clone(), params.clone(), body.clone(), self.environment.clone(), false);
+                static_klass_methods.insert(method_name.lexeme.clone(), func);
             }
         }
 
-        let klass = ReiClass::new(name.lexeme.clone(), klass_methods, static_klass_methods);
+        // 6. Construct class object
+        let klass = ReiClass::new(name.lexeme.clone(), sc, klass_methods, static_klass_methods);
         let callable: Rc<dyn ReiCallable> = Rc::new(klass);
 
-        self.environment.borrow_mut().assign(name, Object::Callable(callable))
+        // 7. Restore env if we created a new one
+        if superclass.is_some() {
+            let temp = self.environment.borrow().clone();
+            self.environment = temp.enclosing.clone().unwrap();
+        }
 
+        // 8. Assign the class to the variable
+        self.environment
+            .borrow_mut()
+            .assign(name, Object::Callable(callable))
     }
 
     fn visit_expression_stmt(&mut self, expression: &expr::Expr) -> Result<(), ExecSignal> {

@@ -49,12 +49,27 @@ impl<'a> Resolver<'a> {
                 self.resolve(statements);
                 self.end_scope();
             }
-            Stmt::Class { name, methods, static_methods } => {
+            Stmt::Class { name, superclass, methods, static_methods } => {
                 let enclosing_class = self.current_class.clone();
                 self.current_class = ClassType::Class;
 
                 self.declare(name);
                 self.define(name);
+
+                if let Some(sup) = superclass {
+                    if let Expr::Variable { name: super_name, .. } = &**sup {
+                        if name.lexeme == super_name.lexeme {
+                            panic!("A class cannot inherit from itself.");
+                        }
+                    }
+
+                    self.resolve_expr(sup);
+
+                    self.begin_scope();
+                    if let Some(scope) = self.scopes.last_mut() {
+                        scope.insert("base".to_string(), true);
+                    }
+                }
 
                 self.begin_scope();
                 if let Some(scope) = self.scopes.last_mut() {
@@ -63,23 +78,25 @@ impl<'a> Resolver<'a> {
 
                 for method in methods {
                     let mut declaration = FunctionType::Method;
-                    match method {
-                        Stmt::Function { name, params, body } => {
-                            if &name.lexeme == "init" {
-                                declaration = FunctionType::Initializer;
-                            }
-                            self.resolve_function(params, body, declaration);
-                        },
-                        _ => {}
+                    if let Stmt::Function { name, params, body } = method {
+                        if name.lexeme == "init" {
+                            declaration = FunctionType::Initializer;
+                        }
+                        self.resolve_function(params, body, declaration);
                     }
-
                 }
 
                 for static_method in static_methods {
-                    if let Stmt::Function { name: _, params, body } = static_method {
+                    if let Stmt::Function { params, body, .. } = static_method {
                         self.resolve_function(params, body, FunctionType::Static);
                     }
                 }
+
+                if superclass.is_some() {
+                    self.end_scope(); // close base scope
+                }
+
+                self.end_scope(); // close this scope
 
                 self.current_class = enclosing_class;
             }
@@ -172,6 +189,9 @@ impl<'a> Resolver<'a> {
                 for arg in arguments {
                     self.resolve_expr(arg);
                 }
+            }
+            Expr::Base { id: _, keyword, method: _ } => {
+                self.resolve_local(expr, keyword);
             }
             Expr::This { id: _, keyword } => {
                 match self.current_class {
