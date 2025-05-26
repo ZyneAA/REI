@@ -811,6 +811,22 @@ impl Parser {
             });
         }
 
+        if self.rmatch(&[TokenType::Base])? {
+            let keyword = self.previous().clone();
+            if self.peek().token_type == TokenType::Getter {
+                self.consume(&TokenType::Getter, "Expected '->' after 'base'")?;
+            }
+            else {
+                self.consume(&TokenType::Dot, "Expected '.' after 'base'")?;
+            }
+            let method = self.consume(&TokenType::Identifier, "Expected base class method name")?.clone();
+            return Ok(expr::Expr::Base {
+                id: self.next_id(),
+                keyword,
+                method
+            })
+        }
+
         if self.rmatch(&[TokenType::Number, TokenType::String])? {
             return Ok(expr::Expr::Literal {
                 id: self.next_id(),

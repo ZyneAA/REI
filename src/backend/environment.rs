@@ -12,7 +12,7 @@ pub type EnvRef = Rc<RefCell<Environment>>;
 pub struct Environment {
 
     pub values: HashMap<String, Object>,
-    enclosing: Option<EnvRef>
+    pub enclosing: Option<EnvRef>
 
 }
 

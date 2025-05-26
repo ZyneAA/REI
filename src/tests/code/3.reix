@@ -1,28 +1,38 @@
-class Animal{
+class Doughnut {
 
-    init(kind, legs, sound) {
-        this <- kind = kind;
-        this <- legs = legs;
-        this <- sound = sound;
-    }
-
-    make_sound() {
-        return this -> sound;
-    }
-
-    me() {
-        return this;
-    }
-
-    static multiply(n) {
-        return n * n;
+    cook() {
+        println "Fry until golden brown.";
     }
 
 }
 
-let cat = Animal("cat", 4, "meow");
-let size = _M_size_of(cat);
+class BostonCream < Doughnut {
 
-println cat -> make_sound();
-println size;
+    cook() {
+        base.cook();
+        println "Pipe full of custard and coat with chocolate.";
+    }
 
+}
+
+class Cola < BostonCream {
+
+    cook() {
+        base.cook();
+        println "COOOLAAAA";
+    }
+
+    my_man() {
+        this -> cook();
+    }
+
+    static cooker() {
+        let a = Cola();
+        a -> cook();
+    }
+
+}
+
+let a = Cola();
+a -> my_man();
+Cola.cooker();
