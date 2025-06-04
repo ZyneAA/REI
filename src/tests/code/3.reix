@@ -1,38 +1,39 @@
-class Doughnut {
+class Entity {
 
-    cook() {
-        println "Fry until golden brown.";
+    init(a) {
+        this <- a = a;
+    }
+
+    me() {
+        println this.a;
+    }
+
+    add(text) {
+        this <- a = this -> a + text;
+        println this -> a;
+        return this;
+    }
+
+
+}
+
+class HeinZaw < Entity {
+
+    init(a) {
+        this.b = base.init(a);
+    }
+
+    me() {
+        println this.b.add("BIG BALLS");
     }
 
 }
 
-class BostonCream < Doughnut {
+let a = Entity("OK");
+println a;
 
-    cook() {
-        base.cook();
-        println "Pipe full of custard and coat with chocolate.";
-    }
+a.add(" sw"). add(" daa").add(" Hein Zaw")
+    .add(" Ko kane")
+    -> me();
 
-}
 
-class Cola < BostonCream {
-
-    cook() {
-        base.cook();
-        println "COOOLAAAA";
-    }
-
-    my_man() {
-        this -> cook();
-    }
-
-    static cooker() {
-        let a = Cola();
-        a -> cook();
-    }
-
-}
-
-let a = Cola();
-a -> my_man();
-Cola.cooker();

@@ -44,6 +44,8 @@ impl<'a> Resolver<'a> {
 
     fn resolve_stmt(&mut self, stmt: &Stmt) {
         match stmt {
+            Stmt::Use { path, alias } => { 
+            }
             Stmt::Block { statements } => {
                 self.begin_scope();
                 self.resolve(statements);
