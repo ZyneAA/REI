@@ -1,3 +1,5 @@
+use std/vec as Vec;
+
 class Entity {
 
     init(a) {

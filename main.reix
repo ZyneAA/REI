@@ -1,3 +1,5 @@
+use a as Vec;
+
 class Entity {
 
     init(a) {

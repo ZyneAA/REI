@@ -1,6 +1,8 @@
 use std::rc::Rc;
 use std::collections::HashMap;
+use std::fs;
 
+use crate::crux::runner::Runner;
 use crate::crux::token::{ Object, Token, TokenType };
 use crate::frontend::expr;
 use crate::frontend::expr::ExprId;
@@ -18,6 +20,7 @@ pub struct Interpreter {
 
     pub environment: EnvRef,
     locals: HashMap<ExprId, usize>,
+    dev: bool
 
 }
 
@@ -249,7 +252,6 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
             }
         };
 
-        // 👤 Get "this"
         let this_obj = Environment::get_at(&self.environment, distance - 1, "this")?;
 
         let instance = match this_obj {
@@ -261,34 +263,46 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
             }
         };
 
-        // 🔍 Try to find the method in superclass
         if let Some(method_fn) = superclass.find_method(&method.lexeme) {
             let bound = method_fn.bind(instance.borrow().clone());
             let callable: Rc<dyn ReiCallable> = Rc::new(bound.unwrap());
             Ok(Object::Callable(callable))
-        } else {
+        }
+        else {
             Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                 msg: format!("Undefined property '{}'.", method.lexeme),
             }))
         }
+
     }
 
 }
 
 impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
+    fn visit_use_stmt(&mut self, path: &String, alias: &String) -> Result<(), ExecSignal> {
+
+        let path = self.resolve_path(path.clone())?;
+        let source = Runner::read_file(&path).unwrap();
+
+        Ok(())
+
+    }
+ 
     fn visit_class_stmt(
         &mut self,
         name: &Token,
         superclass: &Option<Box<expr::Expr>>,
         methods: &Vec<stmt::Stmt>,
         static_methods: &Vec<stmt::Stmt>,
+        expose: &bool
     ) -> Result<(), ExecSignal> {
-        // 1. Evaluate superclass if exists
+
         let mut sc: Option<Rc<ReiClass>> = None;
         let mut superclass_obj = Object::Null;
 
         if let Some(sup_expr) = superclass {
+
             let evaluated = self.evaluate(sup_expr)?;
 
             if let Object::Callable(c) = &evaluated {
@@ -296,31 +310,29 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
                     let class_rc = Rc::new(as_class.clone());
                     sc = Some(class_rc.clone());
                     superclass_obj = Object::Callable(Rc::clone(c));
-                } else {
+                }
+                else {
                     return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                         msg: "Superclass must be a class.".to_string(),
                     }));
                 }
-            } else {
+            }
+            else {
                 return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                     msg: "Superclass must be a class.".to_string(),
                 }));
             }
+
         }
 
-        // 2. Pre-define class name with null
-        self.environment
-            .borrow_mut()
-            .define(name.lexeme.clone(), Object::Null)?;
+        self.environment.borrow_mut().define(name.lexeme.clone(), Object::Null)?;
 
-        // 3. Create new environment if superclass exists
         if superclass.is_some() {
             let env = Environment::from_enclosing(self.environment.clone());
             env.borrow_mut().define("base".to_string(), superclass_obj)?;
             self.environment = env;
         }
 
-        // 4. Collect methods
         let mut klass_methods = HashMap::new();
         for method in methods {
             if let stmt::Stmt::Function { name: method_name, params, body } = method {
@@ -330,7 +342,6 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
             }
         }
 
-        // 5. Collect static methods
         let mut static_klass_methods = HashMap::new();
         for static_method in static_methods {
             if let stmt::Stmt::Function { name: method_name, params, body } = static_method {
@@ -339,20 +350,16 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
             }
         }
 
-        // 6. Construct class object
         let klass = ReiClass::new(name.lexeme.clone(), sc, klass_methods, static_klass_methods);
         let callable: Rc<dyn ReiCallable> = Rc::new(klass);
 
-        // 7. Restore env if we created a new one
         if superclass.is_some() {
             let temp = self.environment.borrow().clone();
             self.environment = temp.enclosing.clone().unwrap();
         }
 
-        // 8. Assign the class to the variable
-        self.environment
-            .borrow_mut()
-            .assign(name, Object::Callable(callable))
+        self.environment.borrow_mut().assign(name, Object::Callable(callable))
+
     }
 
     fn visit_expression_stmt(&mut self, expression: &expr::Expr) -> Result<(), ExecSignal> {
@@ -393,7 +400,12 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
     }
 
-    fn visit_if_stmt(&mut self, condition: &expr::Expr, then_branch: &stmt::Stmt, else_branch: &Option<Box<stmt::Stmt>>) -> Result<(), ExecSignal> {
+    fn visit_if_stmt(
+        &mut self,
+        condition: &expr::Expr,
+        then_branch: &stmt::Stmt,
+        else_branch: &Option<Box<stmt::Stmt>>
+    ) -> Result<(), ExecSignal> {
 
         let obj = self.evaluate(condition)?;
 
@@ -458,12 +470,12 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
 impl Interpreter {
 
-    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(dev: bool) -> Result<Self, Box<dyn std::error::Error>> {
 
         let environment = Environment::global();
         let locals = HashMap::new();
         native::register_all_native_fns(environment.borrow_mut())?;
-        Ok(Interpreter { environment, locals })
+        Ok(Interpreter { environment, locals, dev })
 
     }
 
@@ -482,9 +494,7 @@ impl Interpreter {
     }
 
     pub fn resolve(&mut self, expression_id: ExprId, depth: usize) {
-
         self.locals.insert(expression_id, depth);
-
     }
 
     pub fn execute_block(&mut self, statements: &Vec<stmt::Stmt>, env: EnvRef) -> Result<(), ExecSignal> {
@@ -592,7 +602,7 @@ impl Interpreter {
                     Ok(Object::Number(op(x, y)))
                 }
             }
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber{ token })),
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber { token })),
         }
     }
 
@@ -601,7 +611,7 @@ impl Interpreter {
     {
         match (a, b) {
             (Object::Number(x), Object::Number(y)) => Ok(Object::Bool(op(x, y))),
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber{ token }))
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber { token }))
         }
     }
 
@@ -613,6 +623,35 @@ impl Interpreter {
         let result = f(self);
         self.environment = previous;
         result
+    }
+
+    fn resolve_path(&mut self, path: String) -> Result<String, ExecSignal> {
+
+        if self.dev {
+            let lib_path = format!("./src/tests/code/lib/{}.reix", path);
+            if fs::exists(&lib_path)? {
+                return Ok(lib_path)
+            }
+
+            let user_path = format!("./src/tests/code/{}.reix", path);
+            if fs::exists(&user_path)? {
+                return Ok(user_path)
+            }
+        }
+        else {
+            let lib_path = format!("./lib/{}.reix", path);
+            if fs::exists(&lib_path)? {
+                return Ok(lib_path)
+            }
+
+            let user_path = format!("./{}.reix", path);
+            if fs::exists(&user_path)? {
+                return Ok(user_path)
+            }
+        }
+
+        Err(ExecSignal::RuntimeError(RuntimeError::ModuleNotFound { path }))
+
     }
 
 }

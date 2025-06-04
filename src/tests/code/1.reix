@@ -1,3 +1,5 @@
+use 3 as Three;
+
 fn fib(n) {
 
     let a = 0;
@@ -24,11 +26,11 @@ fn main() {
 
     // writing to memory blocks manually
     _M_write(alloc, 0, 321312);
-    _M_write(alloc, 8, 232);
+    _M_write(alloc, 8, "ABC");
 
     // reading from allocated memory
-    let get_0 = _M_read(alloc, 0, 8, true);
-    let get_1 = _M_read(alloc, 8, 8, true);
+    let get_0 = _M_read(alloc, 0, 7, false);
+    let get_1 = _M_read(alloc, 8, 11, false);
 
     // printing out values
     println "the allocated value: " + get_0;

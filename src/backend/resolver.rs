@@ -44,12 +44,14 @@ impl<'a> Resolver<'a> {
 
     fn resolve_stmt(&mut self, stmt: &Stmt) {
         match stmt {
+            Stmt::Use { path, alias } => { 
+            }
             Stmt::Block { statements } => {
                 self.begin_scope();
                 self.resolve(statements);
                 self.end_scope();
             }
-            Stmt::Class { name, superclass, methods, static_methods } => {
+            Stmt::Class { name, superclass, methods, static_methods, expose } => {
                 let enclosing_class = self.current_class.clone();
                 self.current_class = ClassType::Class;
 

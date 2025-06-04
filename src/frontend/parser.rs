@@ -86,15 +86,63 @@ impl Parser {
 
         // Class
         else if self.rmatch(&[TokenType::Class])? {
-            self.class_declaration()
+            self.class_declaration(false)
         }
+
+        // Modules
+        else if self.rmatch(&[TokenType::Use])? {
+            self.use_module()
+        }
+        else if self.rmatch(&[TokenType::Expose])? {
+            if !self.check(&TokenType::Expose) {
+                return Err(ParseError::SyntaxError {
+                    token: self.peek().clone(),
+                    message: "Expected class name after 'expose'".into(),
+                });
+            }
+            self.class_declaration(true)
+        }
+
         else {
             self.expression_statement()
         }
 
     }
 
-    fn class_declaration(&mut self) -> Result<stmt::Stmt, ParseError> {
+    fn use_module(&mut self) -> Result<stmt::Stmt, ParseError> {
+
+
+        let mut path_parts = vec![];
+
+        if self.check(&TokenType::Number) {
+            let first = self.consume(&TokenType::Number, "Expected module path")?;
+            path_parts.push(first.lexeme.clone());
+        }
+        else {
+            let first = self.consume(&TokenType::Identifier, "Expected module path")?;
+            path_parts.push(first.lexeme.clone());
+        }
+
+        while self.rmatch(&[TokenType::Slash])? {
+            let next = self.consume(&TokenType::Identifier, "Expected module path segment")?;
+            path_parts.push(next.lexeme.clone());
+        }
+
+        self.consume(&TokenType::As, "Expected 'as' to set alias")?;
+        let alias = self.consume(&TokenType::Identifier, "Expected alias for import")?.clone();
+        self.consume(&TokenType::Semicolon, "Expected ';' after use statement")?;
+
+        let path = path_parts.join("/");
+        println!("{}", path);
+
+        Ok(stmt::Stmt::Use {
+            path,
+            alias: alias.lexeme.clone(),
+        })
+
+    }
+
+    fn class_declaration(&mut self, expose: bool) -> Result<stmt::Stmt, ParseError> {
 
         let name = self.consume(&TokenType::Identifier, "Expected a class name")?.clone();
 
@@ -129,7 +177,8 @@ impl Parser {
             name,
             superclass,
             methods,
-            static_methods
+            static_methods,
+            expose
         };
 
         Ok(class)

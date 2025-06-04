@@ -12,10 +12,14 @@ pub struct Runner;
 
 impl Runner {
 
-    pub fn run(source: &str, location: &str) {
+    pub fn run(source: &str, location: &str, dev: bool) {
 
         let lexer = lexer::Lexer::new(source);
         let tokens = lexer.scan_tokens();
+
+        for i in &tokens {
+            println!("{:?}", i);
+        }
 
         let mut parser = Parser::new(tokens);
         let location =  util::red_colored(&format!("Error in {}", location));
@@ -29,7 +33,7 @@ impl Runner {
             return;
         }
 
-        let mut interpreter = match Interpreter::new() {
+        let mut interpreter = match Interpreter::new(dev) {
             Ok(i) => i,
             Err(e) => { eprintln!("{}", e); panic!(); }
         };
@@ -42,8 +46,10 @@ impl Runner {
     }
 
     pub fn read_file(path: &str) -> Result<String, Box<dyn std::error::Error>> {
+
         let content = fs::read_to_string(path)?;
         Ok(content)
+
     }
 
     pub fn run_prompt() {

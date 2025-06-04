@@ -61,7 +61,7 @@ impl Rei {
                         eprintln!("File not found");
                         process::exit(65);
                 });
-                runner::Runner::run(&source, &args[1]);
+                runner::Runner::run(&source, &args[1], false);
 
             }
 
@@ -76,7 +76,7 @@ impl Rei {
                         eprintln!("File not found: {}", test_file_location);
                         process::exit(65);
                 });
-                runner::Runner::run(&source, &test_file_location);
+                runner::Runner::run(&source, &test_file_location, true);
 
             Ok(())
 
