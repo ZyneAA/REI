@@ -1,4 +1,4 @@
-use util/gfx as gfx;
+use 3 as Three;
 
 fn fib(n) {
 

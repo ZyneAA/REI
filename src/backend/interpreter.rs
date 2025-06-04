@@ -1,6 +1,8 @@
 use std::rc::Rc;
 use std::collections::HashMap;
+use std::fs;
 
+use crate::crux::runner::Runner;
 use crate::crux::token::{ Object, Token, TokenType };
 use crate::frontend::expr;
 use crate::frontend::expr::ExprId;
@@ -18,6 +20,7 @@ pub struct Interpreter {
 
     pub environment: EnvRef,
     locals: HashMap<ExprId, usize>,
+    dev: bool
 
 }
 
@@ -279,6 +282,9 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
     fn visit_use_stmt(&mut self, path: &String, alias: &String) -> Result<(), ExecSignal> {
 
+        let path = self.resolve_path(path.clone())?;
+        let source = Runner::read_file(&path).unwrap();
+
         Ok(())
 
     }
@@ -289,12 +295,14 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
         superclass: &Option<Box<expr::Expr>>,
         methods: &Vec<stmt::Stmt>,
         static_methods: &Vec<stmt::Stmt>,
+        expose: &bool
     ) -> Result<(), ExecSignal> {
 
         let mut sc: Option<Rc<ReiClass>> = None;
         let mut superclass_obj = Object::Null;
 
         if let Some(sup_expr) = superclass {
+
             let evaluated = self.evaluate(sup_expr)?;
 
             if let Object::Callable(c) = &evaluated {
@@ -314,6 +322,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
                     msg: "Superclass must be a class.".to_string(),
                 }));
             }
+
         }
 
         self.environment.borrow_mut().define(name.lexeme.clone(), Object::Null)?;
@@ -461,12 +470,12 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
 impl Interpreter {
 
-    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(dev: bool) -> Result<Self, Box<dyn std::error::Error>> {
 
         let environment = Environment::global();
         let locals = HashMap::new();
         native::register_all_native_fns(environment.borrow_mut())?;
-        Ok(Interpreter { environment, locals })
+        Ok(Interpreter { environment, locals, dev })
 
     }
 
@@ -593,7 +602,7 @@ impl Interpreter {
                     Ok(Object::Number(op(x, y)))
                 }
             }
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber{ token })),
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber { token })),
         }
     }
 
@@ -602,7 +611,7 @@ impl Interpreter {
     {
         match (a, b) {
             (Object::Number(x), Object::Number(y)) => Ok(Object::Bool(op(x, y))),
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber{ token }))
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber { token }))
         }
     }
 
@@ -614,6 +623,35 @@ impl Interpreter {
         let result = f(self);
         self.environment = previous;
         result
+    }
+
+    fn resolve_path(&mut self, path: String) -> Result<String, ExecSignal> {
+
+        if self.dev {
+            let lib_path = format!("./src/tests/code/lib/{}.reix", path);
+            if fs::exists(&lib_path)? {
+                return Ok(lib_path)
+            }
+
+            let user_path = format!("./src/tests/code/{}.reix", path);
+            if fs::exists(&user_path)? {
+                return Ok(user_path)
+            }
+        }
+        else {
+            let lib_path = format!("./lib/{}.reix", path);
+            if fs::exists(&lib_path)? {
+                return Ok(lib_path)
+            }
+
+            let user_path = format!("./{}.reix", path);
+            if fs::exists(&user_path)? {
+                return Ok(user_path)
+            }
+        }
+
+        Err(ExecSignal::RuntimeError(RuntimeError::ModuleNotFound { path }))
+
     }
 
 }

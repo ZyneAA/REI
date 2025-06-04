@@ -51,7 +51,7 @@ impl<'a> Resolver<'a> {
                 self.resolve(statements);
                 self.end_scope();
             }
-            Stmt::Class { name, superclass, methods, static_methods } => {
+            Stmt::Class { name, superclass, methods, static_methods, expose } => {
                 let enclosing_class = self.current_class.clone();
                 self.current_class = ClassType::Class;
 

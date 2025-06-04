@@ -30,7 +30,7 @@ pub enum TokenType {
     Eof,
 
     // Module related
-    Use, Export, As
+    Use, Expose, As
 
 }
 
@@ -58,6 +58,7 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("loop", TokenType::Loop);
     map.insert("break", TokenType::Break);
     map.insert("use", TokenType::Use);
+    map.insert("expose", TokenType::Expose);
     map.insert("as", TokenType::As);
     map.insert("continue", TokenType::Continue);
 
@@ -173,7 +174,7 @@ impl fmt::Display for TokenType {
             TokenType::Break => "IDENTIFIER",
             TokenType::Continue => "IDENTIFIER",
             TokenType::Use => "IDENTIFIER",
-            TokenType::Export => "IDENTIFIER",
+            TokenType::Expose => "IDENTIFIER",
             TokenType::As => "IDENTIFIER",
 
             TokenType::Eof => "End of File",

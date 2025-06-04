@@ -1,0 +1,41 @@
+use a as Vec;
+
+class Entity {
+
+    init(a) {
+        this <- a = a;
+    }
+
+    me() {
+        println this.a;
+    }
+
+    add(text) {
+        this <- a = this -> a + text;
+        println this -> a;
+        return this;
+    }
+
+
+}
+
+class HeinZaw < Entity {
+
+    init(a) {
+        this.b = base.init(a);
+    }
+
+    me() {
+        println this.b.add("BIG BALLS");
+    }
+
+}
+
+let a = Entity("OK");
+println a;
+
+a.add(" sw"). add(" daa").add(" Hein Zaw")
+    .add(" Ko kane")
+    -> me();
+
+
