@@ -1,15 +1,22 @@
 use std::rc::Rc;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
 
 use crate::crux::runner::Runner;
 use crate::crux::token::{ Object, Token, TokenType };
+use crate::crux::util;
+
+use crate::frontend::lexer::Lexer;
+use crate::frontend::parser::Parser;
 use crate::frontend::expr;
 use crate::frontend::expr::ExprId;
+
 use crate::backend::stmt;
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::rei_class::ReiClass;
 use crate::backend::environment::{ Environment, EnvRef };
+
 use super::native;
 use super::rei_function::ReiFunction;
 use super::exec_signal::ExecSignal;
@@ -20,6 +27,7 @@ pub struct Interpreter {
 
     pub environment: EnvRef,
     locals: HashMap<ExprId, usize>,
+    exposed_value: Option<Object>,
     dev: bool
 
 }
@@ -192,6 +200,8 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
     fn visit_get_expr(&mut self, object: &Box<expr::Expr>, name: &Token) -> Result<Object, ExecSignal> {
 
         let object = self.evaluate(object)?;
+
+        // From local
         match object {
             Object::Instance(ref instance) => {
                 instance.borrow().get(name)
@@ -204,7 +214,6 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                         return Ok(Object::Callable(method));
                     }
                 }
-
                 Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty { token: name.clone() }))
             },
             _ => Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty { token: name.clone() }))
@@ -280,10 +289,39 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
 impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
-    fn visit_use_stmt(&mut self, path: &String, alias: &String) -> Result<(), ExecSignal> {
+    fn visit_use_stmt(&mut self, path: &String, alias: &Token) -> Result<(), ExecSignal> {
 
         let path = self.resolve_path(path.clone())?;
         let source = Runner::read_file(&path).unwrap();
+
+        let lexer = Lexer::new(&source);
+        let tokens = lexer.scan_tokens();
+
+        let mut parser = Parser::new(tokens);
+        let location =  util::red_colored(&format!("Error in {}", &path));
+
+        let stmts = parser.parse();
+
+        if parser.is_error {
+            for i in parser.errors {
+                println!("{}\n{}\n", location, i);
+            }
+            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInImport { location }))
+        }
+
+        self.exposed_value = None;
+
+        for stmt in stmts {
+            self.execute(&stmt)?;
+        }
+
+        let exposed = self.exposed_value.take().ok_or_else(|| {
+            ExecSignal::RuntimeError(RuntimeError::ErrorInImport {
+                location: format!("No `expose`d item found in file {}", path),
+            })
+        })?;
+
+        self.global_env().borrow_mut().define(alias.lexeme.clone(), exposed)?;
 
         Ok(())
 
@@ -292,7 +330,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
     fn visit_class_stmt(
         &mut self,
         name: &Token,
-        superclass: &Option<Box<expr::Expr>>,
+        superclass: &Option<Box<Vec<expr::Expr>>>,
         methods: &Vec<stmt::Stmt>,
         static_methods: &Vec<stmt::Stmt>,
         expose: &bool
@@ -352,6 +390,9 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
         let klass = ReiClass::new(name.lexeme.clone(), sc, klass_methods, static_klass_methods);
         let callable: Rc<dyn ReiCallable> = Rc::new(klass);
+        if *expose {
+            self.exposed_value = Some(Object::Callable(callable.clone()));
+        }
 
         if superclass.is_some() {
             let temp = self.environment.borrow().clone();
@@ -475,7 +516,7 @@ impl Interpreter {
         let environment = Environment::global();
         let locals = HashMap::new();
         native::register_all_native_fns(environment.borrow_mut())?;
-        Ok(Interpreter { environment, locals, dev })
+        Ok(Interpreter { environment, locals, dev, exposed_value: None })
 
     }
 
@@ -651,6 +692,16 @@ impl Interpreter {
         }
 
         Err(ExecSignal::RuntimeError(RuntimeError::ModuleNotFound { path }))
+
+    }
+
+    fn global_env(&self) -> Rc<RefCell<Environment>> {
+
+        let mut current = self.environment.clone();
+        while let Some(enclosing) = &current.clone().borrow().enclosing {
+            current = enclosing.clone();
+        }
+        current
 
     }
 

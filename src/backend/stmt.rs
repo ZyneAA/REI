@@ -7,11 +7,11 @@ pub trait Visitor<T> {
 
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> T;
     fn visit_expression_stmt(&mut self, expression: &Expr) -> T;
-    fn visit_class_stmt(&mut self, name: &Token, superclass: &Option<Box<Expr>>, methods: &Vec<Stmt>, static_methods: &Vec<Stmt>, expose: &bool) -> T;
+    fn visit_class_stmt(&mut self, name: &Token, superclass: &Option<Box<Vec<Expr>>>, methods: &Vec<Stmt>, static_methods: &Vec<Stmt>, expose: &bool) -> T;
     fn visit_function_stmt(&mut self, name: &Token, params: &Vec<Token>, body: &Vec<Stmt>) -> T;
     fn visit_if_stmt(&mut self, condition: &Expr, then_branch: &Stmt, else_branch: &Option<Box<Stmt>>) -> T;
     fn visit_print_stmt(&mut self, expression: &Expr) -> T;
-    fn visit_use_stmt(&mut self, path: &String, alias: &String) -> T;
+    fn visit_use_stmt(&mut self, path: &String, alias: &Token) -> T;
     fn visit_println_stmt(&mut self, expression: &Expr) -> T;
     fn visit_let_stmt(&mut self, name: &Token, initializer: &Expr) -> T;
     fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> T;
@@ -30,7 +30,7 @@ pub enum Stmt {
 
     Class {
         name: Token,
-        superclass: Option<Box<Expr>>,
+        superclass: Option<Box<Vec<Expr>>>,
         methods: Vec<Stmt>,
         static_methods: Vec<Stmt>,
         expose: bool
@@ -38,7 +38,7 @@ pub enum Stmt {
 
     Use {
         path: String,
-        alias: String,
+        alias: Token,
     },
 
     Expression {

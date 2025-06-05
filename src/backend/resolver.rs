@@ -43,15 +43,18 @@ impl<'a> Resolver<'a> {
     }
 
     fn resolve_stmt(&mut self, stmt: &Stmt) {
+
         match stmt {
-            Stmt::Use { path, alias } => { 
+            Stmt::Use { path: _, alias } => {
+                self.declare(alias);
+                self.define(alias);
             }
             Stmt::Block { statements } => {
                 self.begin_scope();
                 self.resolve(statements);
                 self.end_scope();
             }
-            Stmt::Class { name, superclass, methods, static_methods, expose } => {
+            Stmt::Class { name, superclass, methods, static_methods, expose: _ } => {
                 let enclosing_class = self.current_class.clone();
                 self.current_class = ClassType::Class;
 
@@ -124,15 +127,11 @@ impl<'a> Resolver<'a> {
                 self.resolve_stmt(body);
                 self.loop_depth -= 1;
             }
-
             Stmt::Function { name, params, body } => {
-
                 self.declare(name);
                 self.define(name);
-
                 self.resolve_function(params, body, FunctionType::Function);
             }
-
             Stmt::Return { keyword: _, value } => {
                 if let FunctionType::None = self.current_function {
                     panic!("Cannot return from top-level code.");

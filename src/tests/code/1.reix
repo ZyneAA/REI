@@ -1,4 +1,9 @@
-use 3 as Three;
+use 3 as Entity;
+use test/eva as Eva;
+
+class My < Entity {
+
+}
 
 fn fib(n) {
 
@@ -19,6 +24,11 @@ fn both_fib_call() {
 
 // Entry point
 fn main() {
+
+    let a = My(90);
+    a -> me();
+
+    Eva -> name();
 
     // allocating 10 bytes of memory
     let alloc = _M_alloc(100);

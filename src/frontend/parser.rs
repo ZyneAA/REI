@@ -11,6 +11,7 @@ pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
     id_counter: usize,
+    exposed: bool,
     pub is_error: bool,
     pub errors: Vec<ParseError>
 
@@ -19,7 +20,7 @@ pub struct Parser {
 impl Parser {
 
     pub fn new(tokens: Vec<Token>) -> Self {
-        Parser { tokens, current: 0, id_counter: 0, is_error: false, errors: vec![] }
+        Parser { tokens, current: 0, id_counter: 0, exposed: false, is_error: false, errors: vec![] }
     }
 
     pub fn parse(&mut self) -> Vec<stmt::Stmt> {
@@ -94,12 +95,7 @@ impl Parser {
             self.use_module()
         }
         else if self.rmatch(&[TokenType::Expose])? {
-            if !self.check(&TokenType::Expose) {
-                return Err(ParseError::SyntaxError {
-                    token: self.peek().clone(),
-                    message: "Expected class name after 'expose'".into(),
-                });
-            }
+            self.consume(&TokenType::Class, "Expected 'class' after expose")?;
             self.class_declaration(true)
         }
 
@@ -110,7 +106,6 @@ impl Parser {
     }
 
     fn use_module(&mut self) -> Result<stmt::Stmt, ParseError> {
-
 
         let mut path_parts = vec![];
 
@@ -133,16 +128,26 @@ impl Parser {
         self.consume(&TokenType::Semicolon, "Expected ';' after use statement")?;
 
         let path = path_parts.join("/");
-        println!("{}", path);
 
         Ok(stmt::Stmt::Use {
             path,
-            alias: alias.lexeme.clone(),
+            alias,
         })
 
     }
 
     fn class_declaration(&mut self, expose: bool) -> Result<stmt::Stmt, ParseError> {
+
+        if self.exposed {
+            return Err(ParseError::SyntaxError {
+                token: self.previous().clone(),
+                message: "Can't expose multiple classes from a single file".to_string(),
+            })
+        }
+
+        if self.exposed == false {
+            self.exposed = expose;
+        }
 
         let name = self.consume(&TokenType::Identifier, "Expected a class name")?.clone();
 

@@ -1,0 +1,8 @@
+expose class Eva {
+
+    static name() {
+        println "EVA-01";
+    }
+
+}
+
