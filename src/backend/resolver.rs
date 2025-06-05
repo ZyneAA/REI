@@ -54,28 +54,32 @@ impl<'a> Resolver<'a> {
                 self.resolve(statements);
                 self.end_scope();
             }
-            Stmt::Class { name, superclass, methods, static_methods, expose: _ } => {
+            Stmt::Class { name, superclass_refs, methods, static_methods, expose: _ } => {
                 let enclosing_class = self.current_class.clone();
                 self.current_class = ClassType::Class;
 
                 self.declare(name);
                 self.define(name);
 
-                if let Some(sup) = superclass {
-                    if let Expr::Variable { name: super_name, .. } = &**sup {
-                        if name.lexeme == super_name.lexeme {
-                            panic!("A class cannot inherit from itself.");
+                if !superclass_refs.is_empty() {
+                    for superclass in superclass_refs {
+                        if let Expr::Variable { name: super_name, .. } = superclass {
+                            if name.lexeme == super_name.lexeme {
+                                panic!("A class cannot inherit from itself.");
+                            }
                         }
+
+                        self.resolve_expr(superclass);
                     }
 
-                    self.resolve_expr(sup);
-
+                    // Begin a scope for base (only once, shared by all)
                     self.begin_scope();
                     if let Some(scope) = self.scopes.last_mut() {
                         scope.insert("base".to_string(), true);
                     }
                 }
 
+                // Begin scope for `this`
                 self.begin_scope();
                 if let Some(scope) = self.scopes.last_mut() {
                     scope.insert("this".to_string(), true);
@@ -97,12 +101,11 @@ impl<'a> Resolver<'a> {
                     }
                 }
 
-                if superclass.is_some() {
-                    self.end_scope(); // close base scope
+                if !superclass_refs.is_empty() {
+                    self.end_scope();
                 }
 
-                self.end_scope(); // close this scope
-
+                self.end_scope();
                 self.current_class = enclosing_class;
             }
             Stmt::Expression { expression } => {

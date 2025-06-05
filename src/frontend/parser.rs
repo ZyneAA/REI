@@ -151,15 +151,20 @@ impl Parser {
 
         let name = self.consume(&TokenType::Identifier, "Expected a class name")?.clone();
 
-        let mut superclass = None;
+        let mut superclass_refs = Vec::new();
         if self.rmatch(&[TokenType::Less])? {
-            self.consume(&TokenType::Identifier, "Expect superclass name")?;
-            let sc = self.previous().clone();
-            let sc = expr::Expr::Variable {
-                id: self.next_id(),
-                name: sc
-            };
-            superclass = Some(Box::new(sc));
+            while !self.check(&TokenType::LeftBrace) && !self.is_end() {
+                if self.check(&TokenType::Comma) {
+                    self.consume(&TokenType::Comma, "Expected ','")?;
+                }
+                self.consume(&TokenType::Identifier, "Expect superclass name")?;
+                let sc = self.previous().clone();
+                let sc = expr::Expr::Variable {
+                    id: self.next_id(),
+                    name: sc
+                };
+                superclass_refs.push(sc);
+            }
         }
 
         self.consume(&TokenType::LeftBrace, "Expected { before class body")?;
@@ -180,7 +185,7 @@ impl Parser {
         self.consume(&TokenType::RightBrace, "EXpected } after class body")?;
         let class = stmt::Stmt::Class {
             name,
-            superclass,
+            superclass_refs,
             methods,
             static_methods,
             expose

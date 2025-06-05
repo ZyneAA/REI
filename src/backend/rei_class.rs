@@ -13,7 +13,7 @@ use crate::crux::token::Object;
 pub struct ReiClass {
 
     name: String,
-    superclass: Option<Rc<ReiClass>>,
+    superclass_refs: Vec<Rc<ReiClass>>,
     pub methods: HashMap<String, ReiFunction>,
     pub static_methods: HashMap<String, ReiFunction>
 
@@ -21,8 +21,8 @@ pub struct ReiClass {
 
 impl ReiClass {
 
-    pub fn new(name: String, superclass: Option<Rc<ReiClass>>, methods: HashMap<String, ReiFunction>, static_methods: HashMap<String, ReiFunction>) -> Self {
-        ReiClass { name, superclass, methods, static_methods }
+    pub fn new(name: String, superclass_refs: Vec<Rc<ReiClass>>, methods: HashMap<String, ReiFunction>, static_methods: HashMap<String, ReiFunction>) -> Self {
+        ReiClass { name, superclass_refs, methods, static_methods }
     }
 
     pub fn find_method(&self, name: &str) -> Option<ReiFunction> {
@@ -31,7 +31,13 @@ impl ReiClass {
             return Some(method.clone());
         }
 
-        self.superclass.as_ref().and_then(|superclass| superclass.find_method(name))
+        for superclass in &self.superclass_refs {
+            if let Some(method) = superclass.find_method(name) {
+                return Some(method);
+            }
+        }
+
+        None
 
     }
 

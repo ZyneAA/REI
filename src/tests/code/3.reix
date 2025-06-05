@@ -1,4 +1,4 @@
-expose class Entity {
+class Entity {
 
     init(a) {
         this <- a = a;
@@ -21,5 +21,4 @@ expose class Entity {
     }
 
 }
-
 

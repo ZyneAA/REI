@@ -330,44 +330,48 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
     fn visit_class_stmt(
         &mut self,
         name: &Token,
-        superclass: &Option<Box<Vec<expr::Expr>>>,
+        superclasses: &Vec<expr::Expr>,
         methods: &Vec<stmt::Stmt>,
         static_methods: &Vec<stmt::Stmt>,
         expose: &bool
     ) -> Result<(), ExecSignal> {
 
-        let mut sc: Option<Rc<ReiClass>> = None;
-        let mut superclass_obj = Object::Null;
+        let mut superclass_objs = Vec::new();
+        let mut superclass_refs: Vec<Rc<ReiClass>> = Vec::with_capacity(superclasses.len());
 
-        if let Some(sup_expr) = superclass {
-
+        for sup_expr in superclasses.iter() {
             let evaluated = self.evaluate(sup_expr)?;
-
-            if let Object::Callable(c) = &evaluated {
-                if let Some(as_class) = c.as_any().downcast_ref::<ReiClass>() {
-                    let class_rc = Rc::new(as_class.clone());
-                    sc = Some(class_rc.clone());
-                    superclass_obj = Object::Callable(Rc::clone(c));
+            match &evaluated {
+                Object::Callable(c) => {
+                    if let Some(klass) = c.as_any().downcast_ref::<ReiClass>() {
+                        let rc_class = Rc::new(klass.clone());
+                        superclass_refs.push(rc_class.clone());
+                        superclass_objs.push(Object::Callable(rc_class));
+                    }
+                    else {
+                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                            msg: "Superclass must be a class.".into(),
+                        }));
+                    }
                 }
-                else {
+                _ => {
                     return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                        msg: "Superclass must be a class.".to_string(),
+                        msg: "Superclass must be a class.".into(),
                     }));
                 }
             }
-            else {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "Superclass must be a class.".to_string(),
-                }));
-            }
-
         }
 
         self.environment.borrow_mut().define(name.lexeme.clone(), Object::Null)?;
 
-        if superclass.is_some() {
+        let mut temp_env = None;
+        if !superclass_objs.is_empty() {
             let env = Environment::from_enclosing(self.environment.clone());
-            env.borrow_mut().define("base".to_string(), superclass_obj)?;
+            for (i, base_obj) in superclass_objs.into_iter().enumerate() {
+                let base_name = format!("base{}", i);
+                env.borrow_mut().define(base_name, base_obj)?;
+            }
+            temp_env = Some(self.environment.clone()); // save old env
             self.environment = env;
         }
 
@@ -388,15 +392,14 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
             }
         }
 
-        let klass = ReiClass::new(name.lexeme.clone(), sc, klass_methods, static_klass_methods);
+        let klass = ReiClass::new(name.lexeme.clone(), superclass_refs, klass_methods, static_klass_methods);
         let callable: Rc<dyn ReiCallable> = Rc::new(klass);
         if *expose {
             self.exposed_value = Some(Object::Callable(callable.clone()));
         }
 
-        if superclass.is_some() {
-            let temp = self.environment.borrow().clone();
-            self.environment = temp.enclosing.clone().unwrap();
+        if let Some(env) = temp_env {
+            self.environment = env;
         }
 
         self.environment.borrow_mut().assign(name, Object::Callable(callable))
