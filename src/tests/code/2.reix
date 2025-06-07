@@ -1,22 +1,47 @@
-fn fib(n) {
+use 3 as Entity;
+use test/eva as Eva;
 
-    let a = 0;
-    let b = 1;
-    loop (let i = 0..n; 1) {
-        let tmp = a;
-        a = b;
-        b = tmp + b;
+class Temp {
+
+    init(c) {
+        this.name = c;
     }
-    return a;
 
-}
-
-fn main() {
-
-    loop (let i = 0..1000000; 1) {
-        println fib(100);
+    give() {
+        return this.name;
     }
 
 }
 
-println "total time spent executing: " + _C_measure(main);
+class Temp2 < Temp {
+
+    init(new) {
+        @base.init("Called give()");
+        this.ok = "qwqwq";
+        this.new = new;
+    }
+
+}
+
+class Ok < Temp2 {
+
+    init() {
+        @base.init("NEWW");
+        this.p = "PP";
+    }
+
+    give() {
+        return "Not given";
+    }
+
+}
+
+fn get_name(i) {
+    println i.name + " NOT MEE";
+}
+
+let a = Ok();
+println a;
+println a.give();
+
+get_name(a);

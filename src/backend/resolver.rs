@@ -72,7 +72,6 @@ impl<'a> Resolver<'a> {
                         self.resolve_expr(superclass);
                     }
 
-                    // Begin a scope for base (only once, shared by all)
                     self.begin_scope();
                     if let Some(scope) = self.scopes.last_mut() {
                         scope.insert("base".to_string(), true);
@@ -88,10 +87,17 @@ impl<'a> Resolver<'a> {
                 for method in methods {
                     let mut declaration = FunctionType::Method;
                     if let Stmt::Function { name, params, body } = method {
+
                         if name.lexeme == "init" {
                             declaration = FunctionType::Initializer;
                         }
+
                         self.resolve_function(params, body, declaration);
+
+                        if !superclass_refs.is_empty() {
+                            self.end_scope();
+                        }
+
                     }
                 }
 

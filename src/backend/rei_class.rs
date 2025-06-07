@@ -42,7 +42,19 @@ impl ReiClass {
     }
 
     pub fn find_static_method(&self, name: &str) -> Option<ReiFunction> {
-        self.static_methods.get(name).cloned()
+
+        if let Some(method) = self.static_methods.get(name) {
+            return Some(method.clone());
+        }
+
+        for superclass in &self.superclass_refs {
+            if let Some(method) = superclass.find_static_method(name) {
+                return Some(method);
+            }
+        }
+
+        None
+
     }
 
 }

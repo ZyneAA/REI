@@ -870,8 +870,8 @@ impl Parser {
             });
         }
 
-        if self.rmatch(&[TokenType::Base])? {
-            let keyword = self.previous().clone();
+        if self.rmatch(&[TokenType::At])? {
+            let keyword = self.consume(&TokenType::Base, "Expected base after '@'")?.clone();
             if self.peek().token_type == TokenType::Getter {
                 self.consume(&TokenType::Getter, "Expected '->' after 'base'")?;
             }

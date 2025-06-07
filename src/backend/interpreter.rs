@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::fs;
+use std::path::PathBuf;
 
 use crate::crux::runner::Runner;
 use crate::crux::token::{ Object, Token, TokenType };
@@ -17,17 +17,19 @@ use crate::backend::rei_callable::ReiCallable;
 use crate::backend::rei_class::ReiClass;
 use crate::backend::environment::{ Environment, EnvRef };
 
-use super::native;
-use super::rei_function::ReiFunction;
 use super::exec_signal::ExecSignal;
 use super::exec_signal::runtime_error::RuntimeError;
 use super::exec_signal::control_flow::ControlFlow;
+
+use super::native;
+use super::rei_function::ReiFunction;
 
 pub struct Interpreter {
 
     pub environment: EnvRef,
     locals: HashMap<ExprId, usize>,
     exposed_value: Option<Object>,
+    current_file: Option<PathBuf>,
     dev: bool
 
 }
@@ -201,13 +203,11 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
         let object = self.evaluate(object)?;
 
-        // From local
         match object {
             Object::Instance(ref instance) => {
                 instance.borrow().get(name)
             },
             Object::Callable(ref callable) => {
-            // Downcast to ReiClass to check for static methods
                 if let Some(class) = callable.as_any().downcast_ref::<ReiClass>() {
                     if let Some(method) = class.find_static_method(&name.lexeme) {
                         let method: Rc<dyn ReiCallable> = Rc::new(method);
@@ -291,8 +291,8 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
     fn visit_use_stmt(&mut self, path: &String, alias: &Token) -> Result<(), ExecSignal> {
 
-        let path = self.resolve_path(path.clone())?;
-        let source = Runner::read_file(&path).unwrap();
+        let resolved_path = self.resolve_path(path)?;
+        let source = Runner::read_file(&resolved_path).unwrap();
 
         let lexer = Lexer::new(&source);
         let tokens = lexer.scan_tokens();
@@ -311,13 +311,18 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
         self.exposed_value = None;
 
+        let prev_file = self.current_file.clone();
+        self.current_file = Some(PathBuf::from(&resolved_path));
+
         for stmt in stmts {
             self.execute(&stmt)?;
         }
 
+        self.current_file = prev_file;
+
         let exposed = self.exposed_value.take().ok_or_else(|| {
             ExecSignal::RuntimeError(RuntimeError::ErrorInImport {
-                location: format!("No `expose`d item found in file {}", path),
+                location: format!("No `expose` class found in file {}", path),
             })
         })?;
 
@@ -367,9 +372,9 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
         let mut temp_env = None;
         if !superclass_objs.is_empty() {
             let env = Environment::from_enclosing(self.environment.clone());
-            for (i, base_obj) in superclass_objs.into_iter().enumerate() {
-                let base_name = format!("base{}", i);
-                env.borrow_mut().define(base_name, base_obj)?;
+            for base_obj in superclass_objs.into_iter() {
+                println!("{}", &base_obj.to_string());
+                env.borrow_mut().define("base".into(), base_obj)?;
             }
             temp_env = Some(self.environment.clone()); // save old env
             self.environment = env;
@@ -514,12 +519,12 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
 impl Interpreter {
 
-    pub fn new(dev: bool) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(dev: bool, current_file: Option<PathBuf>) -> Result<Self, Box<dyn std::error::Error>> {
 
         let environment = Environment::global();
         let locals = HashMap::new();
         native::register_all_native_fns(environment.borrow_mut())?;
-        Ok(Interpreter { environment, locals, dev, exposed_value: None })
+        Ok(Interpreter { environment, locals, dev, exposed_value: None, current_file })
 
     }
 
@@ -574,7 +579,6 @@ impl Interpreter {
             Object::Str(s) => s.clone(),
             Object::Callable(c) => c.to_string(),
             Object::Instance(i) => i.borrow().to_string()
-
         }
 
     }
@@ -637,6 +641,7 @@ impl Interpreter {
     pub fn binary_number_operation<T>(&self, a: Object, b: Object, token: Token, op: T) -> Result<Object, ExecSignal>
     where T: Fn(f64, f64) -> f64,
     {
+
         match (a, b) {
             (Object::Number(x), Object::Number(y)) => {
                 if token.token_type == TokenType::Slash && y == 0.0 {
@@ -648,53 +653,70 @@ impl Interpreter {
             }
             _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber { token })),
         }
+
     }
 
     fn compare_number_operation<F>(&self, a: Object, b: Object, token: Token, op: F) -> Result<Object, ExecSignal>
     where F: Fn(f64, f64) -> bool,
     {
+
         match (a, b) {
             (Object::Number(x), Object::Number(y)) => Ok(Object::Bool(op(x, y))),
             _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber { token }))
         }
+
     }
 
     pub fn with_env<F, R>(&mut self, env: EnvRef, f: F) -> R
     where F: FnOnce(&mut Interpreter) -> R,
     {
+
         let previous = self.environment.clone();
         self.environment = env;
         let result = f(self);
         self.environment = previous;
         result
+
     }
 
-    fn resolve_path(&mut self, path: String) -> Result<String, ExecSignal> {
+    fn resolve_path(&mut self, import_path: &str) -> Result<String, ExecSignal> {
+
+        if let Some(current_file) = &self.current_file {
+            if let Some(base_dir) = current_file.parent() {
+                let mut full_path = base_dir.join(import_path);
+                full_path.set_extension("reix");
+                if full_path.exists() {
+                    return Ok(full_path.to_string_lossy().to_string());
+                }
+            }
+        }
 
         if self.dev {
-            let lib_path = format!("./src/tests/code/lib/{}.reix", path);
-            if fs::exists(&lib_path)? {
-                return Ok(lib_path)
+            let lib_path = PathBuf::from(format!("./src/tests/code/lib/{}.reix", import_path));
+            if lib_path.exists() {
+                return Ok(lib_path.to_string_lossy().to_string());
             }
 
-            let user_path = format!("./src/tests/code/{}.reix", path);
-            if fs::exists(&user_path)? {
-                return Ok(user_path)
+            let user_path = PathBuf::from(format!("./src/tests/code/{}.reix", import_path));
+            if user_path.exists() {
+                return Ok(user_path.to_string_lossy().to_string());
             }
         }
         else {
-            let lib_path = format!("./lib/{}.reix", path);
-            if fs::exists(&lib_path)? {
-                return Ok(lib_path)
+            let lib_path = PathBuf::from(format!("./lib/{}.reix", import_path));
+            if lib_path.exists() {
+                return Ok(lib_path.to_string_lossy().to_string());
             }
 
-            let user_path = format!("./{}.reix", path);
-            if fs::exists(&user_path)? {
-                return Ok(user_path)
+            let user_path = PathBuf::from(format!("./{}.reix", import_path));
+            if user_path.exists() {
+                return Ok(user_path.to_string_lossy().to_string());
             }
         }
 
-        Err(ExecSignal::RuntimeError(RuntimeError::ModuleNotFound { path }))
+        Err(ExecSignal::RuntimeError(RuntimeError::ModuleNotFound {
+            path: import_path.into()
+        }))
 
     }
 

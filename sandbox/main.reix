@@ -1,7 +1,19 @@
+use entity/human as Human;
+use entity/orc as Orc;
+use entity/elf as Elf;
+
 fn main() {
 
-    println "Hello, Mate";
+    // OOP and module sys tests
+    let player_1 = Human("Harry Potter", 120, 500);
+    let player_2 = Orc("Thrall", 300, 100);
+    let player_3 = Elf("Legolas", 200, 50);
+
+    println "Player 2: " + player_2.show_stats();
+    println "Player 3: " + player_3;
+
 
 }
 
+// Main fn isnt a necessity, but it is a cleaner apporach
 main();

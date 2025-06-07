@@ -1,18 +1,18 @@
-class Entity {
+expose class Entity {
 
-    init(a) {
-        this <- a = a;
+    init() {
+        this <- a = "Entity";
+        this <- b = 1000;
     }
 
     me() {
-        println this.a;
+        return this.a + " | " + this.b;
     }
 
     add(text) {
 
         this <- a = this -> a + text;
-        println this -> a;
-        return this;
+        return this -> a;
 
     }
 

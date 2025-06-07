@@ -123,6 +123,9 @@ impl<'a> Lexer<'a> {
                     self.add_token(TokenType::Less, Object::Null)
                 }
             }
+            '@' => {
+                self.add_token(TokenType::At, Object::Null)
+            }
             '/' => {
                 if self.match_next_char('/') {
                     while self.peek() != '\n' && !self.is_end() {
@@ -302,6 +305,8 @@ impl<'a> Lexer<'a> {
             self.advance();
             c = self.peek();
         }
+
+        let ident = &self.source[self.start..self.current];
 
         let token_type = match KEYWORDS.get(&self.source[self.start..self.current]){
             Some(v) => v.clone(),

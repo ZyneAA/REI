@@ -1,4 +1,4 @@
-use std::{ fs, io::{ self, Write } };
+use std::{ fs, io::{ self, Write }, path::PathBuf };
 
 use super::util;
 
@@ -13,6 +13,7 @@ pub struct Runner;
 impl Runner {
 
     pub fn run(source: &str, location: &str, dev: bool) {
+        let current_file = Some(PathBuf::from(location));
 
         let lexer = lexer::Lexer::new(source);
         let tokens = lexer.scan_tokens();
@@ -21,6 +22,9 @@ impl Runner {
         let location =  util::red_colored(&format!("Error in {}", location));
 
         let stmts = parser.parse();
+       // for i in &stmts {
+       //     println!("{:?}", i);
+       // }
 
         if parser.is_error {
             for i in parser.errors {
@@ -29,7 +33,7 @@ impl Runner {
             return;
         }
 
-        let mut interpreter = match Interpreter::new(dev) {
+        let mut interpreter = match Interpreter::new(dev, current_file) {
             Ok(i) => i,
             Err(e) => { eprintln!("{}", e); panic!(); }
         };

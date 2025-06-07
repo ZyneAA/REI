@@ -1,34 +1,14 @@
 use 3 as Entity;
 use test/eva as Eva;
 
-class My < Entity {
+class My < Entity, Eva {
 
-}
-
-fn fib(n) {
-
-    let a = 0;
-    let b = 1;
-    loop (let i = 0..n; 1) {
-        let tmp = a;
-        a = b;
-        b = tmp + b;
-    }
-    return a;
-
-}
-
-fn both_fib_call() {
-    println "iterative: " + fib(40);
 }
 
 // Entry point
 fn main() {
 
-    let a = My(90);
-    a -> me();
-
-    Eva -> name();
+    My -> name();
 
     // allocating 10 bytes of memory
     let alloc = _M_alloc(100);
@@ -49,7 +29,6 @@ fn main() {
     // free allocated memory
     _M_free(alloc);
 
-    println "time spent executing both fib: " + _C_measure(both_fib_call) + "\n";
     println "current time: " + _C_format_time();
 
 }
