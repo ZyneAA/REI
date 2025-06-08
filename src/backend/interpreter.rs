@@ -285,6 +285,192 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
     }
 
+    fn visit_meta_expr(&mut self, id: ExprId, _keyword: &Token, method: &Token, args: &Vec<expr::Expr>) -> Result<Object, ExecSignal> {
+
+        match method.lexeme.as_str() {
+
+            "typeof" => {
+
+                if args.len() != 2 {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@typeof() expects 2 arguments".into(),
+                    }));
+                }
+
+                let instance_obj = self.evaluate(&args[0])?;
+                let class_name_obj = self.evaluate(&args[1])?;
+
+                if let (Object::Instance(inst), Object::Str(class_name)) = (&instance_obj, &class_name_obj) {
+                    let mut visited = vec![inst.borrow().class.clone()];
+                    while let Some(klass) = visited.pop() {
+                        if klass.name == *class_name {
+                            return Ok(Object::Bool(true));
+                        }
+                        for parent in &klass.superclass_refs {
+                            visited.push(parent.clone());
+                        }
+                    }
+
+                    Ok(Object::Bool(false))
+                }
+                else {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@typeof() expects (instance, string)".into(),
+                    }));
+                }
+
+            }
+
+            "destroy" => {
+
+                if args.len() != 1 {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@destroy() expects 1 argument".into(),
+                    }));
+                }
+
+                let arg = self.evaluate(&args[0])?;
+
+                if let Object::Str(name) = arg {
+                    if let Some(&distance) = self.locals.get(&id) {
+                        let maybe_this = Environment::get_at(&self.environment, distance, "this");
+                        if let Ok(Object::Instance(inst)) = maybe_this {
+                            let temp = inst.borrow();
+                            let mut fields = temp.fields.borrow_mut();
+                            if fields.remove(&name).is_some() {
+                                return Ok(Object::Null);
+                            }
+                            else {
+                                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                                    msg: format!("Field '{}' does not exist", name),
+                                }));
+                            }
+
+                        }
+                        else {
+                            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                                msg: "Cannot use @destroy outside of instance methods".into(),
+                            }));
+                        }
+                    }
+                    else {
+                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                            msg: "Cannot use @destroy outside of instance methods".into(),
+                        }));
+                    }
+                }
+                else {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@destroy() expects a string argument".into(),
+                    }));
+                }
+
+            }
+
+            "exist" => {
+
+                if args.len() != 1 {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@exist() expects 1 argument".into(),
+                    }));
+                }
+
+                let arg = self.evaluate(&args[0])?;
+
+                if let Object::Str(name) = arg {
+                    if let Some(&distance) = self.locals.get(&id) {
+                        let maybe_this = Environment::get_at(&self.environment, distance, "this");
+                        if let Ok(Object::Instance(inst)) = maybe_this {
+                            let has = inst.borrow().fields.borrow().contains_key(&name);
+                            return Ok(Object::Bool(has));
+                        }
+                        else {
+                            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                                msg: "Cannot use @exist outside of instance methods".into(),
+                            }));
+                        }
+                    }
+                    else {
+                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                            msg: "Cannot use @exist outside of instance methods".into(),
+                        }));
+                    }
+                }
+                else {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@exist() expects a string argument".into(),
+                    }));
+                }
+
+            }
+
+            "mutate" => {
+
+                if args.len() != 2 {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@mutate() expects 2 argument".into(),
+                    }));
+                }
+
+                let name = match self.evaluate(&args[0])? {
+                    Object::Str(s) => s,
+                    _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@mutate() expects 1 argument".into(),
+                    }))
+                };
+
+                let value = self.evaluate(&args[1])?;
+
+                let distance = self.locals.get(&id).ok_or_else(|| {
+                    ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "Cannot use @mutate outside of instance method".into()
+                    })
+                })?;
+
+                let maybe_this = Environment::get_at(&self.environment, *distance, "this")?;
+                let instance = match maybe_this {
+                    Object::Instance(inst) => inst,
+                    _ => panic!(),
+                };
+
+                let inst_ref = instance.borrow();
+
+                let mut klass = inst_ref.class.clone();
+                let mut exists = inst_ref.fields.borrow().contains_key(&name);
+
+                while !exists {
+                    exists = klass.methods.contains_key(&name);
+                    if exists { break; }
+
+                    if let Some(super_ref) = klass.superclass_refs.first() {
+                        klass = super_ref.clone();
+                    }
+                    else {
+                        break;
+                    }
+                }
+
+                if exists {
+                    drop(inst_ref);
+                    instance.borrow_mut().fields.borrow_mut().insert(name, value);
+                    Ok(Object::Null)
+                }
+                else {
+                    Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: format!("@mutate() failed: '{}' is not a valid class attribute", name),
+                    }))
+                }
+
+            }
+
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: format!("Unknown meta method '@{}'", method.lexeme),
+            })),
+
+        }
+
+    }
+
 }
 
 impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
@@ -373,8 +559,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
         if !superclass_objs.is_empty() {
             let env = Environment::from_enclosing(self.environment.clone());
             for base_obj in superclass_objs.into_iter() {
-                println!("{}", &base_obj.to_string());
-                env.borrow_mut().define("base".into(), base_obj)?;
+                env.borrow_mut().define(base_obj.to_string(), base_obj)?;
             }
             temp_env = Some(self.environment.clone()); // save old env
             self.environment = env;

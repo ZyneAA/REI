@@ -850,70 +850,95 @@ impl Parser {
     fn primary(&mut self) -> Result<expr::Expr, ParseError> {
 
         if self.rmatch(&[TokenType::False])? {
+
             return Ok(expr::Expr::Literal {
                 id: self.next_id(),
                 value: Object::Bool(false),
             });
+
         }
 
         if self.rmatch(&[TokenType::True])? {
+
             return Ok(expr::Expr::Literal {
                 id: self.next_id(),
                 value: Object::Bool(true),
             });
+
         }
 
         if self.rmatch(&[TokenType::Null])? {
+
             return Ok(expr::Expr::Literal {
                 id: self.next_id(),
                 value: Object::Null,
             });
+
         }
 
         if self.rmatch(&[TokenType::At])? {
-            let keyword = self.consume(&TokenType::Base, "Expected base after '@'")?.clone();
-            if self.peek().token_type == TokenType::Getter {
-                self.consume(&TokenType::Getter, "Expected '->' after 'base'")?;
+
+            let keyword = self.previous().clone();
+            let method = self.consume(&TokenType::Identifier, "Expect meta method name after '@'")?.clone();
+
+            let mut args = Vec::new();
+            if self.rmatch(&[TokenType::LeftParen])? {
+                if !self.check(&TokenType::RightParen) {
+                    loop {
+                        args.push(self.expression()?);
+                        if !self.rmatch(&[TokenType::Comma])? {
+                            break;
+                        }
+                    }
+                }
+                self.consume(&TokenType::RightParen, "Expect ')' after arguments.")?;
             }
-            else {
-                self.consume(&TokenType::Dot, "Expected '.' after 'base'")?;
-            }
-            let method = self.consume(&TokenType::Identifier, "Expected base class method name")?.clone();
-            return Ok(expr::Expr::Base {
+
+            return Ok(expr::Expr::Meta {
                 id: self.next_id(),
-                keyword,
-                method
-            })
+                keyword: keyword.clone(),
+                method: method.clone(),
+                args,
+            });
+
         }
 
         if self.rmatch(&[TokenType::Number, TokenType::String])? {
+
             return Ok(expr::Expr::Literal {
                 id: self.next_id(),
                 value: self.previous().literal.clone(),
             });
+
         }
 
         if self.rmatch(&[TokenType::This])? {
+
             return Ok(expr::Expr::This {
                 id: self.next_id(),
                 keyword: self.previous().clone()
             });
+
         }
 
         if self.rmatch(&[TokenType::Identifier])? {
+
             return Ok(expr::Expr::Variable {
                 id: self.next_id(),
                 name: self.previous().clone()
             });
+
         }
 
         if self.rmatch(&[TokenType::LeftParen])? {
+
             let expr = self.expression()?;
             self.consume(&TokenType::RightParen, "Expected ) after expression")?;
             return Ok(expr::Expr::Grouping {
                 id: self.next_id(),
                 expression: Box::new(expr),
             });
+
         }
 
         Err(ParseError::SyntaxError {

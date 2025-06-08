@@ -1,6 +1,8 @@
 use std::collections::HashMap;
+
 use super::interpreter::Interpreter;
 use super::stmt::Stmt;
+
 use crate::crux::token::Token;
 use crate::frontend::expr::Expr;
 
@@ -178,6 +180,14 @@ impl<'a> Resolver<'a> {
     fn resolve_expr(&mut self, expr: &Expr) {
 
         match expr {
+            Expr::Meta { id, keyword: _, method, .. } => {
+                if let Some(distance) = self.resolve_this_distance() {
+                    self.interpreter.resolve(*id, distance);
+                }
+                else {
+                    panic!("Bad: {}", method);
+                }
+            }
             Expr::Range { id: _, start, end } => {
                 self.resolve_expr(start);
                 self.resolve_expr(end);
@@ -206,7 +216,6 @@ impl<'a> Resolver<'a> {
             Expr::This { id: _, keyword } => {
                 match self.current_class {
                     ClassType::None => panic!(), // Bad Code, add a custom error thrower for this
-                                                 // one
                     ClassType::Class => {}
                 }
                 self.resolve_local(expr, keyword);
@@ -298,4 +307,16 @@ impl<'a> Resolver<'a> {
         // Not found: leave as global.
 
     }
+
+    fn resolve_this_distance(&self) -> Option<usize> {
+
+        for (i, scope) in self.scopes.iter().rev().enumerate() {
+            if scope.contains_key("this") {
+                return Some(i);
+            }
+        }
+        None
+
+    }
+
 }

@@ -12,8 +12,8 @@ use crate::crux::token::Object;
 #[derive(Debug, Clone)]
 pub struct ReiClass {
 
-    name: String,
-    superclass_refs: Vec<Rc<ReiClass>>,
+    pub name: String,
+    pub superclass_refs: Vec<Rc<ReiClass>>,
     pub methods: HashMap<String, ReiFunction>,
     pub static_methods: HashMap<String, ReiFunction>
 

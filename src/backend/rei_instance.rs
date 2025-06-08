@@ -11,7 +11,7 @@ use crate::crux::token::{ Object, Token };
 #[derive(Debug, Clone)]
 pub struct ReiInstance {
 
-    class: Rc<ReiClass>,
+    pub class: Rc<ReiClass>,
     pub fields: Rc<RefCell<HashMap<String, Object>>>,
 
 }

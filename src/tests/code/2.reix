@@ -1,47 +1,126 @@
 use 3 as Entity;
 use test/eva as Eva;
 
-class Temp {
+class StdCompare {
 
-    init(c) {
-        this.name = c;
+    static compare(first, second) {
+
+        if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
+            if (first.get_comparable() > second.get_comparable()) {
+                return true;
+            }
+            return false;
+        }
+        else {
+            println "Both comparables must inheritance Comparable class";
+            return null;
+        }
+
+    }
+
+    static equal(first, second) {
+
+        if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
+            if (first.get_comparable() == second.get_comparable()) {
+                return true;
+            }
+            return false;
+        }
+        else {
+            println "Both comparables must inheritance Comparable class";
+            return null;
+        }
+
+    }
+
+    static max(first, second) {
+
+        if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
+            if (first.get_comparable() > second.get_comparable()) {
+                return first;
+            }
+            return second;
+        }
+        else {
+            println "Both comparables must inheritance Comparable class";
+            return null;
+        }
+
+    }
+
+    static min(first, second) {
+
+        if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
+            if (first.get_comparable() > second.get_comparable()) {
+                return second;
+            }
+            return first;
+        }
+        else {
+            println "Both comparables must inheritance Comparable class";
+            return null;
+        }
+
+    }
+
+}
+
+class Comparable {
+
+    get_comparable() {
+
+        if (@exist("comparable"))  {
+            return this.comparable;
+        }
+        return false;
+
+    }
+
+}
+
+class Instance {
+
+    typeof(type) {
+
+        if (@typeof(this, type)) return true;
+        return false;
+
+    }
+
+    destroy(attribute) {
+        @destroy(attribute);
+    }
+
+    mutate(attribute, new_val) {
+        @mutate(attribute, new_val);
+    }
+
+}
+
+class Man < Comparable, Instance {
+
+    init(name, age) {
+        this.name = name;
+        this.age = age;
+        this.comparable = age;
+        this.val = 1;
     }
 
     give() {
-        return this.name;
+        return this;
     }
 
 }
 
-class Temp2 < Temp {
+let man1 = Man("Ball", 300);
+let man2 = Man("Llab", 500);
 
-    init(new) {
-        @base.init("Called give()");
-        this.ok = "qwqwq";
-        this.new = new;
-    }
+let older = StdCompare.compare(man1, man2);
+let same = StdCompare.equal(man1, man2);
+let max = StdCompare.max(man1, man2);
 
-}
+man1.mutate("name", "S");
+println "Name: " + man1.name;
 
-class Ok < Temp2 {
+println older + " " + same + " " + max.name;
 
-    init() {
-        @base.init("NEWW");
-        this.p = "PP";
-    }
-
-    give() {
-        return "Not given";
-    }
-
-}
-
-fn get_name(i) {
-    println i.name + " NOT MEE";
-}
-
-let a = Ok();
-println a;
-println a.give();
-
-get_name(a);

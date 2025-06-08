@@ -306,8 +306,6 @@ impl<'a> Lexer<'a> {
             c = self.peek();
         }
 
-        let ident = &self.source[self.start..self.current];
-
         let token_type = match KEYWORDS.get(&self.source[self.start..self.current]){
             Some(v) => v.clone(),
             None => TokenType::Identifier

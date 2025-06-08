@@ -22,9 +22,9 @@ impl Runner {
         let location =  util::red_colored(&format!("Error in {}", location));
 
         let stmts = parser.parse();
-       // for i in &stmts {
-       //     println!("{:?}", i);
-       // }
+    //    for i in &stmts {
+    //        println!("{:?}", i);
+    //    }
 
         if parser.is_error {
             for i in parser.errors {
