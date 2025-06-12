@@ -1,0 +1,10 @@
+expose class Emitter {
+
+    static blew(a) {
+
+        println "I blew " + a;
+
+    }
+
+
+}

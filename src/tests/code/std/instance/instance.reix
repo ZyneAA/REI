@@ -1,0 +1,18 @@
+expose class Instance {
+
+    typeof(type) {
+
+        if (@typeof(this, type)) return true;
+        return false;
+
+    }
+
+    destroy(attribute) {
+        @destroy(attribute);
+    }
+
+    mutate(attribute, new_val) {
+        @mutate(attribute, new_val);
+    }
+
+}

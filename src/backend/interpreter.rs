@@ -1,14 +1,8 @@
 use std::rc::Rc;
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::path::PathBuf;
 
-use crate::crux::runner::Runner;
 use crate::crux::token::{ Object, Token, TokenType };
-use crate::crux::util;
 
-use crate::frontend::lexer::Lexer;
-use crate::frontend::parser::Parser;
 use crate::frontend::expr;
 use crate::frontend::expr::ExprId;
 
@@ -29,8 +23,6 @@ pub struct Interpreter {
     pub environment: EnvRef,
     locals: HashMap<ExprId, usize>,
     exposed_value: Option<Object>,
-    current_file: Option<PathBuf>,
-    dev: bool
 
 }
 
@@ -235,56 +227,6 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
     }
 
-    fn visit_base_expr(&mut self, id: ExprId, keyword: &Token, method: &Token) -> Result<Object, ExecSignal> {
-
-        let distance = self.locals.get(&id).copied().ok_or_else(|| {
-            ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: format!("Could not resolve '{}'.", keyword.lexeme),
-            })
-        })?;
-
-        let superclass_obj = Environment::get_at(&self.environment, distance, "base")?;
-
-        let superclass = match &superclass_obj {
-            Object::Callable(c) => {
-                c.as_any()
-                    .downcast_ref::<ReiClass>()
-                    .cloned()
-                    .ok_or_else(|| ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                        msg: format!("'{}' must refer to a class.", keyword.lexeme),
-                    }))?
-            }
-            _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: format!("'{}' is not callable.", keyword.lexeme),
-                }));
-            }
-        };
-
-        let this_obj = Environment::get_at(&self.environment, distance - 1, "this")?;
-
-        let instance = match this_obj {
-            Object::Instance(i) => i,
-            _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "'this' is not a class instance.".to_string(),
-                }));
-            }
-        };
-
-        if let Some(method_fn) = superclass.find_method(&method.lexeme) {
-            let bound = method_fn.bind(instance.borrow().clone());
-            let callable: Rc<dyn ReiCallable> = Rc::new(bound.unwrap());
-            Ok(Object::Callable(callable))
-        }
-        else {
-            Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: format!("Undefined property '{}'.", method.lexeme),
-            }))
-        }
-
-    }
-
     fn visit_meta_expr(&mut self, id: ExprId, _keyword: &Token, method: &Token, args: &Vec<expr::Expr>) -> Result<Object, ExecSignal> {
 
         match method.lexeme.as_str() {
@@ -475,49 +417,6 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
 impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
-    fn visit_use_stmt(&mut self, path: &String, alias: &Token) -> Result<(), ExecSignal> {
-
-        let resolved_path = self.resolve_path(path)?;
-        let source = Runner::read_file(&resolved_path).unwrap();
-
-        let lexer = Lexer::new(&source);
-        let tokens = lexer.scan_tokens();
-
-        let mut parser = Parser::new(tokens);
-        let location =  util::red_colored(&format!("Error in {}", &path));
-
-        let stmts = parser.parse();
-
-        if parser.is_error {
-            for i in parser.errors {
-                println!("{}\n{}\n", location, i);
-            }
-            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInImport { location }))
-        }
-
-        self.exposed_value = None;
-
-        let prev_file = self.current_file.clone();
-        self.current_file = Some(PathBuf::from(&resolved_path));
-
-        for stmt in stmts {
-            self.execute(&stmt)?;
-        }
-
-        self.current_file = prev_file;
-
-        let exposed = self.exposed_value.take().ok_or_else(|| {
-            ExecSignal::RuntimeError(RuntimeError::ErrorInImport {
-                location: format!("No `expose` class found in file {}", path),
-            })
-        })?;
-
-        self.global_env().borrow_mut().define(alias.lexeme.clone(), exposed)?;
-
-        Ok(())
-
-    }
- 
     fn visit_class_stmt(
         &mut self,
         name: &Token,
@@ -704,12 +603,12 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
 impl Interpreter {
 
-    pub fn new(dev: bool, current_file: Option<PathBuf>) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
 
         let environment = Environment::global();
         let locals = HashMap::new();
         native::register_all_native_fns(environment.borrow_mut())?;
-        Ok(Interpreter { environment, locals, dev, exposed_value: None, current_file })
+        Ok(Interpreter { environment, locals, exposed_value: None })
 
     }
 
@@ -861,57 +760,6 @@ impl Interpreter {
         let result = f(self);
         self.environment = previous;
         result
-
-    }
-
-    fn resolve_path(&mut self, import_path: &str) -> Result<String, ExecSignal> {
-
-        if let Some(current_file) = &self.current_file {
-            if let Some(base_dir) = current_file.parent() {
-                let mut full_path = base_dir.join(import_path);
-                full_path.set_extension("reix");
-                if full_path.exists() {
-                    return Ok(full_path.to_string_lossy().to_string());
-                }
-            }
-        }
-
-        if self.dev {
-            let lib_path = PathBuf::from(format!("./src/tests/code/lib/{}.reix", import_path));
-            if lib_path.exists() {
-                return Ok(lib_path.to_string_lossy().to_string());
-            }
-
-            let user_path = PathBuf::from(format!("./src/tests/code/{}.reix", import_path));
-            if user_path.exists() {
-                return Ok(user_path.to_string_lossy().to_string());
-            }
-        }
-        else {
-            let lib_path = PathBuf::from(format!("./lib/{}.reix", import_path));
-            if lib_path.exists() {
-                return Ok(lib_path.to_string_lossy().to_string());
-            }
-
-            let user_path = PathBuf::from(format!("./{}.reix", import_path));
-            if user_path.exists() {
-                return Ok(user_path.to_string_lossy().to_string());
-            }
-        }
-
-        Err(ExecSignal::RuntimeError(RuntimeError::ModuleNotFound {
-            path: import_path.into()
-        }))
-
-    }
-
-    fn global_env(&self) -> Rc<RefCell<Environment>> {
-
-        let mut current = self.environment.clone();
-        while let Some(enclosing) = &current.clone().borrow().enclosing {
-            current = enclosing.clone();
-        }
-        current
 
     }
 

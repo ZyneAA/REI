@@ -1,6 +1,6 @@
-class StdCompare {
+expose class StdCompare {
 
-    static is_eq(first, second) {
+    static greater(first, second) {
 
         if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
             if (first.get_comparable() > second.get_comparable()) {
@@ -46,62 +46,3 @@ class StdCompare {
     }
 
 }
-
-class Comparable {
-
-    get_comparable() {
-
-        if (@exist("comparable"))  {
-            return this.comparable;
-        }
-        return false;
-
-    }
-
-}
-
-class Instance {
-
-    typeof(type) {
-
-        if (@typeof(this, type)) return true;
-        return false;
-
-    }
-
-    destroy(attribute) {
-        @destroy(attribute);
-    }
-
-    mutate(attribute, new_val) {
-        @mutate(attribute, new_val);
-    }
-
-}
-
-class Man < Comparable, Instance {
-
-    init(name, age) {
-        this.name = name;
-        this.age = age;
-        this.comparable = age;
-        this.val = 1;
-    }
-
-    give() {
-        return this;
-    }
-
-}
-
-let man1 = Man("Ball", 300);
-let man2 = Man("Llab", 500);
-
-let equal = StdCompare.is_eq(man1, man2);
-let max = StdCompare.max(man1, man2);
-
-man1.mutate("name", "S");
-println "Name: " + man1.name;
-
-println equal + " " + max.name;
-

@@ -1,0 +1,45 @@
+expose class StdCompare {
+
+    static is_eq(first, second) {
+
+        if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
+            return first.get_comparable() == second.get_comparable();
+        }
+        else {
+            println "Both comparables must inherit Comparable class";
+            return null;
+        }
+
+    }
+
+    static max(first, second) {
+
+        if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
+            if (first.get_comparable() > second.get_comparable()) {
+                return first;
+            }
+            return second;
+        }
+        else {
+            println "Both comparables must inherit Comparable class";
+            return null;
+        }
+
+    }
+
+    static min(first, second) {
+
+        if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
+            if (first.get_comparable() > second.get_comparable()) {
+                return second;
+            }
+            return first;
+        }
+        else {
+            println "Both comparables must inherit Comparable class";
+            return null;
+        }
+
+    }
+
+}

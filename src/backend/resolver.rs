@@ -47,10 +47,6 @@ impl<'a> Resolver<'a> {
     fn resolve_stmt(&mut self, stmt: &Stmt) {
 
         match stmt {
-            Stmt::Use { path: _, alias } => {
-                self.declare(alias);
-                self.define(alias);
-            }
             Stmt::Block { statements } => {
                 self.begin_scope();
                 self.resolve(statements);
@@ -209,9 +205,6 @@ impl<'a> Resolver<'a> {
                 for arg in arguments {
                     self.resolve_expr(arg);
                 }
-            }
-            Expr::Base { id: _, keyword, method: _ } => {
-                self.resolve_local(expr, keyword);
             }
             Expr::This { id: _, keyword } => {
                 match self.current_class {

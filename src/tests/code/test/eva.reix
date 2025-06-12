@@ -1,9 +1,5 @@
 expose class Eva {
 
-    init() {
-        this.name = "okoko";
-    }
-
     get_name() {
         return this.name;
     }
