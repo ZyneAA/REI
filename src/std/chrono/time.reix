@@ -1,0 +1,7 @@
+expose class Time {
+
+    static measure(func) {
+        return _C_measure(func);
+    }
+
+}

@@ -1,7 +1,0 @@
-expose class SpellTemplate {
-
-    init() {
-        this.damage = 0;
-    }
-
-}

@@ -1,0 +1,7 @@
+expose class Clock {
+
+    static format_time() {
+        return _C_format_time();
+    }
+
+}

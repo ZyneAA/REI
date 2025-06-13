@@ -1,0 +1,11 @@
+expose class Input {
+
+    static read_line() {
+        return _IO_read_line();
+    }
+
+    static read() {
+        return _IO_read();
+    }
+
+}

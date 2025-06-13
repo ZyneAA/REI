@@ -21,11 +21,13 @@ impl ReiCallable for TimeNow {
     }
 
     fn call(&self, _interpreter: &mut Interpreter, _arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
+
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|e| (ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn { msg: e.to_string() })))?
             .as_secs_f64();
         Ok(Object::Number(now))
+
     }
 
     fn to_string(&self) -> String {
@@ -47,6 +49,7 @@ impl ReiCallable for Sleep {
     }
 
     fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
+
         let duration = match &arguments[0] {
             Object::Number(ms) => *ms,
             _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
@@ -56,6 +59,7 @@ impl ReiCallable for Sleep {
 
         thread::sleep(Duration::from_millis(duration as u64));
         Ok(Object::Null)
+
     }
 
     fn to_string(&self) -> String {
@@ -77,8 +81,10 @@ impl ReiCallable for FormatTime {
     }
 
     fn call(&self, _interpreter: &mut Interpreter, _arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
+
         let now = chrono::Utc::now().to_rfc3339();
         Ok(Object::Str(now))
+
     }
 
     fn to_string(&self) -> String {
@@ -100,17 +106,19 @@ impl ReiCallable for Measure {
     }
 
     fn call(&self, interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
+
         if let Object::Callable(callable) = &arguments[0] {
             let now = Instant::now();
             callable.call(interpreter, &vec![])?;
             let elapsed = now.elapsed().as_secs_f64();
-            Ok(Object::Str(format!("Time: {:.6} secs", elapsed)))
+            Ok(Object::Str(format!("{:.6}", elapsed)))
         }
         else {
             Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                 msg: "Expected a function as argument which return none to measure".to_string(),
             }))
         }
+
     }
 
     fn to_string(&self) -> String {

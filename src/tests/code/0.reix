@@ -1,0 +1,36 @@
+use std/cmp/std_compare as StdCompare;
+use std/cmp/comparable as Comparable;
+use std/instance/instance as Instance;
+use std/chrono/clock as Clock;
+use std/chrono/time as Time;
+use std/std_io/std_in as Input;
+
+use 4 as Man;
+
+fn main () {
+
+    let man1 = Man("Ball", 300);
+    let man2 = Man("Llab", 500);
+
+    man1.mutate("name", "S");
+    println "Name: " + man1.name;
+
+    let equal = StdCompare.greater(man1, man2);
+    let max = StdCompare.max(man1, man2);
+    let min = StdCompare.min(man1, man2);
+
+    println equal + " " + max.name + " " + min.name;
+    println "Current time: " + Clock.format_time();
+    println "Time in ms: " + Clock.time_now();
+    println "Enter: ";
+
+    // let input = Input.read_line();
+    let input = Input.read(); // doesnt flush the buff
+    println "U entered: " + input;
+
+
+}
+
+println "Time spent executed: " + Time.measure(main);
+Time.sleep(2000);
+println "Just slept";
