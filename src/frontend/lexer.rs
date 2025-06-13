@@ -123,6 +123,9 @@ impl<'a> Lexer<'a> {
                     self.add_token(TokenType::Less, Object::Null)
                 }
             }
+            '@' => {
+                self.add_token(TokenType::At, Object::Null)
+            }
             '/' => {
                 if self.match_next_char('/') {
                     while self.peek() != '\n' && !self.is_end() {

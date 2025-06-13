@@ -54,6 +54,14 @@ impl Rei {
                     "While : Expr condition, Stmt body",
                 ])?;
             }
+
+            else if &args[1] == "setup" {
+
+                let runner = runner::Runner;
+                runner.install_stdlib()?;
+
+            }
+
             else {
 
                 let source = runner::Runner::read_file(&args[1])
@@ -61,13 +69,20 @@ impl Rei {
                         eprintln!("File not found");
                         process::exit(65);
                 });
-                runner::Runner::run(&source, &args[1], false);
+                runner::Runner::run(&source, &args[1]);
 
             }
 
             Ok(())
 
         }
+
+        else if args_size == 3 && args[1] == "new" {
+            let runner = runner::Runner;
+            runner.new_project(&args[2])?;
+            Ok(())
+        }
+
         else if args_size == 3 && args[1] == "test" {
 
             let test_file_location = format!("./src/tests/code/{}.reix", &args[2]);
@@ -76,7 +91,7 @@ impl Rei {
                         eprintln!("File not found: {}", test_file_location);
                         process::exit(65);
                 });
-                runner::Runner::run(&source, &test_file_location, true);
+                runner::Runner::run(&source, &test_file_location);
 
             Ok(())
 

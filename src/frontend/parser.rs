@@ -1,30 +1,36 @@
 use std::result::Result;
+use std::path::PathBuf;
+use std::fs;
 
 use crate::crux::error::ParseError;
 use crate::crux::token::{ Token, TokenType, Object };
 use super::expr;
 use super::expr::ExprId;
 use crate::backend::stmt;
+use crate::frontend::lexer::Lexer;
 
-pub struct Parser {
+pub struct Parser<'a> {
 
     tokens: Vec<Token>,
     current: usize,
-    id_counter: usize,
+    id_counter: &'a mut usize,
+    exposed: bool,
+    current_file: Option<PathBuf>,
     pub is_error: bool,
     pub errors: Vec<ParseError>
 
 }
 
-impl Parser {
+impl<'a> Parser<'a> {
 
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Parser { tokens, current: 0, id_counter: 0, is_error: false, errors: vec![] }
+    pub fn new(tokens: Vec<Token>, current_file: Option<PathBuf>, id_counter: &'a mut usize) -> Self {
+        Parser { tokens, current: 0, id_counter, exposed: false, current_file, is_error: false, errors: vec![] }
     }
 
     pub fn parse(&mut self) -> Vec<stmt::Stmt> {
 
-        let mut statements = Vec::new();
+        let mut statements = vec![];
+
         while !self.is_end() {
             match self.declaration() {
                 Ok(stmt) => statements.push(stmt),
@@ -94,12 +100,7 @@ impl Parser {
             self.use_module()
         }
         else if self.rmatch(&[TokenType::Expose])? {
-            if !self.check(&TokenType::Expose) {
-                return Err(ParseError::SyntaxError {
-                    token: self.peek().clone(),
-                    message: "Expected class name after 'expose'".into(),
-                });
-            }
+            self.consume(&TokenType::Class, "Expected 'class' after expose")?;
             self.class_declaration(true)
         }
 
@@ -110,7 +111,6 @@ impl Parser {
     }
 
     fn use_module(&mut self) -> Result<stmt::Stmt, ParseError> {
-
 
         let mut path_parts = vec![];
 
@@ -133,28 +133,78 @@ impl Parser {
         self.consume(&TokenType::Semicolon, "Expected ';' after use statement")?;
 
         let path = path_parts.join("/");
-        println!("{}", path);
+        let resolved_path = self.resolve_path(&path)?;
 
-        Ok(stmt::Stmt::Use {
-            path,
-            alias: alias.lexeme.clone(),
-        })
+        let source = fs::read_to_string(&resolved_path).unwrap();
+        let tokens = Lexer::new(&source).scan_tokens();
+
+        let mut parser = Parser::new(tokens, self.current_file.clone(), self.id_counter);
+        let is_error = parser.is_error;
+        let stmts = parser.parse().clone();
+
+        if is_error {
+            for e in parser.errors {
+                self.errors.push(e); // bubble them up to main parser
+            }
+            self.is_error = true;
+        }
+
+        for stmt in stmts {
+            if let stmt::Stmt::Class {
+                name: _,
+                superclass_refs,
+                methods,
+                static_methods,
+                expose: true,
+            } = stmt
+            {
+                let class_stmt = stmt::Stmt::Class {
+                    name: alias.clone(),
+                    superclass_refs: superclass_refs.clone(),
+                    methods: methods.clone(),
+                    static_methods: static_methods.clone(),
+                    expose: false,
+                };
+                return Ok(class_stmt);
+            }
+        }
+
+        Err(ParseError::SyntaxError {
+            token: alias,
+            message: "Invalid assignment target ".into(), }
+        )
 
     }
 
     fn class_declaration(&mut self, expose: bool) -> Result<stmt::Stmt, ParseError> {
 
+        if self.exposed {
+            return Err(ParseError::SyntaxError {
+                token: self.previous().clone(),
+                message: "Can't expose multiple classes from a single file".to_string(),
+            })
+        }
+
+        if self.exposed == false {
+            self.exposed = expose;
+        }
+
         let name = self.consume(&TokenType::Identifier, "Expected a class name")?.clone();
 
-        let mut superclass = None;
+        let mut superclass_refs = Vec::new();
         if self.rmatch(&[TokenType::Less])? {
-            self.consume(&TokenType::Identifier, "Expect superclass name")?;
-            let sc = self.previous().clone();
-            let sc = expr::Expr::Variable {
-                id: self.next_id(),
-                name: sc
-            };
-            superclass = Some(Box::new(sc));
+            while !self.check(&TokenType::LeftBrace) && !self.is_end() {
+                if self.check(&TokenType::Comma) {
+                    self.consume(&TokenType::Comma, "Expected ','")?;
+                }
+                self.consume(&TokenType::Identifier, "Expect superclass name")?;
+                let sc = self.previous().clone();
+                let sc = expr::Expr::Variable {
+                    id: self.next_id(),
+                    name: sc
+                };
+                superclass_refs.push(sc);
+            }
         }
 
         self.consume(&TokenType::LeftBrace, "Expected { before class body")?;
@@ -175,7 +225,7 @@ impl Parser {
         self.consume(&TokenType::RightBrace, "EXpected } after class body")?;
         let class = stmt::Stmt::Class {
             name,
-            superclass,
+            superclass_refs,
             methods,
             static_methods,
             expose
@@ -840,70 +890,95 @@ impl Parser {
     fn primary(&mut self) -> Result<expr::Expr, ParseError> {
 
         if self.rmatch(&[TokenType::False])? {
+
             return Ok(expr::Expr::Literal {
                 id: self.next_id(),
                 value: Object::Bool(false),
             });
+
         }
 
         if self.rmatch(&[TokenType::True])? {
+
             return Ok(expr::Expr::Literal {
                 id: self.next_id(),
                 value: Object::Bool(true),
             });
+
         }
 
         if self.rmatch(&[TokenType::Null])? {
+
             return Ok(expr::Expr::Literal {
                 id: self.next_id(),
                 value: Object::Null,
             });
+
         }
 
-        if self.rmatch(&[TokenType::Base])? {
+        if self.rmatch(&[TokenType::At])? {
+
             let keyword = self.previous().clone();
-            if self.peek().token_type == TokenType::Getter {
-                self.consume(&TokenType::Getter, "Expected '->' after 'base'")?;
+            let method = self.consume(&TokenType::Identifier, "Expect meta method name after '@'")?.clone();
+
+            let mut args = Vec::new();
+            if self.rmatch(&[TokenType::LeftParen])? {
+                if !self.check(&TokenType::RightParen) {
+                    loop {
+                        args.push(self.expression()?);
+                        if !self.rmatch(&[TokenType::Comma])? {
+                            break;
+                        }
+                    }
+                }
+                self.consume(&TokenType::RightParen, "Expect ')' after arguments.")?;
             }
-            else {
-                self.consume(&TokenType::Dot, "Expected '.' after 'base'")?;
-            }
-            let method = self.consume(&TokenType::Identifier, "Expected base class method name")?.clone();
-            return Ok(expr::Expr::Base {
+
+            return Ok(expr::Expr::Meta {
                 id: self.next_id(),
-                keyword,
-                method
-            })
+                keyword: keyword.clone(),
+                method: method.clone(),
+                args,
+            });
+
         }
 
         if self.rmatch(&[TokenType::Number, TokenType::String])? {
+
             return Ok(expr::Expr::Literal {
                 id: self.next_id(),
                 value: self.previous().literal.clone(),
             });
+
         }
 
         if self.rmatch(&[TokenType::This])? {
+
             return Ok(expr::Expr::This {
                 id: self.next_id(),
                 keyword: self.previous().clone()
             });
+
         }
 
         if self.rmatch(&[TokenType::Identifier])? {
+
             return Ok(expr::Expr::Variable {
                 id: self.next_id(),
                 name: self.previous().clone()
             });
+
         }
 
         if self.rmatch(&[TokenType::LeftParen])? {
+
             let expr = self.expression()?;
             self.consume(&TokenType::RightParen, "Expected ) after expression")?;
             return Ok(expr::Expr::Grouping {
                 id: self.next_id(),
                 expression: Box::new(expr),
             });
+
         }
 
         Err(ParseError::SyntaxError {
@@ -1001,9 +1076,38 @@ impl Parser {
 
     fn next_id(&mut self) -> ExprId {
 
-        let id = self.id_counter;
-        self.id_counter += 1;
+        let id = *self.id_counter;
+        *self.id_counter += 1;
         ExprId(id)
+
+    }
+
+    fn resolve_path(&mut self, import_path: &str) -> Result<String, ParseError> {
+
+        if let Some(current_file) = &self.current_file {
+            if let Some(base_dir) = current_file.parent() {
+                let mut full_path = base_dir.join(import_path);
+                full_path.set_extension("reix");
+                if full_path.exists() {
+                    return Ok(full_path.to_string_lossy().to_string());
+                }
+            }
+        }
+
+        let lib_path = PathBuf::from(format!("./lib/{}.reix", import_path));
+        if lib_path.exists() {
+            return Ok(lib_path.to_string_lossy().to_string());
+        }
+
+        let user_path = PathBuf::from(format!("./{}.reix", import_path));
+        if user_path.exists() {
+            return Ok(user_path.to_string_lossy().to_string());
+        }
+
+        Err(ParseError::SyntaxError {
+            token: self.previous().clone(),
+            message: "Expected expression".into(),
+        })
 
     }
 

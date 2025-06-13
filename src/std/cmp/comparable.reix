@@ -1,0 +1,12 @@
+expose class Comparable {
+
+    get_comparable() {
+
+        if (@exist("comparable"))  {
+            return this.comparable;
+        }
+        return false;
+
+    }
+
+}

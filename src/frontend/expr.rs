@@ -11,11 +11,11 @@ pub trait Visitor<T> {
     fn visit_literal_expr(&mut self, value: &Object) -> T;
     fn visit_logical_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> T;
     fn visit_set_expr(&mut self, object: &Expr, name: &Token, value: &Expr) -> T;
-    fn visit_base_expr(&mut self, id: ExprId, keyword: &Token, method: &Token) -> T;
     fn visit_this_expr(&mut self, id: ExprId, keyword: &Token) -> T;
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> T;
     fn visit_variable_expr(&mut self, id: ExprId, name: &Token) -> T;
     fn visit_range_expr(&mut self, start: &Expr, end: &Expr) -> T;
+    fn visit_meta_expr(&mut self, id: ExprId, keyword: &Token, method: &Token, args: &Vec<Expr>) -> T;
 
 }
 
@@ -51,6 +51,13 @@ pub enum Expr {
         name: Token
     },
 
+    Meta {
+        id: ExprId,
+        keyword: Token,
+        method: Token,
+        args: Vec<Expr>,
+    },
+
     Grouping {
         id: ExprId,
         expression: Box<Expr>,
@@ -73,12 +80,6 @@ pub enum Expr {
         object: Box<Expr>,
         name: Token,
         value: Box<Expr>
-    },
-
-    Base {
-        id: ExprId,
-        keyword: Token,
-        method: Token
     },
 
     This {
@@ -119,9 +120,9 @@ impl Expr {
             | Expr::Logical { id, .. }
             | Expr::Set { id, .. }
             | Expr::Unary { id, .. }
-            | Expr::Base { id, .. }
             | Expr::This { id, .. }
             | Expr::Variable { id, .. }
+            | Expr::Meta { id, .. }
             | Expr::Range { id, .. } => id.clone(),
         }
 
@@ -138,8 +139,8 @@ impl Expr {
             Expr::Literal {  id: _, value } => visitor.visit_literal_expr(value),
             Expr::Logical {  id: _, left, operator, right } => visitor.visit_logical_expr(left, operator, right),
             Expr::Set { id: _, object, name, value } => visitor.visit_set_expr(object, name, value),
-            Expr::Base { id, keyword, method } => visitor.visit_base_expr(id.clone(), keyword, method),
             Expr::This { id, keyword } => visitor.visit_this_expr(id.clone(), keyword),
+            Expr::Meta { id, keyword, method, args } => visitor.visit_meta_expr(id.clone(), keyword, method, args),
             Expr::Unary {  id: _, operator, right } => visitor.visit_unary_expr(operator, right),
             Expr::Variable { id, name } => visitor.visit_variable_expr(id.clone(), name),
             Expr::Range {  id: _, start, end } => visitor.visit_range_expr(start, end),

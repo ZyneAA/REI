@@ -1,0 +1,12 @@
+expose class Eva {
+
+    get_name() {
+        return this.name;
+    }
+
+    static name() {
+        println "EVA-01";
+    }
+
+}
+

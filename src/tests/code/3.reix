@@ -1,39 +1,22 @@
-class Entity {
+class Eva {
 
-    init(a) {
-        this <- a = a;
+    get_name() {
+        return this.name;
     }
 
-    me() {
-        println this.a;
-    }
-
-    add(text) {
-        this <- a = this -> a + text;
-        println this -> a;
-        return this;
-    }
-
-
-}
-
-class HeinZaw < Entity {
-
-    init(a) {
-        this.b = base.init(a);
-    }
-
-    me() {
-        println this.b.add("BIG BALLS");
+    static name() {
+        println "EVA-01";
     }
 
 }
 
-let a = Entity("OK");
-println a;
+class Ok < Eva {
 
-a.add(" sw"). add(" daa").add(" Hein Zaw")
-    .add(" Ko kane")
-    -> me();
+    init() {
+        this.name = "ME";
+    }
 
+}
 
+let a = Ok();
+println a.get_name();

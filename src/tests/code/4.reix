@@ -1,0 +1,35 @@
+use std/cmp/std_compare as StdCompare;
+use std/cmp/comparable as Comparable;
+use std/instance/instance as Instance;
+
+use emitter as Emitter;
+
+class Man < Comparable, Instance {
+
+    init(name, age) {
+        this.name = name;
+        this.age = age;
+        this.comparable = age;
+        this.val = 1;
+    }
+
+    give() {
+        return this;
+    }
+
+}
+
+let man1 = Man("Ball", 300);
+let man2 = Man("Llab", 500);
+
+man1.mutate("name", "S");
+println "Name: " + man1.name;
+
+let equal = StdCompare.greater(man1, man2);
+let max = StdCompare.max(man1, man2);
+let min = StdCompare.min(man1, man2);
+Emitter.blew(man1.name);
+
+println equal + " " + max.name + " " + min.name;
+
+

@@ -1,0 +1,16 @@
+use entity as Entity;
+
+expose class Human < Entity {
+
+    init(name, health, mana) {
+        this.name = name;
+        this.health = health;
+        this.mana = mana;
+    }
+
+    static go() {
+        println "Human moved!";
+    }
+
+}
+

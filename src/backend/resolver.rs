@@ -1,6 +1,8 @@
 use std::collections::HashMap;
+
 use super::interpreter::Interpreter;
 use super::stmt::Stmt;
+
 use crate::crux::token::Token;
 use crate::frontend::expr::Expr;
 
@@ -43,29 +45,30 @@ impl<'a> Resolver<'a> {
     }
 
     fn resolve_stmt(&mut self, stmt: &Stmt) {
+
         match stmt {
-            Stmt::Use { path, alias } => { 
-            }
             Stmt::Block { statements } => {
                 self.begin_scope();
                 self.resolve(statements);
                 self.end_scope();
             }
-            Stmt::Class { name, superclass, methods, static_methods, expose } => {
+            Stmt::Class { name, superclass_refs, methods, static_methods, expose: _ } => {
                 let enclosing_class = self.current_class.clone();
                 self.current_class = ClassType::Class;
 
                 self.declare(name);
                 self.define(name);
 
-                if let Some(sup) = superclass {
-                    if let Expr::Variable { name: super_name, .. } = &**sup {
-                        if name.lexeme == super_name.lexeme {
-                            panic!("A class cannot inherit from itself.");
+                if !superclass_refs.is_empty() {
+                    for superclass in superclass_refs {
+                        if let Expr::Variable { name: super_name, .. } = superclass {
+                            if name.lexeme == super_name.lexeme {
+                                panic!("A class cannot inherit from itself.");
+                            }
                         }
-                    }
 
-                    self.resolve_expr(sup);
+                        self.resolve_expr(superclass);
+                    }
 
                     self.begin_scope();
                     if let Some(scope) = self.scopes.last_mut() {
@@ -73,6 +76,7 @@ impl<'a> Resolver<'a> {
                     }
                 }
 
+                // Begin scope for `this`
                 self.begin_scope();
                 if let Some(scope) = self.scopes.last_mut() {
                     scope.insert("this".to_string(), true);
@@ -81,10 +85,17 @@ impl<'a> Resolver<'a> {
                 for method in methods {
                     let mut declaration = FunctionType::Method;
                     if let Stmt::Function { name, params, body } = method {
+
                         if name.lexeme == "init" {
                             declaration = FunctionType::Initializer;
                         }
+
                         self.resolve_function(params, body, declaration);
+
+                        if !superclass_refs.is_empty() {
+                            self.end_scope();
+                        }
+
                     }
                 }
 
@@ -94,12 +105,11 @@ impl<'a> Resolver<'a> {
                     }
                 }
 
-                if superclass.is_some() {
-                    self.end_scope(); // close base scope
+                if !superclass_refs.is_empty() {
+                    self.end_scope();
                 }
 
-                self.end_scope(); // close this scope
-
+                self.end_scope();
                 self.current_class = enclosing_class;
             }
             Stmt::Expression { expression } => {
@@ -124,15 +134,11 @@ impl<'a> Resolver<'a> {
                 self.resolve_stmt(body);
                 self.loop_depth -= 1;
             }
-
             Stmt::Function { name, params, body } => {
-
                 self.declare(name);
                 self.define(name);
-
                 self.resolve_function(params, body, FunctionType::Function);
             }
-
             Stmt::Return { keyword: _, value } => {
                 if let FunctionType::None = self.current_function {
                     panic!("Cannot return from top-level code.");
@@ -170,6 +176,14 @@ impl<'a> Resolver<'a> {
     fn resolve_expr(&mut self, expr: &Expr) {
 
         match expr {
+            Expr::Meta { id, keyword: _, method, .. } => {
+                if let Some(distance) = self.resolve_this_distance() {
+                    self.interpreter.resolve(*id, distance);
+                }
+                else {
+                    panic!("Bad: {}", method);
+                }
+            }
             Expr::Range { id: _, start, end } => {
                 self.resolve_expr(start);
                 self.resolve_expr(end);
@@ -192,13 +206,9 @@ impl<'a> Resolver<'a> {
                     self.resolve_expr(arg);
                 }
             }
-            Expr::Base { id: _, keyword, method: _ } => {
-                self.resolve_local(expr, keyword);
-            }
             Expr::This { id: _, keyword } => {
                 match self.current_class {
                     ClassType::None => panic!(), // Bad Code, add a custom error thrower for this
-                                                 // one
                     ClassType::Class => {}
                 }
                 self.resolve_local(expr, keyword);
@@ -290,4 +300,16 @@ impl<'a> Resolver<'a> {
         // Not found: leave as global.
 
     }
+
+    fn resolve_this_distance(&self) -> Option<usize> {
+
+        for (i, scope) in self.scopes.iter().rev().enumerate() {
+            if scope.contains_key("this") {
+                return Some(i);
+            }
+        }
+        None
+
+    }
+
 }

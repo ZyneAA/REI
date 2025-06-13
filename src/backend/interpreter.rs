@@ -1,26 +1,28 @@
 use std::rc::Rc;
 use std::collections::HashMap;
-use std::fs;
 
-use crate::crux::runner::Runner;
 use crate::crux::token::{ Object, Token, TokenType };
+
 use crate::frontend::expr;
 use crate::frontend::expr::ExprId;
+
 use crate::backend::stmt;
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::rei_class::ReiClass;
 use crate::backend::environment::{ Environment, EnvRef };
-use super::native;
-use super::rei_function::ReiFunction;
+
 use super::exec_signal::ExecSignal;
 use super::exec_signal::runtime_error::RuntimeError;
 use super::exec_signal::control_flow::ControlFlow;
+
+use super::native;
+use super::rei_function::ReiFunction;
 
 pub struct Interpreter {
 
     pub environment: EnvRef,
     locals: HashMap<ExprId, usize>,
-    dev: bool
+    exposed_value: Option<Object>,
 
 }
 
@@ -192,19 +194,18 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
     fn visit_get_expr(&mut self, object: &Box<expr::Expr>, name: &Token) -> Result<Object, ExecSignal> {
 
         let object = self.evaluate(object)?;
+
         match object {
             Object::Instance(ref instance) => {
                 instance.borrow().get(name)
             },
             Object::Callable(ref callable) => {
-            // Downcast to ReiClass to check for static methods
                 if let Some(class) = callable.as_any().downcast_ref::<ReiClass>() {
                     if let Some(method) = class.find_static_method(&name.lexeme) {
                         let method: Rc<dyn ReiCallable> = Rc::new(method);
                         return Ok(Object::Callable(method));
                     }
                 }
-
                 Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty { token: name.clone() }))
             },
             _ => Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty { token: name.clone() }))
@@ -226,52 +227,188 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
     }
 
-    fn visit_base_expr(&mut self, id: ExprId, keyword: &Token, method: &Token) -> Result<Object, ExecSignal> {
+    fn visit_meta_expr(&mut self, id: ExprId, _keyword: &Token, method: &Token, args: &Vec<expr::Expr>) -> Result<Object, ExecSignal> {
 
-        let distance = self.locals.get(&id).copied().ok_or_else(|| {
-            ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: format!("Could not resolve '{}'.", keyword.lexeme),
-            })
-        })?;
+        match method.lexeme.as_str() {
 
-        let superclass_obj = Environment::get_at(&self.environment, distance, "base")?;
+            "typeof" => {
 
-        let superclass = match &superclass_obj {
-            Object::Callable(c) => {
-                c.as_any()
-                    .downcast_ref::<ReiClass>()
-                    .cloned()
-                    .ok_or_else(|| ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                        msg: format!("'{}' must refer to a class.", keyword.lexeme),
-                    }))?
+                if args.len() != 2 {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@typeof() expects 2 arguments".into(),
+                    }));
+                }
+
+                let instance_obj = self.evaluate(&args[0])?;
+                let class_name_obj = self.evaluate(&args[1])?;
+
+                if let (Object::Instance(inst), Object::Str(class_name)) = (&instance_obj, &class_name_obj) {
+                    let mut visited = vec![inst.borrow().class.clone()];
+                    while let Some(klass) = visited.pop() {
+                        if klass.name == *class_name {
+                            return Ok(Object::Bool(true));
+                        }
+                        for parent in &klass.superclass_refs {
+                            visited.push(parent.clone());
+                        }
+                    }
+
+                    Ok(Object::Bool(false))
+                }
+                else {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@typeof() expects (instance, string)".into(),
+                    }));
+                }
+
             }
-            _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: format!("'{}' is not callable.", keyword.lexeme),
-                }));
+
+            "destroy" => {
+
+                if args.len() != 1 {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@destroy() expects 1 argument".into(),
+                    }));
+                }
+
+                let arg = self.evaluate(&args[0])?;
+
+                if let Object::Str(name) = arg {
+                    if let Some(&distance) = self.locals.get(&id) {
+                        let maybe_this = Environment::get_at(&self.environment, distance, "this");
+                        if let Ok(Object::Instance(inst)) = maybe_this {
+                            let temp = inst.borrow();
+                            let mut fields = temp.fields.borrow_mut();
+                            if fields.remove(&name).is_some() {
+                                return Ok(Object::Null);
+                            }
+                            else {
+                                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                                    msg: format!("Field '{}' does not exist", name),
+                                }));
+                            }
+
+                        }
+                        else {
+                            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                                msg: "Cannot use @destroy outside of instance methods".into(),
+                            }));
+                        }
+                    }
+                    else {
+                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                            msg: "Cannot use @destroy outside of instance methods".into(),
+                        }));
+                    }
+                }
+                else {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@destroy() expects a string argument".into(),
+                    }));
+                }
+
             }
-        };
 
-        let this_obj = Environment::get_at(&self.environment, distance - 1, "this")?;
+            "exist" => {
 
-        let instance = match this_obj {
-            Object::Instance(i) => i,
-            _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "'this' is not a class instance.".to_string(),
-                }));
+                if args.len() != 1 {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@exist() expects 1 argument".into(),
+                    }));
+                }
+
+                let arg = self.evaluate(&args[0])?;
+
+                if let Object::Str(name) = arg {
+                    if let Some(&distance) = self.locals.get(&id) {
+                        let maybe_this = Environment::get_at(&self.environment, distance, "this");
+                        if let Ok(Object::Instance(inst)) = maybe_this {
+                            let has = inst.borrow().fields.borrow().contains_key(&name);
+                            return Ok(Object::Bool(has));
+                        }
+                        else {
+                            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                                msg: "Cannot use @exist outside of instance methods".into(),
+                            }));
+                        }
+                    }
+                    else {
+                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                            msg: "Cannot use @exist outside of instance methods".into(),
+                        }));
+                    }
+                }
+                else {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@exist() expects a string argument".into(),
+                    }));
+                }
+
             }
-        };
 
-        if let Some(method_fn) = superclass.find_method(&method.lexeme) {
-            let bound = method_fn.bind(instance.borrow().clone());
-            let callable: Rc<dyn ReiCallable> = Rc::new(bound.unwrap());
-            Ok(Object::Callable(callable))
-        }
-        else {
-            Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: format!("Undefined property '{}'.", method.lexeme),
-            }))
+            "mutate" => {
+
+                if args.len() != 2 {
+                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@mutate() expects 2 argument".into(),
+                    }));
+                }
+
+                let name = match self.evaluate(&args[0])? {
+                    Object::Str(s) => s,
+                    _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "@mutate() expects 1 argument".into(),
+                    }))
+                };
+
+                let value = self.evaluate(&args[1])?;
+
+                let distance = self.locals.get(&id).ok_or_else(|| {
+                    ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: "Cannot use @mutate outside of instance method".into()
+                    })
+                })?;
+
+                let maybe_this = Environment::get_at(&self.environment, *distance, "this")?;
+                let instance = match maybe_this {
+                    Object::Instance(inst) => inst,
+                    _ => panic!(),
+                };
+
+                let inst_ref = instance.borrow();
+
+                let mut klass = inst_ref.class.clone();
+                let mut exists = inst_ref.fields.borrow().contains_key(&name);
+
+                while !exists {
+                    exists = klass.methods.contains_key(&name);
+                    if exists { break; }
+
+                    if let Some(super_ref) = klass.superclass_refs.first() {
+                        klass = super_ref.clone();
+                    }
+                    else {
+                        break;
+                    }
+                }
+
+                if exists {
+                    drop(inst_ref);
+                    instance.borrow_mut().fields.borrow_mut().insert(name, value);
+                    Ok(Object::Null)
+                }
+                else {
+                    Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        msg: format!("@mutate() failed: '{}' is not a valid class attribute", name),
+                    }))
+                }
+
+            }
+
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: format!("Unknown meta method '@{}'", method.lexeme),
+            })),
+
         }
 
     }
@@ -280,56 +417,50 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 
 impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
-    fn visit_use_stmt(&mut self, path: &String, alias: &String) -> Result<(), ExecSignal> {
-
-        let path = self.resolve_path(path.clone())?;
-        let source = Runner::read_file(&path).unwrap();
-
-        Ok(())
-
-    }
- 
     fn visit_class_stmt(
         &mut self,
         name: &Token,
-        superclass: &Option<Box<expr::Expr>>,
+        superclasses: &Vec<expr::Expr>,
         methods: &Vec<stmt::Stmt>,
         static_methods: &Vec<stmt::Stmt>,
         expose: &bool
     ) -> Result<(), ExecSignal> {
 
-        let mut sc: Option<Rc<ReiClass>> = None;
-        let mut superclass_obj = Object::Null;
+        let mut superclass_objs = Vec::new();
+        let mut superclass_refs: Vec<Rc<ReiClass>> = Vec::with_capacity(superclasses.len());
 
-        if let Some(sup_expr) = superclass {
-
+        for sup_expr in superclasses.iter() {
             let evaluated = self.evaluate(sup_expr)?;
-
-            if let Object::Callable(c) = &evaluated {
-                if let Some(as_class) = c.as_any().downcast_ref::<ReiClass>() {
-                    let class_rc = Rc::new(as_class.clone());
-                    sc = Some(class_rc.clone());
-                    superclass_obj = Object::Callable(Rc::clone(c));
+            match &evaluated {
+                Object::Callable(c) => {
+                    if let Some(klass) = c.as_any().downcast_ref::<ReiClass>() {
+                        let rc_class = Rc::new(klass.clone());
+                        superclass_refs.push(rc_class.clone());
+                        superclass_objs.push(Object::Callable(rc_class));
+                    }
+                    else {
+                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                            msg: "Superclass must be a class.".into(),
+                        }));
+                    }
                 }
-                else {
+                _ => {
                     return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                        msg: "Superclass must be a class.".to_string(),
+                        msg: "Superclass must be a class.".into(),
                     }));
                 }
             }
-            else {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "Superclass must be a class.".to_string(),
-                }));
-            }
-
         }
 
         self.environment.borrow_mut().define(name.lexeme.clone(), Object::Null)?;
 
-        if superclass.is_some() {
+        let mut temp_env = None;
+        if !superclass_objs.is_empty() {
             let env = Environment::from_enclosing(self.environment.clone());
-            env.borrow_mut().define("base".to_string(), superclass_obj)?;
+            for base_obj in superclass_objs.into_iter() {
+                env.borrow_mut().define(base_obj.to_string(), base_obj)?;
+            }
+            temp_env = Some(self.environment.clone()); // save old env
             self.environment = env;
         }
 
@@ -350,12 +481,14 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
             }
         }
 
-        let klass = ReiClass::new(name.lexeme.clone(), sc, klass_methods, static_klass_methods);
+        let klass = ReiClass::new(name.lexeme.clone(), superclass_refs, klass_methods, static_klass_methods);
         let callable: Rc<dyn ReiCallable> = Rc::new(klass);
+        if *expose {
+            self.exposed_value = Some(Object::Callable(callable.clone()));
+        }
 
-        if superclass.is_some() {
-            let temp = self.environment.borrow().clone();
-            self.environment = temp.enclosing.clone().unwrap();
+        if let Some(env) = temp_env {
+            self.environment = env;
         }
 
         self.environment.borrow_mut().assign(name, Object::Callable(callable))
@@ -470,12 +603,12 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
 impl Interpreter {
 
-    pub fn new(dev: bool) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
 
         let environment = Environment::global();
         let locals = HashMap::new();
         native::register_all_native_fns(environment.borrow_mut())?;
-        Ok(Interpreter { environment, locals, dev })
+        Ok(Interpreter { environment, locals, exposed_value: None })
 
     }
 
@@ -530,7 +663,6 @@ impl Interpreter {
             Object::Str(s) => s.clone(),
             Object::Callable(c) => c.to_string(),
             Object::Instance(i) => i.borrow().to_string()
-
         }
 
     }
@@ -593,6 +725,7 @@ impl Interpreter {
     pub fn binary_number_operation<T>(&self, a: Object, b: Object, token: Token, op: T) -> Result<Object, ExecSignal>
     where T: Fn(f64, f64) -> f64,
     {
+
         match (a, b) {
             (Object::Number(x), Object::Number(y)) => {
                 if token.token_type == TokenType::Slash && y == 0.0 {
@@ -604,53 +737,29 @@ impl Interpreter {
             }
             _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber { token })),
         }
+
     }
 
     fn compare_number_operation<F>(&self, a: Object, b: Object, token: Token, op: F) -> Result<Object, ExecSignal>
     where F: Fn(f64, f64) -> bool,
     {
+
         match (a, b) {
             (Object::Number(x), Object::Number(y)) => Ok(Object::Bool(op(x, y))),
             _ => Err(ExecSignal::RuntimeError(RuntimeError::OperandMustBeNumber { token }))
         }
+
     }
 
     pub fn with_env<F, R>(&mut self, env: EnvRef, f: F) -> R
     where F: FnOnce(&mut Interpreter) -> R,
     {
+
         let previous = self.environment.clone();
         self.environment = env;
         let result = f(self);
         self.environment = previous;
         result
-    }
-
-    fn resolve_path(&mut self, path: String) -> Result<String, ExecSignal> {
-
-        if self.dev {
-            let lib_path = format!("./src/tests/code/lib/{}.reix", path);
-            if fs::exists(&lib_path)? {
-                return Ok(lib_path)
-            }
-
-            let user_path = format!("./src/tests/code/{}.reix", path);
-            if fs::exists(&user_path)? {
-                return Ok(user_path)
-            }
-        }
-        else {
-            let lib_path = format!("./lib/{}.reix", path);
-            if fs::exists(&lib_path)? {
-                return Ok(lib_path)
-            }
-
-            let user_path = format!("./{}.reix", path);
-            if fs::exists(&user_path)? {
-                return Ok(user_path)
-            }
-        }
-
-        Err(ExecSignal::RuntimeError(RuntimeError::ModuleNotFound { path }))
 
     }
 

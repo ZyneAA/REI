@@ -7,11 +7,10 @@ pub trait Visitor<T> {
 
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> T;
     fn visit_expression_stmt(&mut self, expression: &Expr) -> T;
-    fn visit_class_stmt(&mut self, name: &Token, superclass: &Option<Box<Expr>>, methods: &Vec<Stmt>, static_methods: &Vec<Stmt>, expose: &bool) -> T;
+    fn visit_class_stmt(&mut self, name: &Token, superclass_refs: &Vec<Expr>, methods: &Vec<Stmt>, static_methods: &Vec<Stmt>, expose: &bool) -> T;
     fn visit_function_stmt(&mut self, name: &Token, params: &Vec<Token>, body: &Vec<Stmt>) -> T;
     fn visit_if_stmt(&mut self, condition: &Expr, then_branch: &Stmt, else_branch: &Option<Box<Stmt>>) -> T;
     fn visit_print_stmt(&mut self, expression: &Expr) -> T;
-    fn visit_use_stmt(&mut self, path: &String, alias: &String) -> T;
     fn visit_println_stmt(&mut self, expression: &Expr) -> T;
     fn visit_let_stmt(&mut self, name: &Token, initializer: &Expr) -> T;
     fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> T;
@@ -30,15 +29,10 @@ pub enum Stmt {
 
     Class {
         name: Token,
-        superclass: Option<Box<Expr>>,
+        superclass_refs: Vec<Expr>,
         methods: Vec<Stmt>,
         static_methods: Vec<Stmt>,
         expose: bool
-    },
-
-    Use {
-        path: String,
-        alias: String,
     },
 
     Expression {
@@ -89,9 +83,8 @@ impl Stmt {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
 
         match self {
-            Stmt::Use { path, alias } => visitor.visit_use_stmt(path, alias),
             Stmt::Block { statements } => visitor.visit_block_stmt(statements),
-            Stmt::Class { name, superclass, methods, static_methods, expose } => visitor.visit_class_stmt(name, superclass, methods, static_methods, expose),
+            Stmt::Class { name, superclass_refs, methods, static_methods, expose } => visitor.visit_class_stmt(name, superclass_refs, methods, static_methods, expose),
             Stmt::Expression { expression } => visitor.visit_expression_stmt(expression),
             Stmt::Function { name, params, body } => visitor.visit_function_stmt(name, params, body),
             Stmt::If { condition, then_branch, else_branch } => visitor.visit_if_stmt(condition, then_branch, else_branch),
