@@ -83,7 +83,10 @@ impl ReiCallable for Pow {
         "<native_fn>pow".to_string()
     }
 
-    fn as_any(&self) -> &dyn Any { self }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
 }
 
 #[derive(Clone, Debug)]
@@ -112,5 +115,148 @@ impl ReiCallable for Clamp {
     fn as_any(&self) -> &dyn Any {
         self
     }
+
+}
+
+#[derive(Clone, Debug)]
+struct ToRadians;
+impl ReiCallable for ToRadians {
+
+    fn arity(&self) -> usize {
+        1
+    }
+
+    fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
+
+        if let Object::Number(deg) = args[0] {
+            Ok(Object::Number(deg * PI / 180.0))
+        }
+        else {
+            Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: "Expected a number".to_string(),
+            }))
+        }
+
+    }
+
+    fn to_string(&self) -> String {
+        "<native_fn>to_radians".to_string()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+}
+
+#[derive(Clone, Debug)]
+struct ToDegrees;
+impl ReiCallable for ToDegrees {
+
+    fn arity(&self) -> usize {
+        1
+    }
+
+    fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
+
+        if let Object::Number(rad) = args[0] {
+            Ok(Object::Number(rad * 180.0 / PI))
+        }
+        else {
+            Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: "Expected a number".to_string(),
+            }))
+        }
+
+    }
+
+    fn to_string(&self) -> String {
+        "<native_fn>to_degrees".to_string()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+}
+
+#[derive(Clone, Debug)]
+struct Random;
+impl ReiCallable for Random {
+
+    fn arity(&self) -> usize {
+        0
+    }
+
+    fn call(&self, _: &mut Interpreter, _: &Vec<Object>) -> Result<Object, ExecSignal> {
+        Ok(Object::Number(rand::rng().random::<f64>()))
+    }
+
+    fn to_string(&self) -> String {
+        "<native_fn>random".to_string()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+}
+
+#[derive(Clone, Debug)]
+struct RandomInt;
+impl ReiCallable for RandomInt {
+
+    fn arity(&self) -> usize {
+        2
+    }
+
+    fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
+
+        match (&args[0], &args[1]) {
+            (Object::Number(min), Object::Number(max)) => {
+                let r = rand::rng().random_range(*min as i64..=*max as i64);
+                Ok(Object::Number(r as f64))
+            },
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: "Expected two numbers".to_string(),
+            }))
+        }
+    }
+
+    fn to_string(&self) -> String {
+        "<native_fn>random_int".to_string()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
+
+    env.define("_Ma_sqrt".to_string(), Object::Callable(Rc::new(Sqrt)))?;
+    env.define("_Ma_cbrt".to_string(), Object::Callable(Rc::new(Cbrt)))?;
+    env.define("_Ma_abs".to_string(), Object::Callable(Rc::new(Abs)))?;
+    env.define("_Ma_sign".to_string(), Object::Callable(Rc::new(Sign)))?;
+    env.define("_Ma_floor".to_string(), Object::Callable(Rc::new(Floor)))?;
+    env.define("_Ma_ceil".to_string(), Object::Callable(Rc::new(Ceil)))?;
+    env.define("_Ma_round".to_string(), Object::Callable(Rc::new(Round)))?;
+    env.define("_Ma_trunc".to_string(), Object::Callable(Rc::new(Trunc)))?;
+    env.define("_Ma_sin".to_string(), Object::Callable(Rc::new(Sin)))?;
+    env.define("_Ma_cos".to_string(), Object::Callable(Rc::new(Cos)))?;
+    env.define("_Ma_tan".to_string(), Object::Callable(Rc::new(Tan)))?;
+    env.define("_Ma_asin".to_string(), Object::Callable(Rc::new(Asin)))?;
+    env.define("_Ma_acos".to_string(), Object::Callable(Rc::new(Acos)))?;
+    env.define("_Ma_atan".to_string(), Object::Callable(Rc::new(Atan)))?;
+    env.define("_Ma_log".to_string(), Object::Callable(Rc::new(Log)))?;
+    env.define("_Ma_log10".to_string(), Object::Callable(Rc::new(Log10)))?;
+    env.define("_Ma_pow".to_string(), Object::Callable(Rc::new(Pow)))?;
+    env.define("_Ma_clamp".to_string(), Object::Callable(Rc::new(Clamp)))?;
+    env.define("_Ma_to_radians".to_string(), Object::Callable(Rc::new(ToRadians)))?;
+    env.define("_Ma_to_degrees".to_string(), Object::Callable(Rc::new(ToDegrees)))?;
+    env.define("_Ma_random".to_string(), Object::Callable(Rc::new(Random)))?;
+    env.define("_Ma_random_range".to_string(), Object::Callable(Rc::new(RandomInt)))?;
+
+    Ok(())
 
 }

@@ -1,0 +1,113 @@
+expose class Math {
+
+    // --- Constants ---
+    static PI() {
+        return 3.141592653589793;
+    }
+
+    static E() {
+        return 2.718281828459045;
+    }
+
+    // --- Basic Operations ---
+    static pow(base, exp) {
+        return _Ma_pow(base, exp);
+    }
+
+    static sqrt(n) {
+        return _Ma_sqrt(n);
+    }
+
+    static cbrt(n) {
+        return _Ma_cbrt(n);
+    }
+
+    static abs(n) {
+        return _Ma_abs(n);
+    }
+
+    static sign(n) {
+        return _Ma_sign(n);
+    }
+
+    // --- Rounding ---
+    static floor(n) {
+        return _Ma_floor(n);
+    }
+
+    static ceil(n) {
+        return _Ma_ceil(n);
+    }
+
+    static round(n) {
+        return _Ma_round(n);
+    }
+
+    static trunc(n) {
+        return _Ma_trunc(n);
+    }
+
+    static clamp(value, min, max) {
+        return _Ma_clamp(value, min, max);
+    }
+
+    // --- Trigonometry ---
+    static sin(rads) {
+        return _Ma_sin(rads);
+    }
+
+    static cos(rads) {
+        return _Ma_cos(rads);
+    }
+
+    static tan(rads) {
+        return _Ma_tan(rads);
+    }
+
+    static asin(val) {
+        return _Ma_asin(val);
+    }
+
+    static acos(val) {
+        return _Ma_acos(val);
+    }
+
+    static atan(val) {
+        return _Ma_atan(val);
+    }
+
+    static atan2(y, x) {
+        return _Ma_atan2(y, x);
+    }
+
+    static to_radians(deg) {
+        return deg * 3.141592653589793 / 180;
+    }
+
+    static to_degrees(rad) {
+        return rad * 180 / 3.141592653589793;
+    }
+
+    // --- Logarithms ---
+    static log(n) {
+        return _Ma_log(n);
+    }
+
+    static log10(n) {
+        return _Ma_log10(n);
+    }
+
+    static log_base(n, base) {
+        return _Ma_log(n) / _Ma_log(base);
+    }
+
+    // --- Random ---
+    static random() {
+        return _Ma_random();
+    }
+
+    static random_range(min, max) {
+        return _Ma_random_range(min, max);
+    }
+
+}

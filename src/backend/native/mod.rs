@@ -12,6 +12,7 @@ pub fn register_all_native_fns(mut env: RefMut<Environment>) -> Result<(), Box<d
     chrono::clock::register(&mut *env)?;
     memory::mem::register(&mut *env)?;
     io::std_io::register(&mut *env)?;
+    math::math::register(&mut *env)?;
 
     Ok(())
 

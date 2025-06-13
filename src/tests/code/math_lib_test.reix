@@ -1,0 +1,53 @@
+use std/math/math as Math;
+
+expose class MathTest {
+
+    static run() {
+
+        println "Running Math Tests...";
+
+        println "pow(2, 3): " + Math.pow(2, 3); // 8
+        println "sqrt(9): " + Math.sqrt(9); // 3
+        println "cbrt(27): " + Math.cbrt(27); // 3
+        println "abs(-5): " + Math.abs(-5); // 5
+        println "sign(-10): " + Math.sign(-10); // -1
+        println "sign(0): " + Math.sign(0); // 0
+        println "sign(42): " + Math.sign(42); // 1
+
+        println "floor(3.7): " + Math.floor(3.7); // 3
+        println "ceil(3.2): " + Math.ceil(3.2); // 4
+        println "round(3.5): " + Math.round(3.5); // 4
+        println "round(3.2): " + Math.round(3.2); // 3
+        println "trunc(3.9): " + Math.trunc(3.9); // 3
+
+        println "clamp(10, 0, 5): " + Math.clamp(10, 0, 5); // 5
+        println "clamp(-1, 0, 5): " + Math.clamp(-1, 0, 5); // 0
+        println "clamp(3, 0, 5): " + Math.clamp(3, 0, 5); // 3
+
+        let deg = 90;
+        let rad = Math.to_radians(deg);
+        println "to_radians(90): " + rad; // ~1.5708
+        println "to_degrees(PI/2): " + Math.to_degrees(Math.PI() / 2); // 90
+
+        println "sin(PI/2): " + Math.sin(Math.PI() / 2); // 1
+        println "cos(PI): " + Math.cos(Math.PI()); // -1
+        println "tan(PI/4): " + Math.tan(Math.PI() / 4); // ~1
+        println "asin(1): " + Math.asin(1); // ~PI/2
+        println "acos(0): " + Math.acos(0); // ~PI/2
+        println "atan(1): " + Math.atan(1); // ~PI/4
+        println "atan2(1, 1): " + Math.atan2(1, 1); // ~PI/4
+
+        println "log(E): " + Math.log(Math.E()); // 1
+        println "log10(100): " + Math.log10(100); // 2
+        println "log_base(8, 2): " + Math.log_base(8, 2); // 3
+
+        let rand = Math.random();
+        println "random(): " + rand;
+
+        let rand_int = Math.random_range(1, 10);
+        println "random_int(1,10): " + rand_int;
+
+    }
+
+}
+
