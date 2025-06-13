@@ -33,8 +33,6 @@ pub enum RuntimeError<T>
     NotCallable, InvalidArguments { token: T},
     PropertyError,
     ErrorInNativeFn { msg: String },
-    ModuleNotFound { path: String },
-    ErrorInImport { location: String },
     IoError { error: io::Error }
 
 }
@@ -47,8 +45,6 @@ where T: fmt::Debug + fmt::Display
 
         match self {
             RuntimeError::IoError { error } => write!(f, "{} | {}", util::red_colored("IO Error"), error),
-            RuntimeError::ErrorInImport { location } => write!(f, "{} | {}", util::red_colored("Error In Import"), location),
-            RuntimeError::ModuleNotFound { path } => write!(f, "{} | {}", util::red_colored("Module Not Found In Given Path"), path),
             RuntimeError::ErrorInNativeFn { msg } => write!(f, "{} | {}", util::red_colored("Error In Native Function"), msg),
             RuntimeError::InvalidArguments { token} => write!(f, "{} | {}", util::red_colored("Invalid Callable Argument Number | Argument don't match the callable's parameters"), token),
             RuntimeError::NotCallable => write!(f, "{}", util::red_colored("Invalid Callable | Can only call functions and classes")),

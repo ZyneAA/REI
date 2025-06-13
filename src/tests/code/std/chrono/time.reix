@@ -1,0 +1,11 @@
+expose class Time {
+
+    static measure(func) {
+        return _C_measure(func);
+    }
+
+    static sleep(amount) {
+        _C_sleep(amount);
+    }
+
+}
