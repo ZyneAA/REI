@@ -1,15 +1,12 @@
 expose class StdCompare {
 
-    static greater(first, second) {
+    static is_eq(first, second) {
 
         if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
-            if (first.get_comparable() > second.get_comparable()) {
-                return true;
-            }
-            return false;
+            return first.get_comparable() == second.get_comparable();
         }
         else {
-            println "Both comparables must inheritance Comparable class";
+            println "Both comparables must inherit Comparable class";
             return null;
         }
 
@@ -24,7 +21,7 @@ expose class StdCompare {
             return second;
         }
         else {
-            println "Both comparables must inheritance Comparable class";
+            println "Both comparables must inherit Comparable class";
             return null;
         }
 
@@ -39,7 +36,7 @@ expose class StdCompare {
             return first;
         }
         else {
-            println "Both comparables must inheritance Comparable class";
+            println "Both comparables must inherit Comparable class";
             return null;
         }
 
