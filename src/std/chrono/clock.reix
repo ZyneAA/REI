@@ -4,4 +4,8 @@ expose class Clock {
         return _C_format_time();
     }
 
+    static time_now() {
+        return _C_time_now();
+    }
+
 }

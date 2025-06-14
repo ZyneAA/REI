@@ -10,12 +10,12 @@ expose class Math {
     }
 
     // --- Basic Operations ---
-    static pow(base, exp) {
-        return _Ma_pow(base, exp);
+    static pow(a, b) {
+        return _Ma_pow(a, b);
     }
 
-    static sqrt(n) {
-        return _Ma_sqrt(n);
+    static sqrt(a) {
+        return _Ma_sqrt(a);
     }
 
     static cbrt(n) {
@@ -76,16 +76,12 @@ expose class Math {
         return _Ma_atan(val);
     }
 
-    static atan2(y, x) {
-        return _Ma_atan2(y, x);
-    }
-
     static to_radians(deg) {
-        return deg * 3.141592653589793 / 180;
+        return deg * Math.PI() / 180;
     }
 
     static to_degrees(rad) {
-        return rad * 180 / 3.141592653589793;
+        return rad * 180 / Math.PI();
     }
 
     // --- Logarithms ---
@@ -97,11 +93,7 @@ expose class Math {
         return _Ma_log10(n);
     }
 
-    static log_base(n, base) {
-        return _Ma_log(n) / _Ma_log(base);
-    }
-
-    // --- Random ---
+    // --- Random, RNG ---
     static random() {
         return _Ma_random();
     }

@@ -203,8 +203,8 @@ impl ReiCallable for Random {
 }
 
 #[derive(Clone, Debug)]
-struct RandomInt;
-impl ReiCallable for RandomInt {
+struct RandomRange;
+impl ReiCallable for RandomRange {
 
     fn arity(&self) -> usize {
         2
@@ -255,7 +255,7 @@ pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
     env.define("_Ma_to_radians".to_string(), Object::Callable(Rc::new(ToRadians)))?;
     env.define("_Ma_to_degrees".to_string(), Object::Callable(Rc::new(ToDegrees)))?;
     env.define("_Ma_random".to_string(), Object::Callable(Rc::new(Random)))?;
-    env.define("_Ma_random_range".to_string(), Object::Callable(Rc::new(RandomInt)))?;
+    env.define("_Ma_random_range".to_string(), Object::Callable(Rc::new(RandomRange)))?;
 
     Ok(())
 
