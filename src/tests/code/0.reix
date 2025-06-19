@@ -1,6 +1,7 @@
 use std/cmp/std_compare as StdCompare;
 use std/cmp/comparable as Comparable;
 use std/instance/instance as Instance;
+use std/instance/drop as Drop;
 use std/chrono/clock as Clock;
 use std/chrono/time as Time;
 use std/std_io/std_in as Input;
@@ -10,7 +11,7 @@ use math_lib_test as MathTest;
 use 4 as Man;
 
 let man1 = Man("Ball", 300);
-let man2 = Man("Llab", 500);
+let man2 = Man("K", 500);
 
 man1.mutate("name", "S");
 println "Name: " + man1.name;
@@ -18,8 +19,8 @@ println "Name: " + man1.name;
 let equal = StdCompare.is_eq(man1, man2);
 let max = StdCompare.max(man1, man2);
 let min = StdCompare.min(man1, man2);
-
 println equal + " " + max.name + " " + min.name;
+
 println "Current time: " + Clock.format_time();
 println "Time in ms: " + Clock.time_now();
 println "Enter: ";
@@ -28,5 +29,10 @@ println "Enter: ";
 let input = Input.read(); // doesnt flush the buff
 println "U entered: " + input + "\n";
 
-MathTest.run();
+println man1;
+man1.drop();
+println man1;
+
+
+// MathTest.run();
 

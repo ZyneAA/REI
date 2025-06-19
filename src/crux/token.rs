@@ -80,7 +80,7 @@ pub enum Object {
     Callable(Rc<dyn ReiCallable>),
     Instance(Rc<RefCell<ReiInstance>>),
     MBlock(*mut u8, usize),
-    // Arr(Vec<Object>)
+    Vec(Rc<RefCell<Vec<Object>>>)
 
 }
 
@@ -97,7 +97,7 @@ impl fmt::Display for Object {
             Object::Instance(i) => write!(f, "{}", i.borrow().to_string()),
             Object::MBlock(p, s) => write!(f, "{:p} {}", p, s),
             Object::Null => write!(f, "Null"),
-            // Object::Arr(v) => write!(f, "{:?}", v)
+            Object::Vec(v) => write!(f, "{:?}", v)
         }
     }
 
@@ -144,7 +144,6 @@ impl fmt::Display for TokenType {
             TokenType::LessEqual => "Less Equal",
             TokenType::Getter => "Getter",
             TokenType::Setter => "Setter",
-
 
             // Literals
             TokenType::Identifier => "Identifier",

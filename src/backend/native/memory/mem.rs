@@ -307,6 +307,11 @@ impl ReiCallable for ReiSizeOf {
             Object::Callable(_) => std::mem::size_of::<Rc<dyn ReiCallable>>(),
             Object::Instance(_) => std::mem::size_of::<Rc<RefCell<ReiInstance>>>(),
             Object::MBlock(_, size) => *size,
+            Object::Vec(v) => {
+                let object_size = std::mem::size_of::<Object>();
+                let total = object_size * v.borrow().len();
+                std::mem::size_of::<Vec<Object>>() + total
+            }
         };
 
         Ok(Object::Number(size as f64))
