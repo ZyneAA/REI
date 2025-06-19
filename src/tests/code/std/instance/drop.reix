@@ -1,0 +1,13 @@
+expose class Drop {
+
+    drop() {
+
+        if (@exist("target")) {
+            @destroy("target");
+            return;
+        }
+        println "Missing attribute 'target'";
+
+    }
+
+}

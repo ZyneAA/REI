@@ -652,17 +652,14 @@ impl Interpreter {
                 }
                 s
             },
-            Object::Range(s, e) => {
-                format!("<range | {}..{}>", s, e)
-            }
-            Object::MBlock(p, s) => {
-                format!("<mblock | ptr: {:p} size: {}>", p, s)
-            }
+            Object::Range(s, e) => format!("<range | {}..{}>", s, e),
+            Object::MBlock(p, s) => format!("<mblock | ptr: {:p} size: {}>", p, s),
             Object::Bool(b) => b.to_string(),
             Object::Dummy => "dummy".to_string(),
             Object::Str(s) => s.clone(),
             Object::Callable(c) => c.to_string(),
-            Object::Instance(i) => i.borrow().to_string()
+            Object::Instance(i) => i.borrow().to_string(),
+            Object::Vec(v) => format!("{:?}", v)
         }
 
     }
