@@ -4,16 +4,21 @@ use std/instance/instance as Instance;
 use std/instance/drop as Drop;
 use std/chrono/clock as Clock;
 use std/chrono/time as Time;
-use std/std_io/std_in as Input;
+use std/io/std_in as Input;
 use std/math as Math;
 
 use math_lib_test as MathTest;
 use 4 as Man;
 
+fn insert() {
+    return "New Name";
+}
+
 let man1 = Man("Ball", 300);
 let man2 = Man("K", 500);
 
 man1.mutate("name", "S");
+man1.name = insert();
 println "Name: " + man1.name;
 
 let equal = StdCompare.is_eq(man1, man2);
@@ -30,9 +35,4 @@ let input = Input.read(); // doesnt flush the buff
 println "U entered: " + input + "\n";
 
 println man1;
-man1.drop();
-println man1;
-
-
-// MathTest.run();
 
