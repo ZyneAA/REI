@@ -121,8 +121,10 @@ impl ReiCallable for PopFromVec {
             })),
         };
 
-        vec_ref.borrow_mut().pop();
-        Ok(Object::Null)
+        match vec_ref.borrow_mut().pop() {
+            Some(val) => Ok(val),
+            None => Ok(Object::Null)
+        }
 
     }
 

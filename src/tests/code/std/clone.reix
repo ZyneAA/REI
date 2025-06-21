@@ -1,0 +1,11 @@
+expose class Clone {
+
+    clone() {
+        return _Mi_clone(this);
+    }
+
+    static clone_from(target) {
+        return _Mi_clone(target);
+    }
+
+}

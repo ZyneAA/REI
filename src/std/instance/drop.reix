@@ -2,7 +2,6 @@ expose class Drop {
 
     drop() {
         if (@exist("target"))  {
-            println "hereree " + this.target;
             @destroy(target);
         }
         return "Missing attribute 'target'";

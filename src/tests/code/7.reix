@@ -1,0 +1,81 @@
+expose class Vec {
+
+    init() {
+        this.vec = _Co_new_vec();
+    }
+
+    push(val) {
+
+        if (@exist("vec")) {
+            _Co_push_to_vec(this.vec, val);
+        }
+
+    }
+
+    pop() {
+
+        if (@exist("vec")) {
+            return _Co_pop_from_vec(this.vec);
+        }
+
+    }
+
+    append(target) {
+
+        if (@typeof(target, "Vec") and @exist("vec")) {
+            _Co_append_to_vec(this.vec, target.vec);
+        }
+
+    }
+
+    clear() {
+
+        if (@exist("vec")) {
+            _Co_clear_vec(this.vec);
+        }
+
+    }
+
+    is_empty() {
+
+        if (@exist("vec")) {
+            return _Co_vec_is_empty(this.vec);
+        }
+
+    }
+
+    split(index) {
+
+        if (@exist("vec")) {
+            return _Co_split_vec(this.vec, index);
+        }
+
+    }
+
+    len() {
+
+        if (@exist("vec")) {
+            return _Co_vec_len(this.vec);
+        }
+
+    }
+
+    get(index) {
+
+        if (@exist("vec")) {
+            return _Co_vec_get(this.vec, index);
+        }
+
+    }
+
+    clone() {
+
+        let new_vec = Vec();
+        if (@exist("vec")) {
+            new_vec.vec = _Mi_clone(this.vec);
+        }
+        return new_vec;
+
+    }
+
+}

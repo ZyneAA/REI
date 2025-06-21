@@ -69,11 +69,7 @@ impl<'a> Resolver<'a> {
 
                         self.resolve_expr(superclass);
                     }
-
                     self.begin_scope();
-                    if let Some(scope) = self.scopes.last_mut() {
-                        scope.insert("base".to_string(), true);
-                    }
                 }
 
                 // Begin scope for `this`
@@ -83,20 +79,22 @@ impl<'a> Resolver<'a> {
                 }
 
                 for method in methods {
-                    let mut declaration = FunctionType::Method;
+
                     if let Stmt::Function { name, params, body } = method {
 
-                        if name.lexeme == "init" {
-                            declaration = FunctionType::Initializer;
+                        let prev_function = self.current_function.clone();
+                        self.current_function = if name.lexeme == "init" {
+                            FunctionType::Initializer
                         }
+                        else {
+                            FunctionType::Method
+                        };
 
-                        self.resolve_function(params, body, declaration);
-
-                        if !superclass_refs.is_empty() {
-                            self.end_scope();
-                        }
+                        self.resolve_function(params, body, self.current_function.clone());
+                        self.current_function = prev_function;
 
                     }
+
                 }
 
                 for static_method in static_methods {

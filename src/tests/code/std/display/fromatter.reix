@@ -1,0 +1,14 @@
+expose class Fmt {
+
+    fmt() {
+
+        if (@exist("fmttable")) {
+            println this.fmttable;
+        }
+        else {
+            println "Formattable not found";
+        }
+
+    }
+
+}

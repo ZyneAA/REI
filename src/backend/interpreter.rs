@@ -659,7 +659,11 @@ impl Interpreter {
             Object::Str(s) => s.clone(),
             Object::Callable(c) => c.to_string(),
             Object::Instance(i) => i.borrow().to_string(),
-            Object::Vec(v) => format!("{:?}", v)
+            Object::Vec(v) => {
+                let vec_borrow = v.borrow();
+                let elements: Vec<String> = vec_borrow.iter().map(|o| o.to_string()).collect();
+                format!("[{}]", elements.join(", "))
+            }
         }
 
     }

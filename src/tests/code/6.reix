@@ -1,0 +1,40 @@
+use std/clone as Clone;
+use std/collection/vec as Vec;
+
+let person0 = Person("me");
+let person1 = Person("u");
+let person2 = person0;
+person2.name = "us";
+
+println person0.name;
+println person1.name;
+println person2.name;
+
+let a = Vec();
+let b = Vec();
+
+a.push("OK SOSOSOSO");
+a.push(true);
+a.push(null);
+a.push(10);
+
+b.push("name");
+b.push("is");
+b.push("z");
+
+a.append(b);
+
+println "the a vec: " + a.vec;
+println "the len() is: " + a.len();
+println "is empty: " + a.is_empty();
+println "the b vec: " + b.vec;
+
+let c = a.split(3);
+println "after splitting: " + c;
+
+let d = a.clone();
+println "c, a clone from a: " + d.vec;
+
+a.clear();
+println "after clearing: " + a.vec;
+
