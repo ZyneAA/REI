@@ -1,0 +1,7 @@
+expose class SizedVec < Vec {
+
+    init(size) {
+        this.vec = _Co_new_vec_sized(size);
+    }
+
+}

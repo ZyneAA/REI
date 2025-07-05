@@ -1,6 +1,8 @@
 use std::fs;
+use std::io;
 use std::any::Any;
 use std::rc::Rc;
+use std::cell::RefCell;
 
 use crate::crux::token::Object;
 use crate::backend::interpreter::Interpreter;
@@ -51,7 +53,7 @@ impl ReiCallable for BuildDir {
     }
 
     fn to_string(&self) -> String {
-        "<native_fn>_FS_build_dir".to_string()
+        "<native_fn>_Fs_build_dir".to_string()
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -59,10 +61,83 @@ impl ReiCallable for BuildDir {
     }
 
 }
+
+#[derive(Clone, Debug)]
+pub struct ReadDir;
+impl ReiCallable for ReadDir {
+
+    fn arity(&self) -> usize {
+        1
+    }
+
+    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
+
+        let path = match arguments.get(0) {
+            Some(Object::Str(n)) => n,
+            _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: "expected Str".to_string(),
+            })),
+        };
+
+        let entries = fs::read_dir(path)?
+            .map(|res| res.map(|e| Object::Str(e.path().to_string_lossy().to_string())))
+            .collect::<Result<Vec<_>, io::Error>>()?;
+
+        let vec = Rc::new(RefCell::new(entries));
+        Ok(Object::Vec(vec))
+
+    }
+
+    fn to_string(&self) -> String {
+        "<native_fn>_Fs_read_dir".to_string()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+}
+
+#[derive(Clone, Debug)]
+pub struct CreateFile;
+impl ReiCallable for CreateFile {
+
+    fn arity(&self) -> usize {
+        1
+    }
+
+    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
+
+        let path = match arguments.get(0) {
+            Some(Object::Str(n)) => n,
+            _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: "expected Str".to_string(),
+            })),
+        };
+
+        let entries = fs::read_dir(path)?
+            .map(|res| res.map(|e| Object::Str(e.path().to_string_lossy().to_string())))
+            .collect::<Result<Vec<_>, io::Error>>()?;
+
+        let vec = Rc::new(RefCell::new(entries));
+        Ok(Object::Vec(vec))
+
+    }
+
+    fn to_string(&self) -> String {
+        "<native_fn>_Fs_create_file".to_string()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+}
+
 pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
 
-    let malloc: Rc<dyn ReiCallable> = Rc::new(BuildDir);
-    env.define("_FS_build_dir".to_string(), Object::Callable(malloc))?;
+    env.define("_Fs_build_dir".to_string(), Object::Callable(Rc::new(BuildDir)))?;
+    env.define("_Fs_read_dir".to_string(), Object::Callable(Rc::new(ReadDir)))?;
 
     Ok(())
 

@@ -1,0 +1,11 @@
+let me = "xx";
+
+fn who() {
+    println me;
+    fn where() {
+        println "IDK";
+    }
+    where();
+}
+
+who();

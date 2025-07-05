@@ -247,6 +247,7 @@ impl<'a> Lexer<'a> {
 
         result
     }
+
     fn is_end(&self) -> bool {
         self.current >= self.length
     }

@@ -17,14 +17,14 @@ pub struct Parser<'a> {
     exposed: bool,
     current_file: Option<PathBuf>,
     pub is_error: bool,
-    pub errors: Vec<ParseError>
+    syntax_errors: &'a mut Vec<ParseError>
 
 }
 
 impl<'a> Parser<'a> {
 
-    pub fn new(tokens: Vec<Token>, current_file: Option<PathBuf>, id_counter: &'a mut usize) -> Self {
-        Parser { tokens, current: 0, id_counter, exposed: false, current_file, is_error: false, errors: vec![] }
+    pub fn new(tokens: Vec<Token>, current_file: Option<PathBuf>, id_counter: &'a mut usize, syntax_errors: &'a mut Vec<ParseError>) -> Self {
+        Parser { tokens, current: 0, id_counter, exposed: false, current_file, is_error: false, syntax_errors }
     }
 
     pub fn parse(&mut self) -> Vec<stmt::Stmt> {
@@ -36,7 +36,8 @@ impl<'a> Parser<'a> {
                 Ok(stmt) => statements.push(stmt),
                 Err(e) => {
                     self.is_error = true;
-                    self.errors.push(e);
+                    self.syntax_errors.push(e);
+                    println!("e22e");
                     self.synchronize();
                 }
             }
@@ -138,16 +139,8 @@ impl<'a> Parser<'a> {
         let source = fs::read_to_string(&resolved_path).unwrap();
         let tokens = Lexer::new(&source).scan_tokens();
 
-        let mut parser = Parser::new(tokens, self.current_file.clone(), self.id_counter);
-        let is_error = parser.is_error;
+        let mut parser = Parser::new(tokens, self.current_file.clone(), self.id_counter, self.syntax_errors);
         let stmts = parser.parse().clone();
-
-        if is_error {
-            for e in parser.errors {
-                self.errors.push(e); // bubble them up to main parser
-            }
-            self.is_error = true;
-        }
 
         for stmt in stmts {
             if let stmt::Stmt::Class {
@@ -990,7 +983,7 @@ impl<'a> Parser<'a> {
 
     fn synchronize(&mut self) {
 
-        self.advance();
+        println!("heerer");
         while !self.is_end() {
 
             if self.previous().token_type == TokenType::Semicolon { return }
@@ -1006,10 +999,8 @@ impl<'a> Parser<'a> {
                 | TokenType::Print
                 | TokenType::PrintLn
                 | TokenType::Return => return,
-                _ => {},
+                _ => { self.advance(); },
             }
-
-            self.advance();
 
         }
 

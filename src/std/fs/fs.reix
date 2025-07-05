@@ -1,0 +1,11 @@
+expose class Fs {
+
+    static build_dir(path, recursive) {
+        _Fs_build_dir(path, recursive);
+    }
+
+    static read_dir(path) {
+        return _Fs_read_dir(path);
+    }
+
+}
