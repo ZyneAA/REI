@@ -1,0 +1,7 @@
+expose class FromVecRaw < Vec {
+
+    init(from) {
+        this.vec = from
+    }
+
+}

@@ -3,6 +3,7 @@ use std::path::Path;
 use std::env;
 
 use super::util;
+use crate::crux::error::ParseError;
 
 use crate::frontend::lexer;
 use crate::frontend::parser::Parser;
@@ -15,28 +16,23 @@ pub struct Runner;
 impl Runner {
 
     pub fn run(source: &str, location: &str) {
+
         let current_file = Some(PathBuf::from(location));
 
         let lexer = lexer::Lexer::new(source);
         let tokens = lexer.scan_tokens();
 
-    //    for i in &tokens {
-    //        println!("{:?}", i);
-    //    }
-
         let mut global_expr_id_counter = 0;
-        let mut parser = Parser::new(tokens, current_file.clone(), &mut global_expr_id_counter);
+        let mut syntax_errors: Vec<ParseError> = vec![];
+
+        let mut parser = Parser::new(tokens, current_file.clone(), &mut global_expr_id_counter, &mut syntax_errors);
         let location =  util::red_colored(&format!("Error in {}", location));
 
-        let is_parse_error = parser.is_error;
         let stmts = parser.parse();
 
-    //    for i in &stmts {
-    //        println!("{:?}", i);
-    //    }
-
-        if is_parse_error {
-            for i in parser.errors {
+        println!("{:?}", syntax_errors);
+        if syntax_errors.len() > 0 {
+            for i in syntax_errors {
                 println!("{}\n{}\n", location, i);
             }
             return;

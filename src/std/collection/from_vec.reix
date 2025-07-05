@@ -1,0 +1,11 @@
+expose class FromVec < Vec {
+
+    init(from) {
+
+        if (@typeof(from, "Vec")) {
+            this <- vec = from -> vec;
+        }
+
+    }
+
+}

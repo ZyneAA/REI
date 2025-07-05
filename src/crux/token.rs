@@ -72,15 +72,15 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
 pub enum Object {
 
     Number(f64),
-    Str(String),
     Bool(bool),
     Range(f64, f64),
+    Str(String),
     Dummy,
     Null,
     Callable(Rc<dyn ReiCallable>),
     Instance(Rc<RefCell<ReiInstance>>),
     MBlock(*mut u8, usize),
-    Vec(Rc<RefCell<Vec<Object>>>)
+    Vec(Rc<RefCell<Vec<Object>>>),
 
 }
 
@@ -235,12 +235,14 @@ impl fmt::Display for Token {
 impl fmt::Debug for Token {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+
         f.debug_struct("Token")
          .field("token_type", &self.token_type)
          .field("lexeme", &self.lexeme)
          .field("literal", &self.literal)
          .field("line", &self.line)
          .finish()
+
     }
 
 }
