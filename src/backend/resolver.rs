@@ -157,6 +157,9 @@ impl<'a> Resolver<'a> {
             Stmt::PrintLn { expression } => {
                 self.resolve_expr(expression);
             }
+            Stmt::Throw { expression } => {
+                self.resolve_expr(expression);
+            }
             Stmt::Break => {
                 if self.loop_depth == 0 {
                     panic!("Cannot use 'break' outside of a loop.");

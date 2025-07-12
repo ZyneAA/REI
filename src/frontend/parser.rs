@@ -37,7 +37,6 @@ impl<'a> Parser<'a> {
                 Err(e) => {
                     self.is_error = true;
                     self.syntax_errors.push(e);
-                    println!("e22e");
                     self.synchronize();
                 }
             }
@@ -90,6 +89,9 @@ impl<'a> Parser<'a> {
         else if self.rmatch(&[TokenType::Continue])? {
             self.continue_statement()
         }
+        else if self.rmatch(&[TokenType::Throw])? {
+            self.throw_statement()
+        }
 
         // Class
         else if self.rmatch(&[TokenType::Class])? {
@@ -107,6 +109,26 @@ impl<'a> Parser<'a> {
 
         else {
             self.expression_statement()
+        }
+
+    }
+
+    fn throw_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
+
+        let value = self.expression()?;
+
+        let throw = stmt::Stmt::Throw {
+            expression: Box::new(value)
+        };
+
+        match self.consume(&TokenType::Semicolon, "Expected ; after value") {
+            Ok(_) => {
+                Ok(throw)
+            },
+            Err(e) => {
+                self.synchronize();
+                Err(e)
+            }
         }
 
     }
@@ -983,7 +1005,7 @@ impl<'a> Parser<'a> {
 
     fn synchronize(&mut self) {
 
-        println!("heerer");
+        println!("Sync at token: {:?}", self.previous());
         while !self.is_end() {
 
             if self.previous().token_type == TokenType::Semicolon { return }

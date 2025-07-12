@@ -1,3 +1,7 @@
-let x = 231
-let = 2;
-println x
+use klass as Test;
+
+let test0 = Test("hero");
+println test0.a();
+
+let x = 231;
+println x;

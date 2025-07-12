@@ -30,7 +30,6 @@ impl Runner {
 
         let stmts = parser.parse();
 
-        println!("{:?}", syntax_errors);
         if syntax_errors.len() > 0 {
             for i in syntax_errors {
                 println!("{}\n{}\n", location, i);

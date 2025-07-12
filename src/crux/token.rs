@@ -26,7 +26,7 @@ pub enum TokenType {
     // Keywords
     And, Class, Setter, Getter, Static, Else, False, Fn, For, If, Null, Or, At,
     Print, PrintLn, Return, Base, This, True, Let, While, Loop,
-    Break, Continue,
+    Break, Continue, Throw,
     Eof,
 
     // Module related
@@ -87,6 +87,7 @@ pub enum Object {
 impl fmt::Display for Object {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+
         match self {
             Object::Number(n) => write!(f, "{}", n),
             Object::Str(s) => write!(f, "{}", s),
@@ -103,6 +104,7 @@ impl fmt::Display for Object {
                 write!(f, "[{}]", elements.join(", "))
             }
         }
+
     }
 
 }
@@ -178,6 +180,7 @@ impl fmt::Display for TokenType {
             TokenType::Break => "IDENTIFIER",
             TokenType::Continue => "IDENTIFIER",
             TokenType::Use => "IDENTIFIER",
+            TokenType::Throw => "IDENTIFIER",
             TokenType::Expose => "IDENTIFIER",
             TokenType::As => "IDENTIFIER",
             TokenType::At => "IDENTIFIER",

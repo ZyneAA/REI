@@ -1,7 +1,9 @@
 use std::rc::Rc;
 use std::collections::HashMap;
+use std::thread;
 
 use crate::crux::token::{ Object, Token, TokenType };
+use crate::crux::util;
 
 use crate::frontend::expr;
 use crate::frontend::expr::ExprId;
@@ -506,6 +508,22 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
         let value = self.evaluate(expression)?;
         print!("{}", self.stringify(&value));
+        Ok(())
+
+    }
+
+    fn visit_throw_stmt(&mut self, expression: &Box<expr::Expr>) -> Result<(), ExecSignal> {
+
+        let obj = self.evaluate(expression)?;
+        let current_thread = thread::current();
+        let current_thread_name = current_thread.name().unwrap_or("main");
+        let current_thread_id = current_thread.id();
+
+        let value = format!("Exeception in {:?}: {:?} -->\n {}", current_thread_name, current_thread_id, self.stringify(&obj));
+        let throw = util::red_colored(&value);
+
+        println!("{}", throw);
+
         Ok(())
 
     }
