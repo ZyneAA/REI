@@ -21,7 +21,7 @@ impl<'a> Lexer<'a> {
 
         let tokens: Vec<Token> = Vec::new();
 
-        Lexer{
+        Lexer {
             source,
             tokens,
             start: 0,

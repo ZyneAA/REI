@@ -93,6 +93,11 @@ impl<'a> Parser<'a> {
             self.throw_statement()
         }
 
+        // Error handle
+        else if self.rmatch(&[TokenType::Do])? {
+            self.do_statement()
+        }
+
         // Class
         else if self.rmatch(&[TokenType::Class])? {
             self.class_declaration(false)
@@ -113,6 +118,12 @@ impl<'a> Parser<'a> {
 
     }
 
+    fn do_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
+
+
+
+    }
+
     fn throw_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
         let value = self.expression()?;
@@ -122,9 +133,7 @@ impl<'a> Parser<'a> {
         };
 
         match self.consume(&TokenType::Semicolon, "Expected ; after value") {
-            Ok(_) => {
-                Ok(throw)
-            },
+            Ok(_) => Ok(throw),
             Err(e) => {
                 self.synchronize();
                 Err(e)
@@ -270,14 +279,14 @@ impl<'a> Parser<'a> {
 
     fn break_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
-        self.consume(&TokenType::Semicolon, "Expected ','")?;
+        self.consume(&TokenType::Semicolon, "Expected ';'")?;
         Ok(stmt::Stmt::Break)
 
     }
 
     fn continue_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
 
-        self.consume(&TokenType::Semicolon, "Expected ','")?;
+        self.consume(&TokenType::Semicolon, "Expected ';'")?;
         Ok(stmt::Stmt::Continue)
 
     }
@@ -400,6 +409,7 @@ impl<'a> Parser<'a> {
         Ok(stmt::Stmt::Block {
             statements: vec![init, while_stmt],
         })
+
     }
 
     fn while_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
@@ -430,6 +440,7 @@ impl<'a> Parser<'a> {
         else {
             None
         };
+
         Ok(stmt::Stmt::If {
             condition: Box::new(condition),
             then_branch: Box::new(then_branch),
@@ -446,6 +457,7 @@ impl<'a> Parser<'a> {
         }
 
         self.consume(&TokenType::RightBrace, "Expected a } after block")?;
+
         Ok(stmt::Stmt::Block {
             statements
         })
@@ -572,6 +584,7 @@ impl<'a> Parser<'a> {
             return Ok(stmt::Stmt::PrintLn {
                 expression: Box::new(range)
             })
+
         }
 
         match self.consume(&TokenType::Semicolon, "Expected ; after value") {
@@ -598,6 +611,7 @@ impl<'a> Parser<'a> {
         };
 
         if self.peek().token_type == TokenType::DotDot {
+
             let initializer = initializer.unwrap();
             self.consume(&TokenType::DotDot, "Expect '..' for Range type")?;
             let end = self.expression()?;
@@ -1005,7 +1019,6 @@ impl<'a> Parser<'a> {
 
     fn synchronize(&mut self) {
 
-        println!("Sync at token: {:?}", self.previous());
         while !self.is_end() {
 
             if self.previous().token_type == TokenType::Semicolon { return }

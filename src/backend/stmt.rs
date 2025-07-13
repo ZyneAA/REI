@@ -14,10 +14,20 @@ pub trait Visitor<T> {
     fn visit_println_stmt(&mut self, expression: &Expr) -> T;
     fn visit_let_stmt(&mut self, name: &Token, initializer: &Expr) -> T;
     fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> T;
+    fn visit_do_fail_yield_stmt(&mut self, do_exprs: &Vec<Expr>, fail_exprs: &Vec<Expr>, yields: &Option<Vec<YieldBinding>>) -> T;
     fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Box<Expr>>) -> T;
     fn visit_throw_stmt(&mut self, expression: &Box<Expr>) -> T;
     fn visit_break_stmt(&mut self) -> T;
     fn visit_continue_stmt(&mut self) -> T;
+
+}
+
+#[derive(Clone, Debug)]
+pub enum YieldBinding {
+
+    Let(Token),
+    Assign(Expr),
+    Ignore(bool)
 
 }
 
@@ -61,6 +71,12 @@ pub enum Stmt {
         value: Option<Box<Expr>>,
     },
 
+    DoFailYield {
+        do_exprs: Vec<Expr>,
+        fail_exprs: Vec<Expr>,
+        yields: Option<Vec<YieldBinding>>,
+    },
+
     Throw {
         expression: Box<Expr>,
     },
@@ -95,6 +111,7 @@ impl Stmt {
             Stmt::If { condition, then_branch, else_branch } => visitor.visit_if_stmt(condition, then_branch, else_branch),
             Stmt::Print { expression } => visitor.visit_print_stmt(expression),
             Stmt::Return { keyword, value } => visitor.visit_return_stmt(keyword, value),
+            Stmt::DoFailYield { do_exprs, fail_exprs, yields } => visitor.visit_do_fail_yield_stmt(do_exprs, fail_exprs, yields),
             Stmt::Throw { expression } => visitor.visit_throw_stmt(expression),
             Stmt::PrintLn { expression } => visitor.visit_println_stmt(expression),
             Stmt::Let { name, initializer } => visitor.visit_let_stmt(name, initializer),

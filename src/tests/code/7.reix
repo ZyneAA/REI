@@ -1,4 +1,15 @@
-use std/fs/fs as Fs;
+fn a() {
+    return 1000;
+}
 
-let dir = Fs.build_dir("./new", false);
-println dir;
+class b {
+
+    ok() {
+        println "OK";
+    }
+
+}
+
+do: a(), b(), 12+1
+fail: throw "Failed doing smth", throw "uhh ohh no"
+yield: let x, let y, let z;

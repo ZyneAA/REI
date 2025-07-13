@@ -26,7 +26,7 @@ pub enum TokenType {
     // Keywords
     And, Class, Setter, Getter, Static, Else, False, Fn, For, If, Null, Or, At,
     Print, PrintLn, Return, Base, This, True, Let, While, Loop,
-    Break, Continue, Throw,
+    Break, Continue, Throw, Do, Fail, Yield,
     Eof,
 
     // Module related
@@ -46,6 +46,9 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("if", TokenType::If);
     map.insert("null", TokenType::Null);
     map.insert("or", TokenType::Or);
+    map.insert("do", TokenType::Do);
+    map.insert("fail", TokenType::Fail);
+    map.insert("yield", TokenType::Fail);
     map.insert("print", TokenType::Print);
     map.insert("println", TokenType::PrintLn);
     map.insert("return", TokenType::Return);
@@ -57,6 +60,7 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("while", TokenType::While);
     map.insert("loop", TokenType::Loop);
     map.insert("break", TokenType::Break);
+    map.insert("throw", TokenType::Throw);
     map.insert("use", TokenType::Use);
     map.insert("expose", TokenType::Expose);
     map.insert("as", TokenType::As);
@@ -167,6 +171,9 @@ impl fmt::Display for TokenType {
             TokenType::If => "IDENTIFIER",
             TokenType::Null => "IDENTIFIER",
             TokenType::Or => "IDENTIFIER",
+            TokenType::Do => "IDENTIFIER",
+            TokenType::Fail => "IDENTIFIER",
+            TokenType::Yield => "IDENTIFIER",
             TokenType::Print => "IDENTIFIER",
             TokenType::PrintLn => "IDENTIFIER",
             TokenType::Return => "IDENTIFIER",

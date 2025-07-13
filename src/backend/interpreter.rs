@@ -519,7 +519,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
         let current_thread_name = current_thread.name().unwrap_or("main");
         let current_thread_id = current_thread.id();
 
-        let value = format!("Exeception in {:?}: {:?} -->\n {}", current_thread_name, current_thread_id, self.stringify(&obj));
+        let value = format!("Exeception in {:?} | {:?}:\n    {}", current_thread_name, current_thread_id, self.stringify(&obj));
         let throw = util::red_colored(&value);
 
         println!("{}", throw);
