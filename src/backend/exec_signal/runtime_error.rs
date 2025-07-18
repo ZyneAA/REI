@@ -4,45 +4,28 @@ use std::io;
 use crate::crux::util;
 
 #[derive(Debug)]
-pub enum RuntimeError<T>
-{
-
-    TypeMismatch {
-        token: T,
-    },
-    UndefinedVariable {
-        token: T,
-    },
-    UndefinedProperty {
-        token: T,
-    },
-    DividedByZero {
-        token: T,
-    },
-    OperandMustBeNumber {
-        token: T,
-    },
-    UnexpectedBinaryOperation {
-        token: T
-    },
-    InvalidOperator {
-        token: T
-    },
+pub enum RuntimeError<T> {
+    TypeMismatch { token: T },
+    UndefinedVariable { token: T },
+    UndefinedProperty { token: T },
+    DividedByZero { token: T },
+    OperandMustBeNumber { token: T },
+    UnexpectedBinaryOperation { token: T },
+    InvalidOperator { token: T },
     InvalidRange,
     InvalidRangeType,
-    NotCallable, InvalidArguments { token: T},
+    NotCallable,
+    InvalidArguments { token: T },
     PropertyError,
     ErrorInNativeFn { msg: String },
-    IoError { error: io::Error }
-
+    IoError { error: io::Error },
 }
 
 impl<T> fmt::Display for RuntimeError<T>
-where T: fmt::Debug + fmt::Display
+where
+    T: fmt::Debug + fmt::Display,
 {
-
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-
         match self {
             RuntimeError::IoError { error } => write!(f, "{} | {}", util::red_colored("IO Error"), error),
             RuntimeError::ErrorInNativeFn { msg } => write!(f, "{} | {}", util::red_colored("Error In Native Function"), msg),
@@ -59,9 +42,7 @@ where T: fmt::Debug + fmt::Display
             RuntimeError::DividedByZero { token } => write!(f, "{} | {}", util::red_colored("Divided By Zero"), token),
             RuntimeError::OperandMustBeNumber { token } => write!(f, "{} | {}", util::red_colored("Operand must be a number"), token),
         }
-
     }
-
 }
 
 impl<T> std::error::Error for RuntimeError<T> where T: fmt::Debug + fmt::Display {}

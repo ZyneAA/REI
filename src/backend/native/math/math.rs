@@ -1,46 +1,44 @@
+use rand::Rng;
 use std::any::Any;
 use std::f64::consts::PI;
 use std::rc::Rc;
-use rand::Rng;
 
-use crate::crux::token::Object;
-use crate::backend::interpreter::Interpreter;
-use crate::backend::exec_signal::ExecSignal;
-use crate::backend::exec_signal::runtime_error::RuntimeError;
-use crate::backend::rei_callable::ReiCallable;
 use crate::backend::environment::Environment;
+use crate::backend::exec_signal::runtime_error::RuntimeError;
+use crate::backend::exec_signal::ExecSignal;
+use crate::backend::interpreter::Interpreter;
+use crate::backend::rei_callable::ReiCallable;
+use crate::crux::token::Object;
 
 macro_rules! math_fn {
-
     ($name:ident, $rust_fn:expr) => {
         #[derive(Clone, Debug)]
         struct $name;
 
         impl ReiCallable for $name {
-
-            fn arity(&self) -> usize { 1 }
+            fn arity(&self) -> usize {
+                1
+            }
 
             fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
-
                 if let Object::Number(n) = args[0] {
                     Ok(Object::Number($rust_fn(n)))
-                }
-                else {
+                } else {
                     Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                         msg: "Expected number".to_string(),
                     }))
                 }
-
             }
 
-            fn to_string(&self) -> String { format!("<native_fn>{}" , stringify!($name)) }
+            fn to_string(&self) -> String {
+                format!("<native_fn>{}", stringify!($name))
+            }
 
-            fn as_any(&self) -> &dyn Any { self }
-
+            fn as_any(&self) -> &dyn Any {
+                self
+            }
         }
-
     };
-
 }
 
 math_fn!(Sqrt, f64::sqrt);
@@ -63,20 +61,17 @@ math_fn!(Log10, f64::log10);
 #[derive(Clone, Debug)]
 struct Pow;
 impl ReiCallable for Pow {
-
     fn arity(&self) -> usize {
         2
     }
 
     fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
-
         match (&args[0], &args[1]) {
             (Object::Number(a), Object::Number(b)) => Ok(Object::Number(a.powf(*b))),
             _ => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                 msg: "Expected two numbers".to_string(),
-            }))
+            })),
         }
-
     }
 
     fn to_string(&self) -> String {
@@ -86,26 +81,24 @@ impl ReiCallable for Pow {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 #[derive(Clone, Debug)]
 struct Clamp;
 impl ReiCallable for Clamp {
-
     fn arity(&self) -> usize {
         3
     }
 
     fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
-
         match (&args[0], &args[1], &args[2]) {
-            (Object::Number(val), Object::Number(min), Object::Number(max)) => Ok(Object::Number(val.max(*min).min(*max))),
+            (Object::Number(val), Object::Number(min), Object::Number(max)) => {
+                Ok(Object::Number(val.max(*min).min(*max)))
+            }
             _ => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                 msg: "Expected three numbers".to_string(),
-            }))
+            })),
         }
-
     }
 
     fn to_string(&self) -> String {
@@ -115,28 +108,23 @@ impl ReiCallable for Clamp {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 #[derive(Clone, Debug)]
 struct ToRadians;
 impl ReiCallable for ToRadians {
-
     fn arity(&self) -> usize {
         1
     }
 
     fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
-
         if let Object::Number(deg) = args[0] {
             Ok(Object::Number(deg * PI / 180.0))
-        }
-        else {
+        } else {
             Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                 msg: "Expected a number".to_string(),
             }))
         }
-
     }
 
     fn to_string(&self) -> String {
@@ -146,28 +134,23 @@ impl ReiCallable for ToRadians {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 #[derive(Clone, Debug)]
 struct ToDegrees;
 impl ReiCallable for ToDegrees {
-
     fn arity(&self) -> usize {
         1
     }
 
     fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
-
         if let Object::Number(rad) = args[0] {
             Ok(Object::Number(rad * 180.0 / PI))
-        }
-        else {
+        } else {
             Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                 msg: "Expected a number".to_string(),
             }))
         }
-
     }
 
     fn to_string(&self) -> String {
@@ -177,13 +160,11 @@ impl ReiCallable for ToDegrees {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 #[derive(Clone, Debug)]
 struct Random;
 impl ReiCallable for Random {
-
     fn arity(&self) -> usize {
         0
     }
@@ -199,27 +180,24 @@ impl ReiCallable for Random {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 #[derive(Clone, Debug)]
 struct RandomRange;
 impl ReiCallable for RandomRange {
-
     fn arity(&self) -> usize {
         2
     }
 
     fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
-
         match (&args[0], &args[1]) {
             (Object::Number(min), Object::Number(max)) => {
                 let r = rand::rng().random_range(*min as i64..=*max as i64);
                 Ok(Object::Number(r as f64))
-            },
+            }
             _ => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
                 msg: "Expected two numbers".to_string(),
-            }))
+            })),
         }
     }
 
@@ -233,7 +211,6 @@ impl ReiCallable for RandomRange {
 }
 
 pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
-
     env.define("_Ma_sqrt".to_string(), Object::Callable(Rc::new(Sqrt)))?;
     env.define("_Ma_cbrt".to_string(), Object::Callable(Rc::new(Cbrt)))?;
     env.define("_Ma_abs".to_string(), Object::Callable(Rc::new(Abs)))?;
@@ -252,11 +229,19 @@ pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
     env.define("_Ma_log10".to_string(), Object::Callable(Rc::new(Log10)))?;
     env.define("_Ma_pow".to_string(), Object::Callable(Rc::new(Pow)))?;
     env.define("_Ma_clamp".to_string(), Object::Callable(Rc::new(Clamp)))?;
-    env.define("_Ma_to_radians".to_string(), Object::Callable(Rc::new(ToRadians)))?;
-    env.define("_Ma_to_degrees".to_string(), Object::Callable(Rc::new(ToDegrees)))?;
+    env.define(
+        "_Ma_to_radians".to_string(),
+        Object::Callable(Rc::new(ToRadians)),
+    )?;
+    env.define(
+        "_Ma_to_degrees".to_string(),
+        Object::Callable(Rc::new(ToDegrees)),
+    )?;
     env.define("_Ma_random".to_string(), Object::Callable(Rc::new(Random)))?;
-    env.define("_Ma_random_range".to_string(), Object::Callable(Rc::new(RandomRange)))?;
+    env.define(
+        "_Ma_random_range".to_string(),
+        Object::Callable(Rc::new(RandomRange)),
+    )?;
 
     Ok(())
-
 }

@@ -1,24 +1,26 @@
 use std::any::Any;
-use std::io::{ self, Write };
+use std::io::{self, Write};
 use std::rc::Rc;
 
-use crate::crux::token::Object;
-use crate::backend::interpreter::Interpreter;
-use crate::backend::exec_signal::ExecSignal;
-use crate::backend::exec_signal::runtime_error::RuntimeError;
-use crate::backend::rei_callable::ReiCallable;
 use crate::backend::environment::Environment;
+use crate::backend::exec_signal::runtime_error::RuntimeError;
+use crate::backend::exec_signal::ExecSignal;
+use crate::backend::interpreter::Interpreter;
+use crate::backend::rei_callable::ReiCallable;
+use crate::crux::token::Object;
 
 #[derive(Clone, Debug)]
 pub struct ReadLine;
 impl ReiCallable for ReadLine {
-
     fn arity(&self) -> usize {
         0
     }
 
-    fn call(&self, _interpreter: &mut Interpreter, _arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
-
+    fn call(
+        &self,
+        _interpreter: &mut Interpreter,
+        _arguments: &Vec<Object>,
+    ) -> Result<Object, ExecSignal> {
         print!("");
         io::stdout().flush().unwrap();
 
@@ -32,7 +34,6 @@ impl ReiCallable for ReadLine {
                 msg: "Failed to read input from stdin".to_string(),
             })),
         }
-
     }
 
     fn to_string(&self) -> String {
@@ -42,19 +43,20 @@ impl ReiCallable for ReadLine {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 #[derive(Clone, Debug)]
 pub struct Read;
 impl ReiCallable for Read {
-
     fn arity(&self) -> usize {
         0
     }
 
-    fn call(&self, _interpreter: &mut Interpreter, _arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
-
+    fn call(
+        &self,
+        _interpreter: &mut Interpreter,
+        _arguments: &Vec<Object>,
+    ) -> Result<Object, ExecSignal> {
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
             Ok(_) => {
@@ -65,7 +67,6 @@ impl ReiCallable for Read {
                 msg: "Failed to read input from stdin".to_string(),
             })),
         }
-
     }
 
     fn to_string(&self) -> String {
@@ -75,11 +76,9 @@ impl ReiCallable for Read {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
-
     let read_line: Rc<dyn ReiCallable> = Rc::new(ReadLine);
     env.define("_IO_read_line".to_string(), Object::Callable(read_line))?;
 
@@ -87,6 +86,4 @@ pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
     env.define("_IO_read".to_string(), Object::Callable(read))?;
 
     Ok(())
-
 }
-

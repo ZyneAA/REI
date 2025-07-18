@@ -1,0 +1,15 @@
+expose class Test {
+
+    init(name) {
+        this.name = name;
+    }
+
+    a() {
+        return this.name;
+    }
+
+    static ello() {
+        println "Hello";
+    }
+
+}
