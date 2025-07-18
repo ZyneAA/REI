@@ -1,35 +1,41 @@
-use std::alloc::{ alloc, dealloc, Layout };
+use std::alloc::{alloc, dealloc, Layout};
+use std::any::Any;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::any::Any;
 
-use crate::crux::token::Object;
+use crate::backend::environment::Environment;
+use crate::backend::exec_signal::{runtime_error::RuntimeError, ExecSignal};
 use crate::backend::interpreter::Interpreter;
-use crate::backend::exec_signal::{ExecSignal, runtime_error::RuntimeError};
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::rei_instance::ReiInstance;
-use crate::backend::environment::Environment;
+use crate::crux::token::Object;
 
 #[derive(Clone, Debug)]
 pub struct ReiMalloc;
 impl ReiCallable for ReiMalloc {
-
     fn arity(&self) -> usize {
         1
     }
 
-    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
-
+    fn call(
+        &self,
+        _interpreter: &mut Interpreter,
+        arguments: &Vec<Object>,
+    ) -> Result<Object, ExecSignal> {
         let size = match arguments.get(0) {
             Some(Object::Number(n)) => *n as usize,
-            _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "expected number".to_string(),
-            })),
+            _ => {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: "expected number".to_string(),
+                }))
+            }
         };
 
-        let layout = Layout::from_size_align(size, 8).map_err(|e| ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-            msg: format!("invalid layout: {}", e),
-        }))?;
+        let layout = Layout::from_size_align(size, 8).map_err(|e| {
+            ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: format!("invalid layout: {}", e),
+            })
+        })?;
 
         unsafe {
             let ptr = alloc(layout);
@@ -40,7 +46,6 @@ impl ReiCallable for ReiMalloc {
             }
             Ok(Object::MBlock(ptr, size))
         }
-
     }
 
     fn to_string(&self) -> String {
@@ -50,45 +55,54 @@ impl ReiCallable for ReiMalloc {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 #[derive(Clone, Debug)]
 pub struct ReiRead;
 impl ReiCallable for ReiRead {
-
     fn arity(&self) -> usize {
         4
     }
 
-    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
-
+    fn call(
+        &self,
+        _interpreter: &mut Interpreter,
+        arguments: &Vec<Object>,
+    ) -> Result<Object, ExecSignal> {
         let (ptr, size) = match arguments.get(0) {
             Some(Object::MBlock(p, s)) => (*p, *s),
-            _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "expected MBlock as first arg".to_string(),
-            })),
+            _ => {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: "expected MBlock as first arg".to_string(),
+                }))
+            }
         };
 
         let offset = match arguments.get(1) {
             Some(Object::Number(n)) => *n as usize,
-            _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "expected number offset as second arg".to_string(),
-            })),
+            _ => {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: "expected number offset as second arg".to_string(),
+                }))
+            }
         };
 
         let length = match arguments.get(2) {
             Some(Object::Number(n)) => *n as usize,
-            _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "expected number ad third arg".to_string(),
-            })),
+            _ => {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: "expected number ad third arg".to_string(),
+                }))
+            }
         };
 
         let mode = match arguments.get(3) {
             Some(Object::Bool(n)) => n,
-            _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "expected mode, true or false as fourth arg".to_string(),
-            })),
+            _ => {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: "expected mode, true or false as fourth arg".to_string(),
+                }))
+            }
         };
 
         if offset + length > size {
@@ -99,7 +113,6 @@ impl ReiCallable for ReiRead {
 
         let ptr = ptr as *const u8;
         unsafe {
-
             let slice = std::slice::from_raw_parts(ptr.add(offset), length);
             let val = if *mode {
                 match length {
@@ -114,29 +127,36 @@ impl ReiCallable for ReiRead {
                         Object::Number(num)
                     }
                     _ => {
-                        let repr = slice.iter()
+                        let repr = slice
+                            .iter()
                             .map(|b| format!("0x{:02X}", b))
                             .collect::<Vec<_>>()
                             .join(" ");
                         let info = format!(
                             "mem[{:p}+{}..+{}]: [{}]",
-                            ptr, offset, offset + length, repr
+                            ptr,
+                            offset,
+                            offset + length,
+                            repr
                         );
                         Object::Str(info)
                     }
                 }
-            }
-            else {
+            } else {
                 match std::str::from_utf8(slice) {
                     Ok(s) => Object::Str(s.to_string()),
                     Err(_) => {
-                        let repr = slice.iter()
+                        let repr = slice
+                            .iter()
                             .map(|b| format!("0x{:02X}", b))
                             .collect::<Vec<_>>()
                             .join(" ");
                         let info = format!(
                             "mem[{:p}+{}..+{}]: [{}]",
-                            ptr, offset, offset + length, repr
+                            ptr,
+                            offset,
+                            offset + length,
+                            repr
                         );
                         Object::Str(info)
                     }
@@ -144,9 +164,7 @@ impl ReiCallable for ReiRead {
             };
 
             Ok(val)
-
         }
-
     }
 
     fn to_string(&self) -> String {
@@ -156,31 +174,36 @@ impl ReiCallable for ReiRead {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 #[derive(Clone, Debug)]
 pub struct ReiWrite;
 impl ReiCallable for ReiWrite {
-
     fn arity(&self) -> usize {
         3
     }
 
-    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
-
+    fn call(
+        &self,
+        _interpreter: &mut Interpreter,
+        arguments: &Vec<Object>,
+    ) -> Result<Object, ExecSignal> {
         let (ptr, size) = match arguments.get(0) {
             Some(Object::MBlock(p, s)) => (*p, *s),
-            _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "expected MBlock as first arg".to_string(),
-            })),
+            _ => {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: "expected MBlock as first arg".to_string(),
+                }))
+            }
         };
 
         let offset = match arguments.get(1) {
             Some(Object::Number(n)) => *n as usize,
-            _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "expected number offset as second arg".to_string(),
-            })),
+            _ => {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: "expected number offset as second arg".to_string(),
+                }))
+            }
         };
 
         let value = arguments.get(2).ok_or_else(|| {
@@ -232,7 +255,6 @@ impl ReiCallable for ReiWrite {
         }
 
         Ok(Object::Null)
-
     }
 
     fn to_string(&self) -> String {
@@ -242,29 +264,34 @@ impl ReiCallable for ReiWrite {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 #[derive(Clone, Debug)]
 pub struct ReiFree;
 impl ReiCallable for ReiFree {
-
     fn arity(&self) -> usize {
         1
     }
 
-    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
-
+    fn call(
+        &self,
+        _interpreter: &mut Interpreter,
+        arguments: &Vec<Object>,
+    ) -> Result<Object, ExecSignal> {
         let (ptr, size) = match arguments.get(0) {
             Some(Object::MBlock(p, s)) => (*p, *s),
-            _ => return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "expected a MBlock when freeing memory".to_string(),
-            })),
+            _ => {
+                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    msg: "expected a MBlock when freeing memory".to_string(),
+                }))
+            }
         };
 
-        let layout = Layout::from_size_align(size, 8).map_err(|e| ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-            msg: format!("invalid layout: {}", e),
-        }))?;
+        let layout = Layout::from_size_align(size, 8).map_err(|e| {
+            ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: format!("invalid layout: {}", e),
+            })
+        })?;
 
         unsafe {
             dealloc(ptr, layout);
@@ -280,22 +307,25 @@ impl ReiCallable for ReiFree {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 #[derive(Clone, Debug)]
 pub struct ReiSizeOf;
 impl ReiCallable for ReiSizeOf {
-
     fn arity(&self) -> usize {
         1
     }
 
-    fn call(&self, _interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Result<Object, ExecSignal> {
-
-        let obj = arguments.get(0).ok_or_else(|| ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-            msg: "Expected one argument to _M_sizeof".to_string(),
-        }))?;
+    fn call(
+        &self,
+        _interpreter: &mut Interpreter,
+        arguments: &Vec<Object>,
+    ) -> Result<Object, ExecSignal> {
+        let obj = arguments.get(0).ok_or_else(|| {
+            ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                msg: "Expected one argument to _M_sizeof".to_string(),
+            })
+        })?;
 
         let size = match obj {
             Object::Number(_) => std::mem::size_of::<f64>(),
@@ -315,7 +345,6 @@ impl ReiCallable for ReiSizeOf {
         };
 
         Ok(Object::Number(size as f64))
-
     }
 
     fn to_string(&self) -> String {
@@ -325,12 +354,9 @@ impl ReiCallable for ReiSizeOf {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
-
 pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
-
     let malloc: Rc<dyn ReiCallable> = Rc::new(ReiMalloc);
     env.define("_M_alloc".to_string(), Object::Callable(malloc))?;
 
@@ -347,5 +373,4 @@ pub fn register(env: &mut Environment) -> Result<(), ExecSignal> {
     env.define("_M_size_of".to_string(), Object::Callable(size_of))?;
 
     Ok(())
-
 }

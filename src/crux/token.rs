@@ -1,41 +1,84 @@
-use std::fmt;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::collections::HashMap;
+use std::fmt;
+use std::rc::Rc;
 
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::rei_instance::ReiInstance;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenType {
-
     // Single-character tokens.
-    LeftParen, RightParen, LeftBrace, RightBrace,
-    Comma, Dot, DotDot, Minus, Plus, Semicolon, Slash, Star,
+    LeftParen,
+    RightParen,
+    LeftBrace,
+    RightBrace,
+    Comma,
+    Dot,
+    DotDot,
+    Minus,
+    Plus,
+    Semicolon,
+    Fullcolon,
+    Slash,
+    Star,
 
     // One or two characters token
-    Bang, BangEqual,
-    Equal, EqualEqual,
-    Greater, GreaterEqual,
-    Less, LessEqual,
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
 
     // Literals
-    Identifier, String, Number, Range,
+    Identifier,
+    String,
+    Number,
+    Range,
 
     // Keywords
-    And, Class, Setter, Getter, Static, Else, False, Fn, For, If, Null, Or, At,
-    Print, PrintLn, Return, Base, This, True, Let, While, Loop,
-    Break, Continue, Throw, Do, Fail, Yield,
+    And,
+    Class,
+    Setter,
+    Getter,
+    Static,
+    Else,
+    False,
+    Fn,
+    For,
+    If,
+    Null,
+    Or,
+    At,
+    Print,
+    PrintLn,
+    Return,
+    Base,
+    This,
+    True,
+    Let,
+    While,
+    Loop,
+    Break,
+    Continue,
+    Throw,
+    Do,
+    Fail,
+    Yield,
+    Underscore,
     Eof,
 
     // Module related
-    Use, Expose, As
-
+    Use,
+    Expose,
+    As,
 }
 
 pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
-
     let mut map = HashMap::new();
     map.insert("and", TokenType::And);
     map.insert("class", TokenType::Class);
@@ -61,6 +104,7 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("loop", TokenType::Loop);
     map.insert("break", TokenType::Break);
     map.insert("throw", TokenType::Throw);
+    map.insert("_", TokenType::Underscore);
     map.insert("use", TokenType::Use);
     map.insert("expose", TokenType::Expose);
     map.insert("as", TokenType::As);
@@ -68,13 +112,10 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("continue", TokenType::Continue);
 
     map
-
 });
-
 
 #[derive(Clone, Debug)]
 pub enum Object {
-
     Number(f64),
     Bool(bool),
     Range(f64, f64),
@@ -85,13 +126,10 @@ pub enum Object {
     Instance(Rc<RefCell<ReiInstance>>),
     MBlock(*mut u8, usize),
     Vec(Rc<RefCell<Vec<Object>>>),
-
 }
 
 impl fmt::Display for Object {
-
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-
         match self {
             Object::Number(n) => write!(f, "{}", n),
             Object::Str(s) => write!(f, "{}", s),
@@ -108,26 +146,20 @@ impl fmt::Display for Object {
                 write!(f, "[{}]", elements.join(", "))
             }
         }
-
     }
-
 }
 
 #[derive(Clone)]
 pub struct Token {
-
     pub token_type: TokenType,
     pub lexeme: String,
     pub literal: Object,
     pub line: usize,
-    pub place: usize
-
+    pub place: usize,
 }
 
 impl fmt::Display for TokenType {
-
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-
         let text = match self {
             // Single-character tokens
             TokenType::LeftParen => "Left Paren",
@@ -140,6 +172,7 @@ impl fmt::Display for TokenType {
             TokenType::Minus => "Minus",
             TokenType::Plus => "Plus",
             TokenType::Semicolon => "Semicolon",
+            TokenType::Fullcolon => "Fullcolon",
             TokenType::Slash => "Slash",
             TokenType::Star => "Star",
 
@@ -188,6 +221,7 @@ impl fmt::Display for TokenType {
             TokenType::Continue => "IDENTIFIER",
             TokenType::Use => "IDENTIFIER",
             TokenType::Throw => "IDENTIFIER",
+            TokenType::Underscore => "IDENTIFIER",
             TokenType::Expose => "IDENTIFIER",
             TokenType::As => "IDENTIFIER",
             TokenType::At => "IDENTIFIER",
@@ -196,27 +230,27 @@ impl fmt::Display for TokenType {
         };
 
         write!(f, "{text}")
-
     }
-
 }
 
 impl Token {
-
-    pub fn new(token_type: TokenType, lexeme: String, literal: Object, line: usize, place: usize) -> Self {
-
-        Token{
+    pub fn new(
+        token_type: TokenType,
+        lexeme: String,
+        literal: Object,
+        line: usize,
+        place: usize,
+    ) -> Self {
+        Token {
             token_type,
             lexeme,
             literal,
             line,
-            place
+            place,
         }
-
     }
 
     pub fn fake(token_type: TokenType) -> Self {
-
         Token {
             token_type,
             lexeme: format!("{:?}", token_type),
@@ -224,35 +258,33 @@ impl Token {
             line: 0,
             place: 0,
         }
-
     }
-
 }
 
 impl fmt::Display for Token {
-
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-
-        match self.literal{
-            Object::Null => write!(f, "{} -->'{}'<-- at {}:{}", self.token_type, self.lexeme, self.line, self.place),
-            _ => write!(f, "{} -->' {} '<-- {} at : {}:{}", self.token_type, self.lexeme, self.literal, self.line, self.place)
+        match self.literal {
+            Object::Null => write!(
+                f,
+                "{} -->'{}'<-- at {}:{}",
+                self.token_type, self.lexeme, self.line, self.place
+            ),
+            _ => write!(
+                f,
+                "{} -->' {} '<-- {} at : {}:{}",
+                self.token_type, self.lexeme, self.literal, self.line, self.place
+            ),
         }
-
     }
-
 }
 
 impl fmt::Debug for Token {
-
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-
         f.debug_struct("Token")
-         .field("token_type", &self.token_type)
-         .field("lexeme", &self.lexeme)
-         .field("literal", &self.literal)
-         .field("line", &self.line)
-         .finish()
-
+            .field("token_type", &self.token_type)
+            .field("lexeme", &self.lexeme)
+            .field("literal", &self.literal)
+            .field("line", &self.line)
+            .finish()
     }
-
 }

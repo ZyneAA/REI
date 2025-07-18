@@ -1,8 +1,7 @@
 use std::fs::File;
-use std::io::{ Write, Result };
+use std::io::{Result, Write};
 
 pub fn define_ast(target_dir: &str, base_name: &str, types: Vec<&str>) -> Result<()> {
-
     let lower_base_name = &base_name.to_lowercase();
     let path = format!("{}/{}.rs", target_dir, lower_base_name);
     println!("generated in {}", &path);
@@ -10,10 +9,13 @@ pub fn define_ast(target_dir: &str, base_name: &str, types: Vec<&str>) -> Result
 
     // importing what we'll be using
     if base_name == "Stmt" {
-        writeln!(out, "use std::boxed::Box;\nuse crate::crux::token::Token;\nuse crate::frontend::expr::Expr;\n").unwrap(); 
-    }
-    else {
-        writeln!(out, "use std::boxed::Box;\nuse crate::crux::token::{{ Token, Object }};\n").unwrap(); 
+        writeln!(out, "use std::boxed::Box;\nuse crate::crux::token::Token;\nuse crate::frontend::expr::Expr;\n").unwrap();
+    } else {
+        writeln!(
+            out,
+            "use std::boxed::Box;\nuse crate::crux::token::{{ Token, Object }};\n"
+        )
+        .unwrap();
     }
 
     define_visitor(&mut out, base_name, &types).unwrap();
@@ -32,11 +34,9 @@ pub fn define_ast(target_dir: &str, base_name: &str, types: Vec<&str>) -> Result
     define_accept_impl(&mut out, base_name, &types).unwrap();
 
     Ok(())
-
 }
 
 fn define_type(out: &mut File, struct_name: &str, field_list: &str) -> Result<()> {
-
     writeln!(out, "    {} {{", struct_name)?;
 
     let fields: Vec<&str> = field_list.split(", ").collect();
@@ -51,15 +51,12 @@ fn define_type(out: &mut File, struct_name: &str, field_list: &str) -> Result<()
     writeln!(out, "    }},\n")?;
 
     Ok(())
-
 }
 
 fn define_visitor(out: &mut File, base_name: &str, types: &Vec<&str>) -> Result<()> {
-
     writeln!(out, "pub trait Visitor<T> {{\n").unwrap();
 
     for type_def in types {
-
         let parts = type_def.split(':').nth(1).unwrap();
         let types: Vec<String> = if parts.contains(',') {
             let mut temp: Vec<String> = Vec::new();
@@ -70,39 +67,31 @@ fn define_visitor(out: &mut File, base_name: &str, types: &Vec<&str>) -> Result<
                 temp.push(i);
             }
             temp
-        }
-        else {
+        } else {
             let a: Vec<&str> = parts.trim().split(' ').rev().collect();
             let a = a.join(": &");
             vec![a]
-
         };
         let types = types.join(", ");
         let type_def = type_def.split(':').next().unwrap().trim().to_lowercase();
         let method_name = format!("visit_{}_{}", type_def, base_name.to_lowercase());
 
-        writeln!(
-            out,
-            "    fn {}(&mut self, {}) -> T;",
-            method_name,
-            types
-        )?;
+        writeln!(out, "    fn {}(&mut self, {}) -> T;", method_name, types)?;
     }
 
     writeln!(out, "\n}}\n")?;
     Ok(())
-
 }
 
-
 fn define_accept_impl(out: &mut File, base_name: &str, types: &Vec<&str>) -> Result<()> {
-
     writeln!(out, "impl {} {{\n", base_name)?;
-    writeln!(out, "    pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {{\n")?;
+    writeln!(
+        out,
+        "    pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {{\n"
+    )?;
     writeln!(out, "        match self {{")?;
 
     for type_def in types {
-
         let parts = type_def.split(':').nth(1).unwrap();
         let types: Vec<String> = if parts.contains(',') {
             let mut temp: Vec<String> = Vec::new();
@@ -113,11 +102,9 @@ fn define_accept_impl(out: &mut File, base_name: &str, types: &Vec<&str>) -> Res
                 temp.push(i.to_string());
             }
             temp
-        }
-        else {
+        } else {
             let a: Vec<&str> = parts.trim().split(' ').collect();
             vec![a.get(1).unwrap().to_string()]
-
         };
 
         let types = types.join(", ");
@@ -139,15 +126,12 @@ fn define_accept_impl(out: &mut File, base_name: &str, types: &Vec<&str>) -> Res
     writeln!(out, "    }}")?;
     writeln!(out, "\n}}\n")?;
     Ok(())
-
 }
 
 fn rustify_type(ty: &str) -> &str {
-
     match ty {
         "Expr" => "Box<Expr>",
         "Token" => "Token",
         _ => ty,
     }
-
 }

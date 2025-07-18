@@ -1,6 +1,10 @@
-use std::{ fs, io::{ self, Write }, path::PathBuf };
-use std::path::Path;
 use std::env;
+use std::path::Path;
+use std::{
+    fs,
+    io::{self, Write},
+    path::PathBuf,
+};
 
 use super::util;
 use crate::crux::error::ParseError;
@@ -14,9 +18,7 @@ use crate::backend::resolver::Resolver;
 pub struct Runner;
 
 impl Runner {
-
     pub fn run(source: &str, location: &str) {
-
         let current_file = Some(PathBuf::from(location));
 
         let lexer = lexer::Lexer::new(source);
@@ -25,8 +27,13 @@ impl Runner {
         let mut global_expr_id_counter = 0;
         let mut syntax_errors: Vec<ParseError> = vec![];
 
-        let mut parser = Parser::new(tokens, current_file.clone(), &mut global_expr_id_counter, &mut syntax_errors);
-        let location =  util::red_colored(&format!("Error in {}", location));
+        let mut parser = Parser::new(
+            tokens,
+            current_file.clone(),
+            &mut global_expr_id_counter,
+            &mut syntax_errors,
+        );
+        let location = util::red_colored(&format!("Error in {}", location));
 
         let stmts = parser.parse();
 
@@ -39,27 +46,25 @@ impl Runner {
 
         let mut interpreter = match Interpreter::new() {
             Ok(i) => i,
-            Err(e) => { eprintln!("{}", e); panic!(); }
+            Err(e) => {
+                eprintln!("{}", e);
+                panic!();
+            }
         };
         let mut resolver = Resolver::new(&mut interpreter);
         resolver.resolve(&stmts);
         if let Err(e) = interpreter.interpret(stmts) {
             eprintln!("{}", e);
         }
-
     }
 
     pub fn read_file(path: &str) -> Result<String, Box<dyn std::error::Error>> {
-
         let content = fs::read_to_string(path)?;
         Ok(content)
-
     }
 
     pub fn run_prompt() {
-
         loop {
-
             print!("> ");
             io::stdout().flush().unwrap();
 
@@ -70,11 +75,9 @@ impl Runner {
 
             println!("> {}", input);
         }
-
     }
 
     pub fn new_project(&self, project_name: &str) -> Result<(), Box<dyn std::error::Error>> {
-
         fs::create_dir(project_name)?;
         fs::create_dir(format!("./{}/lib", project_name))?;
 
@@ -89,11 +92,9 @@ impl Runner {
         fs::write(git_ignore, "/lib/std")?;
 
         Ok(())
-
     }
 
     fn copy_dir_all(&self, src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
-
         fs::create_dir_all(&dst)?;
         for entry in fs::read_dir(&src)? {
             let entry = entry?;
@@ -104,26 +105,21 @@ impl Runner {
 
             if ty.is_dir() {
                 self.copy_dir_all(src_path, dst_path)?;
-            }
-            else {
+            } else {
                 fs::copy(src_path, dst_path)?;
             }
         }
         Ok(())
-
     }
 
     pub fn install_stdlib(&self) -> io::Result<()> {
-
         let src = Path::new("src/std");
         let dst = self.get_rei_std_path();
         println!("Installing stdlib to {:?}", dst);
         self.copy_dir_all(src, dst)
-
     }
 
     fn get_rei_std_path(&self) -> PathBuf {
-
         if let Ok(custom_path) = env::var("REI_HOME") {
             return PathBuf::from(custom_path).join("std");
         }
@@ -137,5 +133,4 @@ impl Runner {
         #[cfg(target_os = "windows")]
         return PathBuf::from("C:\\ProgramData\\rei\\std");
     }
-
 }

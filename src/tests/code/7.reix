@@ -10,6 +10,8 @@ class b {
 
 }
 
-do: a(), b(), 12+1
+let val;
+
+do: a() -> b(), 12+1
 fail: throw "Failed doing smth", throw "uhh ohh no"
-yield: let x, let y, let z;
+yield: val, _, let z;

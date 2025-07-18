@@ -4,36 +4,48 @@ use crate::crux::token::Token;
 use crate::frontend::expr::Expr;
 
 pub trait Visitor<T> {
-
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> T;
     fn visit_expression_stmt(&mut self, expression: &Expr) -> T;
-    fn visit_class_stmt(&mut self, name: &Token, superclass_refs: &Vec<Expr>, methods: &Vec<Stmt>, static_methods: &Vec<Stmt>, expose: &bool) -> T;
+    fn visit_class_stmt(
+        &mut self,
+        name: &Token,
+        superclass_refs: &Vec<Expr>,
+        methods: &Vec<Stmt>,
+        static_methods: &Vec<Stmt>,
+        expose: &bool,
+    ) -> T;
     fn visit_function_stmt(&mut self, name: &Token, params: &Vec<Token>, body: &Vec<Stmt>) -> T;
-    fn visit_if_stmt(&mut self, condition: &Expr, then_branch: &Stmt, else_branch: &Option<Box<Stmt>>) -> T;
+    fn visit_if_stmt(
+        &mut self,
+        condition: &Expr,
+        then_branch: &Stmt,
+        else_branch: &Option<Box<Stmt>>,
+    ) -> T;
     fn visit_print_stmt(&mut self, expression: &Expr) -> T;
     fn visit_println_stmt(&mut self, expression: &Expr) -> T;
     fn visit_let_stmt(&mut self, name: &Token, initializer: &Expr) -> T;
     fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> T;
-    fn visit_do_fail_yield_stmt(&mut self, do_exprs: &Vec<Expr>, fail_exprs: &Vec<Expr>, yields: &Option<Vec<YieldBinding>>) -> T;
+    fn visit_do_fail_yield_stmt(
+        &mut self,
+        do_exprs: &Vec<Expr>,
+        fail_exprs: &Vec<Expr>,
+        yield_bindings: &Option<Vec<YieldBinding>>,
+    ) -> T;
     fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Box<Expr>>) -> T;
     fn visit_throw_stmt(&mut self, expression: &Box<Expr>) -> T;
     fn visit_break_stmt(&mut self) -> T;
     fn visit_continue_stmt(&mut self) -> T;
-
 }
 
 #[derive(Clone, Debug)]
 pub enum YieldBinding {
-
-    Let(Token),
+    Let(Stmt),
     Assign(Expr),
-    Ignore(bool)
-
+    Ignore(bool),
 }
 
 #[derive(Clone, Debug)]
 pub enum Stmt {
-
     Block {
         statements: Vec<Stmt>,
     },
@@ -43,7 +55,7 @@ pub enum Stmt {
         superclass_refs: Vec<Expr>,
         methods: Vec<Stmt>,
         static_methods: Vec<Stmt>,
-        expose: bool
+        expose: bool,
     },
 
     Expression {
@@ -74,7 +86,7 @@ pub enum Stmt {
     DoFailYield {
         do_exprs: Vec<Expr>,
         fail_exprs: Vec<Expr>,
-        yields: Option<Vec<YieldBinding>>,
+        yield_bindings: Option<Vec<YieldBinding>>,
     },
 
     Throw {
@@ -95,23 +107,37 @@ pub enum Stmt {
         body: Box<Stmt>,
     },
 
-    Break, Continue
-
+    Break,
+    Continue,
 }
 
 impl Stmt {
-
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
-
         match self {
             Stmt::Block { statements } => visitor.visit_block_stmt(statements),
-            Stmt::Class { name, superclass_refs, methods, static_methods, expose } => visitor.visit_class_stmt(name, superclass_refs, methods, static_methods, expose),
+            Stmt::Class {
+                name,
+                superclass_refs,
+                methods,
+                static_methods,
+                expose,
+            } => visitor.visit_class_stmt(name, superclass_refs, methods, static_methods, expose),
             Stmt::Expression { expression } => visitor.visit_expression_stmt(expression),
-            Stmt::Function { name, params, body } => visitor.visit_function_stmt(name, params, body),
-            Stmt::If { condition, then_branch, else_branch } => visitor.visit_if_stmt(condition, then_branch, else_branch),
+            Stmt::Function { name, params, body } => {
+                visitor.visit_function_stmt(name, params, body)
+            }
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => visitor.visit_if_stmt(condition, then_branch, else_branch),
             Stmt::Print { expression } => visitor.visit_print_stmt(expression),
             Stmt::Return { keyword, value } => visitor.visit_return_stmt(keyword, value),
-            Stmt::DoFailYield { do_exprs, fail_exprs, yields } => visitor.visit_do_fail_yield_stmt(do_exprs, fail_exprs, yields),
+            Stmt::DoFailYield {
+                do_exprs,
+                fail_exprs,
+                yield_bindings,
+            } => visitor.visit_do_fail_yield_stmt(do_exprs, fail_exprs, yield_bindings),
             Stmt::Throw { expression } => visitor.visit_throw_stmt(expression),
             Stmt::PrintLn { expression } => visitor.visit_println_stmt(expression),
             Stmt::Let { name, initializer } => visitor.visit_let_stmt(name, initializer),
@@ -119,8 +145,5 @@ impl Stmt {
             Stmt::Break => visitor.visit_break_stmt(),
             Stmt::Continue => visitor.visit_continue_stmt(),
         }
-
     }
-
 }
-

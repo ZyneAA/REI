@@ -7,25 +7,30 @@ use crate::crux::token::Token;
 use crate::frontend::expr::Expr;
 
 pub struct Resolver<'a> {
-
     interpreter: &'a mut Interpreter,
     scopes: Vec<HashMap<String, bool>>, // stack of scopes
     current_function: FunctionType,
     current_class: ClassType,
     loop_depth: usize,
-
 }
 
 #[derive(Clone, Debug)]
-enum FunctionType { None, Function, Method, Initializer, Static }
+enum FunctionType {
+    None,
+    Function,
+    Method,
+    Initializer,
+    Static,
+}
 
 #[derive(Clone, Debug)]
-enum ClassType { None, Class }
+enum ClassType {
+    None,
+    Class,
+}
 
 impl<'a> Resolver<'a> {
-
     pub fn new(interpreter: &'a mut Interpreter) -> Self {
-
         Resolver {
             interpreter,
             scopes: Vec::new(),
@@ -33,26 +38,29 @@ impl<'a> Resolver<'a> {
             current_class: ClassType::None,
             loop_depth: 0,
         }
-
     }
 
     pub fn resolve(&mut self, statements: &Vec<Stmt>) {
-
         for stmt in statements {
             self.resolve_stmt(stmt);
         }
-
     }
 
     fn resolve_stmt(&mut self, stmt: &Stmt) {
-
         match stmt {
+            Stmt::DoFailYield { .. } => {}
             Stmt::Block { statements } => {
                 self.begin_scope();
                 self.resolve(statements);
                 self.end_scope();
             }
-            Stmt::Class { name, superclass_refs, methods, static_methods, expose: _ } => {
+            Stmt::Class {
+                name,
+                superclass_refs,
+                methods,
+                static_methods,
+                expose: _,
+            } => {
                 let enclosing_class = self.current_class.clone();
                 self.current_class = ClassType::Class;
 
@@ -61,7 +69,10 @@ impl<'a> Resolver<'a> {
 
                 if !superclass_refs.is_empty() {
                     for superclass in superclass_refs {
-                        if let Expr::Variable { name: super_name, .. } = superclass {
+                        if let Expr::Variable {
+                            name: super_name, ..
+                        } = superclass
+                        {
                             if name.lexeme == super_name.lexeme {
                                 panic!("A class cannot inherit from itself.");
                             }
@@ -79,22 +90,17 @@ impl<'a> Resolver<'a> {
                 }
 
                 for method in methods {
-
                     if let Stmt::Function { name, params, body } = method {
-
                         let prev_function = self.current_function.clone();
                         self.current_function = if name.lexeme == "init" {
                             FunctionType::Initializer
-                        }
-                        else {
+                        } else {
                             FunctionType::Method
                         };
 
                         self.resolve_function(params, body, self.current_function.clone());
                         self.current_function = prev_function;
-
                     }
-
                 }
 
                 for static_method in static_methods {
@@ -119,7 +125,11 @@ impl<'a> Resolver<'a> {
                 self.resolve_expr(initializer);
                 self.define(name);
             }
-            Stmt::If { condition, then_branch, else_branch } => {
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 self.resolve_expr(condition);
                 self.resolve_stmt(then_branch);
                 if let Some(else_stmt) = else_branch {
@@ -171,17 +181,19 @@ impl<'a> Resolver<'a> {
                 }
             }
         }
-
     }
 
     fn resolve_expr(&mut self, expr: &Expr) {
-
         match expr {
-            Expr::Meta { id, keyword: _, method, .. } => {
+            Expr::Meta {
+                id,
+                keyword: _,
+                method,
+                ..
+            } => {
                 if let Some(distance) = self.resolve_this_distance() {
                     self.interpreter.resolve(*id, distance);
-                }
-                else {
+                } else {
                     panic!("Bad: {}", method);
                 }
             }
@@ -193,15 +205,30 @@ impl<'a> Resolver<'a> {
                 self.resolve_expr(value);
                 self.resolve_local(expr, name);
             }
-            Expr::Binary { id: _, left, operator: _, right } => {
+            Expr::Binary {
+                id: _,
+                left,
+                operator: _,
+                right,
+            } => {
                 self.resolve_expr(left);
                 self.resolve_expr(right);
             }
-            Expr::Logical { id: _, left, operator: _, right } => {
+            Expr::Logical {
+                id: _,
+                left,
+                operator: _,
+                right,
+            } => {
                 self.resolve_expr(left);
                 self.resolve_expr(right);
             }
-            Expr::Call { id: _, callee, paren: _, arguments } => {
+            Expr::Call {
+                id: _,
+                callee,
+                paren: _,
+                arguments,
+            } => {
                 self.resolve_expr(callee);
                 for arg in arguments {
                     self.resolve_expr(arg);
@@ -214,17 +241,30 @@ impl<'a> Resolver<'a> {
                 }
                 self.resolve_local(expr, keyword);
             }
-            Expr::Get { id: _, object, name: _ } => {
+            Expr::Get {
+                id: _,
+                object,
+                name: _,
+            } => {
                 self.resolve_expr(object);
             }
-            Expr::Set {id: _, object, name: _, value} => {
+            Expr::Set {
+                id: _,
+                object,
+                name: _,
+                value,
+            } => {
                 self.resolve_expr(value);
                 self.resolve_expr(object);
             }
             Expr::Grouping { id: _, expression } => {
                 self.resolve_expr(expression);
             }
-            Expr::Unary { id: _, operator: _, right } => {
+            Expr::Unary {
+                id: _,
+                operator: _,
+                right,
+            } => {
                 self.resolve_expr(right);
             }
             Expr::Literal { id: _, value: _ } => {
@@ -240,7 +280,6 @@ impl<'a> Resolver<'a> {
                 self.resolve_local(expr, name);
             }
         }
-
     }
 
     fn begin_scope(&mut self) {
@@ -252,7 +291,6 @@ impl<'a> Resolver<'a> {
     }
 
     fn declare(&mut self, name: &Token) {
-
         if self.scopes.is_empty() {
             return;
         }
@@ -261,20 +299,19 @@ impl<'a> Resolver<'a> {
             panic!("Variable with this name already declared in this scope.");
         }
         scope.insert(name.lexeme.clone(), false);
-
     }
 
     fn define(&mut self, name: &Token) {
-
         if self.scopes.is_empty() {
             return;
         }
-        self.scopes.last_mut().unwrap().insert(name.lexeme.clone(), true);
-
+        self.scopes
+            .last_mut()
+            .unwrap()
+            .insert(name.lexeme.clone(), true);
     }
 
     fn resolve_function(&mut self, params: &Vec<Token>, body: &Vec<Stmt>, ty: FunctionType) {
-
         let enclosing_function = self.current_function.clone();
         self.current_function = ty;
 
@@ -287,11 +324,9 @@ impl<'a> Resolver<'a> {
         self.end_scope();
 
         self.current_function = enclosing_function;
-
     }
 
     fn resolve_local(&mut self, expr: &Expr, name: &Token) {
-
         for (i, scope) in self.scopes.iter().rev().enumerate() {
             if scope.contains_key(&name.lexeme) {
                 self.interpreter.resolve(expr.id(), i);
@@ -299,18 +334,14 @@ impl<'a> Resolver<'a> {
             }
         }
         // Not found: leave as global.
-
     }
 
     fn resolve_this_distance(&self) -> Option<usize> {
-
         for (i, scope) in self.scopes.iter().rev().enumerate() {
             if scope.contains_key("this") {
                 return Some(i);
             }
         }
         None
-
     }
-
 }
