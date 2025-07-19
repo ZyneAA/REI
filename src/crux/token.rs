@@ -150,12 +150,13 @@ impl fmt::Display for Object {
 }
 
 #[derive(Clone)]
-pub struct Token {
+pub struct Token<'a> {
     pub token_type: TokenType,
     pub lexeme: String,
     pub literal: Object,
     pub line: usize,
     pub place: usize,
+    pub path: &'a str
 }
 
 impl fmt::Display for TokenType {
@@ -233,13 +234,14 @@ impl fmt::Display for TokenType {
     }
 }
 
-impl Token {
+impl <'a>Token<'a> {
     pub fn new(
         token_type: TokenType,
         lexeme: String,
         literal: Object,
         line: usize,
         place: usize,
+        path: &'a str
     ) -> Self {
         Token {
             token_type,
@@ -247,21 +249,24 @@ impl Token {
             literal,
             line,
             place,
+            path
         }
     }
 
     pub fn fake(token_type: TokenType) -> Self {
+        let lexeme = format!("{:?}", token_type);
         Token {
             token_type,
-            lexeme: format!("{:?}", token_type),
+            lexeme,
             literal: Object::Dummy,
             line: 0,
             place: 0,
+            path: "Internal"
         }
     }
 }
 
-impl fmt::Display for Token {
+impl<'a> fmt::Display for Token<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.literal {
             Object::Null => write!(
@@ -278,7 +283,7 @@ impl fmt::Display for Token {
     }
 }
 
-impl fmt::Debug for Token {
+impl<'a> fmt::Debug for Token<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Token")
             .field("token_type", &self.token_type)

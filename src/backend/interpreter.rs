@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::thread;
 
@@ -24,6 +25,7 @@ pub struct Interpreter {
     pub environment: EnvRef,
     locals: HashMap<ExprId, usize>,
     exposed_value: Option<Object>,
+    current_file: Option<PathBuf>,
 }
 
 impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
@@ -684,7 +686,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 }
 
 impl Interpreter {
-    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(current_file: Option<PathBuf>) -> Result<Self, Box<dyn std::error::Error>> {
         let environment = Environment::global();
         let locals = HashMap::new();
         native::register_all_native_fns(environment.borrow_mut())?;
@@ -692,6 +694,7 @@ impl Interpreter {
             environment,
             locals,
             exposed_value: None,
+            current_file,
         })
     }
 

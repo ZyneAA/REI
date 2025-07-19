@@ -4,9 +4,12 @@ use std::result::Result;
 
 use super::expr;
 use super::expr::ExprId;
+
 use crate::backend::stmt;
+
 use crate::crux::error::ParseError;
 use crate::crux::token::{Object, Token, TokenType};
+
 use crate::frontend::lexer::Lexer;
 
 pub struct Parser<'a> {
@@ -14,7 +17,7 @@ pub struct Parser<'a> {
     current: usize,
     id_counter: &'a mut usize,
     exposed: bool,
-    current_file: Option<PathBuf>,
+    current_file: &'a Option<PathBuf>,
     pub is_error: bool,
     syntax_errors: &'a mut Vec<ParseError>,
 }
@@ -22,7 +25,7 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     pub fn new(
         tokens: Vec<Token>,
-        current_file: Option<PathBuf>,
+        current_file: &'a Option<PathBuf>,
         id_counter: &'a mut usize,
         syntax_errors: &'a mut Vec<ParseError>,
     ) -> Self {
@@ -211,11 +214,12 @@ impl<'a> Parser<'a> {
 
         let mut parser = Parser::new(
             tokens,
-            self.current_file.clone(),
+            &self.current_file,
             self.id_counter,
             self.syntax_errors,
         );
         let stmts = parser.parse().clone();
+        println!("{}", resolved_path);
 
         for stmt in stmts {
             if let stmt::Stmt::Class {

@@ -5,7 +5,7 @@ use crate::crux::token::{Object, Token, TokenType, KEYWORDS};
 
 pub struct Lexer<'a> {
     source: &'a str,
-    tokens: Vec<Token>,
+    tokens: Vec<Token<'a>>,
     start: usize,
     current: usize,
     line: usize,
@@ -15,7 +15,7 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     pub fn new(source: &'a str) -> Self {
-        let tokens: Vec<Token> = Vec::new();
+        let tokens: Vec<Token> = vec![];
 
         Lexer {
             source,
