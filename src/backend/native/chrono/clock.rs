@@ -27,7 +27,7 @@ impl ReiCallable for TimeNow {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|e| {
-                (ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn { msg: e.to_string() }))
+                ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn { msg: e.to_string() })
             })?
             .as_secs_f64();
         Ok(Object::Number(now))

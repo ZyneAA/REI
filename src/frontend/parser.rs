@@ -210,7 +210,7 @@ impl<'a> Parser<'a> {
         let resolved_path = self.resolve_path(&path)?;
 
         let source = fs::read_to_string(&resolved_path).unwrap();
-        let tokens = Lexer::new(&source).scan_tokens();
+        let tokens = Lexer::new(&source, resolved_path).scan_tokens();
 
         let mut parser = Parser::new(
             tokens,
@@ -218,9 +218,8 @@ impl<'a> Parser<'a> {
             self.id_counter,
             self.syntax_errors,
         );
-        let stmts = parser.parse().clone();
-        println!("{}", resolved_path);
 
+        let stmts = parser.parse().clone();
         for stmt in stmts {
             if let stmt::Stmt::Class {
                 name: _,
@@ -243,7 +242,7 @@ impl<'a> Parser<'a> {
 
         Err(ParseError::SyntaxError {
             token: alias,
-            message: "Invalid assignment target ".into(),
+            message: "Invalid assignment target".into(),
         })
     }
 

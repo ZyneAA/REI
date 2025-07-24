@@ -9,6 +9,7 @@ pub mod rei_instance;
 pub mod rei_return;
 pub mod resolver;
 pub mod stmt;
+pub mod stack_trace;
 
 // pub mod ir;
 // pub mod jit;

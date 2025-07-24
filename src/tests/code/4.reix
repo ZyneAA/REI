@@ -4,7 +4,6 @@ expose class Man < Comparable, Instance, Drop {
         this.name = name;
         this.age = age;
         this.comparable = age;
-        this.val = 1;
         this.target = "Drop";
     }
 

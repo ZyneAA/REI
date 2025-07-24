@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::rc::Rc;
 use std::thread;
 
@@ -25,7 +24,6 @@ pub struct Interpreter {
     pub environment: EnvRef,
     locals: HashMap<ExprId, usize>,
     exposed_value: Option<Object>,
-    current_file: Option<PathBuf>,
 }
 
 impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
@@ -173,18 +171,24 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
     ) -> Result<Object, ExecSignal> {
         let start = self.evaluate(start)?;
         let end = self.evaluate(end)?;
-        match (start, end) {
+        match (&start, &end) {
             (Object::Number(s), Object::Number(e)) => {
                 if s.fract() != 0.0 || e.fract() != 0.0 {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::InvalidRangeType));
+                    return Err(ExecSignal::RuntimeError(RuntimeError::InvalidRangeType {
+                        start,
+                        end,
+                    }));
                 }
                 if e < s {
                     Err(ExecSignal::RuntimeError(RuntimeError::InvalidRange))
                 } else {
-                    Ok(Object::Range(s, e))
+                    Ok(Object::Range(s.clone(), e.clone()))
                 }
             }
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::InvalidRangeType)),
+            _ => Err(ExecSignal::RuntimeError(RuntimeError::InvalidRangeType {
+                start,
+                end,
+            })),
         }
     }
 
@@ -575,13 +579,13 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
         let current_thread_id = current_thread.id();
 
         let value = format!(
-            "Exeception in {:?} | {:?}:\n    {}",
+            "Exeception in {:?} | {:?}:\n    at {}",
             current_thread_name,
             current_thread_id,
             self.stringify(&obj)
         );
-        let throw = util::red_colored(&value);
 
+        let throw = util::red_colored(&value);
         println!("{}", throw);
 
         Ok(())
@@ -598,6 +602,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
         self.environment
             .borrow_mut()
             .define(name.lexeme.clone(), value)?;
+
         Ok(())
     }
 
@@ -686,7 +691,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 }
 
 impl Interpreter {
-    pub fn new(current_file: Option<PathBuf>) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let environment = Environment::global();
         let locals = HashMap::new();
         native::register_all_native_fns(environment.borrow_mut())?;
@@ -694,7 +699,6 @@ impl Interpreter {
             environment,
             locals,
             exposed_value: None,
-            current_file,
         })
     }
 

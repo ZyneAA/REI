@@ -7,6 +7,8 @@ use std::rc::Rc;
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::rei_instance::ReiInstance;
 
+use crate::crux::util;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenType {
     // Single-character tokens.
@@ -150,13 +152,13 @@ impl fmt::Display for Object {
 }
 
 #[derive(Clone)]
-pub struct Token<'a> {
+pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
     pub literal: Object,
     pub line: usize,
     pub place: usize,
-    pub path: &'a str
+    pub path: String,
 }
 
 impl fmt::Display for TokenType {
@@ -234,14 +236,14 @@ impl fmt::Display for TokenType {
     }
 }
 
-impl <'a>Token<'a> {
+impl Token {
     pub fn new(
         token_type: TokenType,
         lexeme: String,
         literal: Object,
         line: usize,
         place: usize,
-        path: &'a str
+        path: String,
     ) -> Self {
         Token {
             token_type,
@@ -249,7 +251,7 @@ impl <'a>Token<'a> {
             literal,
             line,
             place,
-            path
+            path,
         }
     }
 
@@ -261,29 +263,33 @@ impl <'a>Token<'a> {
             literal: Object::Dummy,
             line: 0,
             place: 0,
-            path: "Internal"
+            path: String::from("Internal"),
         }
     }
 }
 
-impl<'a> fmt::Display for Token<'a> {
+impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let path = util::white_colored(&self.path);
+        let place_string = format!("{}:{}", self.line, self.place);
+        let place = util::blue_colored(&place_string);
+
         match self.literal {
             Object::Null => write!(
                 f,
-                "{} -->'{}'<-- at {}:{}",
-                self.token_type, self.lexeme, self.line, self.place
+                "in {}\n |\n | {} -->'{}'<-- at {}\n |\n",
+                path, self.token_type, self.lexeme, place
             ),
             _ => write!(
                 f,
-                "{} -->' {} '<-- {} at : {}:{}",
-                self.token_type, self.lexeme, self.literal, self.line, self.place
+                "in {}\n |\n | {} -->'{}'<-- {} at {}\n |\n",
+                path, self.token_type, self.lexeme, self.literal, place
             ),
         }
     }
 }
 
-impl<'a> fmt::Debug for Token<'a> {
+impl fmt::Debug for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Token")
             .field("token_type", &self.token_type)

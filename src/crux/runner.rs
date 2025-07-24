@@ -20,8 +20,10 @@ pub struct Runner;
 impl Runner {
     pub fn run(source: &str, location: &str) {
         let mut current_file = Some(PathBuf::from(location));
+        // map be current_file into Tokens?
 
-        let lexer = lexer::Lexer::new(source);
+        let current_path = String::from(location);
+        let lexer = lexer::Lexer::new(source, current_path);
         let tokens = lexer.scan_tokens();
 
         let mut global_expr_id_counter = 0;
@@ -44,7 +46,7 @@ impl Runner {
             return;
         }
 
-        let mut interpreter = match Interpreter::new(current_file) {
+        let mut interpreter = match Interpreter::new() {
             Ok(i) => i,
             Err(e) => {
                 eprintln!("{}", e);
