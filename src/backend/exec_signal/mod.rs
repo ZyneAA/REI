@@ -2,6 +2,7 @@ use std::fmt;
 use std::io;
 
 use crate::crux::token::Token;
+use crate::crux::util;
 
 pub mod control_flow;
 pub mod runtime_error;
@@ -15,7 +16,7 @@ pub enum ExecSignal {
 impl fmt::Display for ExecSignal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ExecSignal::RuntimeError(err) => write!(f, "Runtime Error: {}", err),
+            ExecSignal::RuntimeError(err) => write!(f, "{} {}", util::red_colored("Runtime Error:"), err),
             ExecSignal::ControlFlow(flow) => write!(f, "Control Flow: {}", flow),
         }
     }

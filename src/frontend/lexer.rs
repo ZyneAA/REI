@@ -5,6 +5,7 @@ use crate::crux::token::{Object, Token, TokenType, KEYWORDS};
 
 pub struct Lexer<'a> {
     source: &'a str,
+    current_path: String,
     tokens: Vec<Token>,
     start: usize,
     current: usize,
@@ -14,11 +15,11 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(source: &'a str) -> Self {
-        let tokens: Vec<Token> = Vec::new();
-
+    pub fn new(source: &'a str, current_path: String) -> Self {
+        let tokens: Vec<Token> = vec![];
         Lexer {
             source,
+            current_path,
             tokens,
             start: 0,
             current: 0,
@@ -34,12 +35,14 @@ impl<'a> Lexer<'a> {
             self.scan_token();
         }
 
+        let path = self.current_path;
         self.tokens.push(Token::new(
             TokenType::Eof,
             String::from(""),
             Object::Null,
             self.line,
             self.place,
+            path,
         ));
 
         self.tokens
@@ -245,7 +248,14 @@ impl<'a> Lexer<'a> {
 
     fn add_token(&mut self, token_type: TokenType, literal: Object) {
         let text = self.source[self.start..self.current].to_string();
-        let token = Token::new(token_type, text, literal, self.line, self.place);
+        let token = Token::new(
+            token_type,
+            text,
+            literal,
+            self.line,
+            self.place,
+            self.current_path.clone(),
+        );
 
         self.tokens.push(token);
     }

@@ -7,6 +7,8 @@ use std::rc::Rc;
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::rei_instance::ReiInstance;
 
+use crate::crux::util;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenType {
     // Single-character tokens.
@@ -156,6 +158,7 @@ pub struct Token {
     pub literal: Object,
     pub line: usize,
     pub place: usize,
+    pub path: String,
 }
 
 impl fmt::Display for TokenType {
@@ -240,6 +243,7 @@ impl Token {
         literal: Object,
         line: usize,
         place: usize,
+        path: String,
     ) -> Self {
         Token {
             token_type,
@@ -247,16 +251,19 @@ impl Token {
             literal,
             line,
             place,
+            path,
         }
     }
 
     pub fn fake(token_type: TokenType) -> Self {
+        let lexeme = format!("{:?}", token_type);
         Token {
             token_type,
-            lexeme: format!("{:?}", token_type),
+            lexeme,
             literal: Object::Dummy,
             line: 0,
             place: 0,
+            path: String::from("Internal"),
         }
     }
 }
