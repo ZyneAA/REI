@@ -263,21 +263,24 @@ impl Token {
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let path = util::white_colored(&self.path);
+        let place_string = format!("{}:{}", self.line, self.place);
+        let place = util::blue_colored(&place_string);
+
         match self.literal {
             Object::Null => write!(
                 f,
-                "{} -->'{}'<-- at {}:{}",
-                self.token_type, self.lexeme, self.line, self.place
+                "in {}\n |\n | {} -->'{}'<-- at {}\n |\n",
+                path, self.token_type, self.lexeme, place
             ),
             _ => write!(
                 f,
-                "{} -->' {} '<-- {} at : {}:{}",
-                self.token_type, self.lexeme, self.literal, self.line, self.place
+                "in {}\n |\n | {} -->'{}'<-- {} at {}\n |\n",
+                path, self.token_type, self.lexeme, self.literal, place
             ),
         }
     }
 }
-
 impl fmt::Debug for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Token")

@@ -13,7 +13,6 @@ use 4 as Man;
 fn insert() {
     return "New Name";
 }
-
 let man1 = Man("Ball", 300);
 let man2 = Man("K", 500);
 

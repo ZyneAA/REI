@@ -1,6 +1,17 @@
 use std/clone as Clone;
 use std/collection/vec as Vec;
+use std/cmp/std_compare as StdCompare;
+use std/cmp/comparable as Comparable;
+use std/instance/instance as Instance;
+use std/instance/drop as Drop;
 
+class Person {
+
+    init(name) {
+        this.name = name;
+    }
+
+}
 let person0 = Person("me");
 let person1 = Person("u");
 let person2 = person0;
