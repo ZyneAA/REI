@@ -14,7 +14,6 @@ pub fn blue_colored(text: &str) -> String {
     format!("\x1b[94m{}\x1b[0m", text)
 }
 
-
 pub fn white_colored(text: &str) -> String {
     format!("\x1b[1;37m{}\x1b[0m", text)
 }

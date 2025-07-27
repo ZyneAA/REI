@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::cell::RefCell;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::thread;
@@ -6,10 +7,12 @@ use std::time::{Duration, Instant};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::backend::environment::Environment;
-use crate::backend::exec_signal::runtime_error::RuntimeError;
+use crate::backend::exec_signal::runtime_error::{RuntimeError, RuntimeErrorType};
 use crate::backend::exec_signal::ExecSignal;
 use crate::backend::interpreter::Interpreter;
 use crate::backend::rei_callable::ReiCallable;
+use crate::backend::stack_trace::ExecContext;
+
 use crate::crux::token::Object;
 
 #[derive(Clone, Debug)]
@@ -23,11 +26,13 @@ impl ReiCallable for TimeNow {
         &self,
         _interpreter: &mut Interpreter,
         _arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|e| {
-                ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn { msg: e.to_string() })
+                let err_type = RuntimeErrorType::ErrorInNativeFn { msg: e.to_string() };
+                ExecSignal::RuntimeError(RuntimeError::new(err_type, context))
             })?
             .as_secs_f64();
         Ok(Object::Number(now))
@@ -53,13 +58,17 @@ impl ReiCallable for Sleep {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let duration = match &arguments[0] {
             Object::Number(ms) => *ms,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
                     msg: "Expected number (milliseconds) as argument to <sleep>".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )));
             }
         };
 
@@ -87,6 +96,7 @@ impl ReiCallable for FormatTime {
         &self,
         _interpreter: &mut Interpreter,
         _arguments: &Vec<Object>,
+        _context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let now = chrono::Utc::now().to_rfc3339();
         Ok(Object::Str(now))
@@ -112,16 +122,20 @@ impl ReiCallable for Measure {
         &self,
         interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         if let Object::Callable(callable) = &arguments[0] {
             let now = Instant::now();
-            callable.call(interpreter, &vec![])?;
+            callable.call(interpreter, &vec![], context.clone())?;
             let elapsed = now.elapsed().as_secs_f64();
             Ok(Object::Str(format!("{:.6}", elapsed)))
         } else {
-            Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+            let err_type = RuntimeErrorType::ErrorInNativeFn {
                 msg: "Expected a function as argument which return none to measure".to_string(),
-            }))
+            };
+            Err(ExecSignal::RuntimeError(RuntimeError::new(
+                err_type, context,
+            )))
         }
     }
 

@@ -1,13 +1,21 @@
 use std::any::Any;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
 use super::exec_signal::ExecSignal;
+
 use super::interpreter::Interpreter;
+
 use super::rei_callable::ReiCallable;
+
 use super::rei_function::ReiFunction;
+
 use super::rei_instance::ReiInstance;
+
 use crate::crux::token::Object;
+
+use crate::backend::stack_trace::ExecContext;
 
 #[derive(Debug, Clone)]
 pub struct ReiClass {
@@ -66,13 +74,18 @@ impl ReiCallable for ReiClass {
         &self,
         interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
-        let instance = ReiInstance::new(self.clone());
+        let instance = ReiInstance::new(self.clone(), context.clone());
 
         let init = self.find_method("init");
         match init {
             Some(i) => {
-                i.bind(instance.clone())?.call(interpreter, arguments)?;
+                i.bind(instance.clone(), context.clone())?.call(
+                    interpreter,
+                    arguments,
+                    context.clone(),
+                )?;
             }
             None => {}
         }

@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::thread;
@@ -11,10 +12,11 @@ use crate::frontend::expr::ExprId;
 use crate::backend::environment::{EnvRef, Environment};
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::rei_class::ReiClass;
+use crate::backend::stack_trace::{CallFrame, ExecContext};
 use crate::backend::stmt;
 
 use super::exec_signal::control_flow::ControlFlow;
-use super::exec_signal::runtime_error::RuntimeError;
+use super::exec_signal::runtime_error::{RuntimeError, RuntimeErrorType};
 use super::exec_signal::ExecSignal;
 
 use super::native;
@@ -24,6 +26,7 @@ pub struct Interpreter {
     pub environment: EnvRef,
     locals: HashMap<ExprId, usize>,
     exposed_value: Option<Object>,
+    context: Rc<RefCell<ExecContext>>,
 }
 
 impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
@@ -53,9 +56,13 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                 }
             }
             TokenType::Bang => Ok(Object::Bool(!self.is_truthy(&right))),
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::InvalidOperator {
-                token: operator.clone(),
-            })),
+            _ => {
+                let err_type = RuntimeErrorType::InvalidOperator {
+                    token: operator.clone(),
+                };
+                let stack_trace = RuntimeError::new(err_type, self.context.clone());
+                Err(ExecSignal::RuntimeError(stack_trace))
+            }
         }
     }
 
@@ -82,9 +89,13 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                 (Object::Str(a), Object::Str(b)) => Ok(Object::Str(a + &b)),
                 (Object::Str(a), b) => Ok(Object::Str(a + &b.to_string())),
                 (a, Object::Str(b)) => Ok(Object::Str(a.to_string() + &b)),
-                _ => Err(ExecSignal::RuntimeError(RuntimeError::TypeMismatch {
-                    token: operator.clone(),
-                })),
+                _ => {
+                    let err_type = RuntimeErrorType::TypeMismatch {
+                        token: operator.clone(),
+                    };
+                    let stack_trace = RuntimeError::new(err_type, self.context.clone());
+                    Err(ExecSignal::RuntimeError(stack_trace))
+                }
             },
             TokenType::Minus => {
                 self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
@@ -98,7 +109,6 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                 self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
                 self.binary_number_operation(left, right, operator.clone(), |a, b| a * b)
             }
-
             TokenType::Greater => {
                 self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
                 self.compare_number_operation(left, right, operator.clone(), |a, b| a > b)
@@ -115,15 +125,15 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                 self.check_number_operands(operator.clone(), left.clone(), right.clone())?;
                 self.compare_number_operation(left, right, operator.clone(), |a, b| a <= b)
             }
-
             TokenType::EqualEqual => Ok(Object::Bool(self.is_equal(left, right))),
             TokenType::BangEqual => Ok(Object::Bool(!self.is_equal(left, right))),
-
-            _ => Err(ExecSignal::RuntimeError(
-                RuntimeError::UnexpectedBinaryOperation {
+            _ => {
+                let err_type = RuntimeErrorType::UnexpectedBinaryOperation {
                     token: operator.clone(),
-                },
-            )),
+                };
+                let stack_trace = RuntimeError::new(err_type, self.context.clone());
+                Err(ExecSignal::RuntimeError(stack_trace))
+            }
         }
     }
 
@@ -171,24 +181,30 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
     ) -> Result<Object, ExecSignal> {
         let start = self.evaluate(start)?;
         let end = self.evaluate(end)?;
+
         match (&start, &end) {
             (Object::Number(s), Object::Number(e)) => {
                 if s.fract() != 0.0 || e.fract() != 0.0 {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::InvalidRangeType {
-                        start,
-                        end,
-                    }));
+                    let err_type = RuntimeErrorType::InvalidRangeType { start, end };
+                    let stack_trace = RuntimeError::new(err_type, self.context.clone());
+                    return Err(ExecSignal::RuntimeError(stack_trace));
                 }
                 if e < s {
-                    Err(ExecSignal::RuntimeError(RuntimeError::InvalidRange))
+                    let err_type = RuntimeErrorType::InvalidRange;
+                    let stack_trace = RuntimeError::new(err_type, self.context.clone());
+                    Err(ExecSignal::RuntimeError(stack_trace))
                 } else {
                     Ok(Object::Range(s.clone(), e.clone()))
                 }
             }
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::InvalidRangeType {
-                start,
-                end,
-            })),
+            _ => {
+                let err_type = RuntimeErrorType::InvalidRangeType {
+                    start: start.clone(),
+                    end: end.clone(),
+                };
+                let stack_trace = RuntimeError::new(err_type, self.context.clone());
+                Err(ExecSignal::RuntimeError(stack_trace))
+            }
         }
     }
 
@@ -207,13 +223,26 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
         match callee {
             Object::Callable(ref function) => {
                 if arguments.len() != function.arity() {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::InvalidArguments {
+                    let err_type = RuntimeErrorType::InvalidArguments {
                         token: paren.clone(),
-                    }));
+                    };
+
+                    let stack_trace = RuntimeError::new(err_type, self.context.clone());
+                    return Err(ExecSignal::RuntimeError(stack_trace));
                 }
-                function.call(self, &args)
+
+                let callframe = CallFrame::new(function.to_string(), paren.get_location());
+                self.context.borrow_mut().push_call(callframe);
+                let result = function.call(self, &args, self.context.clone());
+                // self.context.borrow_mut().pop_call();
+
+                result
             }
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::NotCallable)),
+            _ => {
+                let err_type = RuntimeErrorType::NotCallable;
+                let stack_trace = RuntimeError::new(err_type, self.context.clone());
+                Err(ExecSignal::RuntimeError(stack_trace))
+            }
         }
     }
 
@@ -233,13 +262,19 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                         return Ok(Object::Callable(method));
                     }
                 }
-                Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty {
+                let err_type = RuntimeErrorType::UndefinedProperty {
                     token: name.clone(),
-                }))
+                };
+                let stack_trace = RuntimeError::new(err_type, self.context.clone());
+                Err(ExecSignal::RuntimeError(stack_trace))
             }
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::UndefinedProperty {
-                token: name.clone(),
-            })),
+            _ => {
+                let err_type = RuntimeErrorType::UndefinedProperty {
+                    token: name.clone(),
+                };
+                let stack_trace = RuntimeError::new(err_type, self.context.clone());
+                Err(ExecSignal::RuntimeError(stack_trace))
+            }
         }
     }
 
@@ -256,7 +291,11 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                 instance.borrow_mut().set(&name.lexeme, value.clone());
                 Ok(value)
             }
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::PropertyError)),
+            _ => {
+                let err_type = RuntimeErrorType::PropertyError;
+                let stack_trace = RuntimeError::new(err_type, self.context.clone());
+                Err(ExecSignal::RuntimeError(stack_trace))
+            }
         }
     }
 
@@ -270,9 +309,13 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
         match method.lexeme.as_str() {
             "typeof" => {
                 if args.len() != 2 {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    let err_type = RuntimeErrorType::ErrorInReflection {
                         msg: "@typeof() expects 2 arguments".into(),
-                    }));
+                    };
+                    return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )));
                 }
 
                 let instance_obj = self.evaluate(&args[0])?;
@@ -290,20 +333,27 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                             visited.push(parent.clone());
                         }
                     }
-
                     Ok(Object::Bool(false))
                 } else {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    let err_type = RuntimeErrorType::ErrorInReflection {
                         msg: "@typeof() expects (instance, string)".into(),
-                    }));
+                    };
+                    Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )))
                 }
             }
 
             "destroy" => {
                 if args.len() != 1 {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    let err_type = RuntimeErrorType::ErrorInReflection {
                         msg: "@destroy() expects 1 argument".into(),
-                    }));
+                    };
+                    return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )));
                 }
 
                 let arg = self.evaluate(&args[0])?;
@@ -317,34 +367,44 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                             if fields.remove(&name).is_some() {
                                 return Ok(Object::Null);
                             } else {
-                                return Err(ExecSignal::RuntimeError(
-                                    RuntimeError::ErrorInNativeFn {
-                                        msg: format!("Field '{}' does not exist", name),
-                                    },
-                                ));
+                                let err_type = RuntimeErrorType::ErrorInReflection {
+                                    msg: format!("Field '{}' does not exist", name),
+                                };
+                                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                                    err_type,
+                                    self.context.clone(),
+                                )));
                             }
-                        } else {
-                            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                                msg: "Cannot use @destroy outside of instance methods".into(),
-                            }));
                         }
-                    } else {
-                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                            msg: "Cannot use @destroy outside of instance methods".into(),
-                        }));
                     }
+
+                    let err_type = RuntimeErrorType::ErrorInReflection {
+                        msg: "Cannot use @destroy outside of instance methods".into(),
+                    };
+                    Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )))
                 } else {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    let err_type = RuntimeErrorType::ErrorInReflection {
                         msg: "@destroy() expects a string argument".into(),
-                    }));
+                    };
+                    Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )))
                 }
             }
 
             "exist" => {
                 if args.len() != 1 {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    let err_type = RuntimeErrorType::ErrorInReflection {
                         msg: "@exist() expects 1 argument".into(),
-                    }));
+                    };
+                    return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )));
                 }
 
                 let arg = self.evaluate(&args[0])?;
@@ -355,55 +415,67 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                         if let Ok(Object::Instance(inst)) = maybe_this {
                             let has = inst.borrow().fields.borrow().contains_key(&name);
                             return Ok(Object::Bool(has));
-                        } else {
-                            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                                msg: "Cannot use @exist outside of instance methods".into(),
-                            }));
                         }
-                    } else {
-                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                            msg: "Cannot use @exist outside of instance methods".into(),
-                        }));
                     }
+
+                    let err_type = RuntimeErrorType::ErrorInReflection {
+                        msg: "Cannot use @exist outside of instance methods".into(),
+                    };
+                    Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )))
                 } else {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    let err_type = RuntimeErrorType::ErrorInReflection {
                         msg: "@exist() expects a string argument".into(),
-                    }));
+                    };
+                    Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )))
                 }
             }
 
             "mutate" => {
                 if args.len() != 2 {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    let err_type = RuntimeErrorType::ErrorInReflection {
                         msg: "@mutate() expects 2 argument".into(),
-                    }));
+                    };
+                    return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )));
                 }
 
                 let name = match self.evaluate(&args[0])? {
                     Object::Str(s) => s,
                     _ => {
-                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                            msg: "@mutate() expects 1 argument".into(),
-                        }))
+                        let err_type = RuntimeErrorType::ErrorInReflection {
+                            msg: "@mutate() expects 1st argument to be string".into(),
+                        };
+                        return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                            err_type,
+                            self.context.clone(),
+                        )));
                     }
                 };
 
                 let value = self.evaluate(&args[1])?;
 
                 let distance = self.locals.get(&id).ok_or_else(|| {
-                    ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    let err_type = RuntimeErrorType::ErrorInReflection {
                         msg: "Cannot use @mutate outside of instance method".into(),
-                    })
+                    };
+                    ExecSignal::RuntimeError(RuntimeError::new(err_type, self.context.clone()))
                 })?;
 
                 let maybe_this = Environment::get_at(&self.environment, *distance, "this")?;
                 let instance = match maybe_this {
                     Object::Instance(inst) => inst,
-                    _ => panic!(),
+                    _ => panic!(), // optional: replace with a proper error if desired
                 };
 
                 let inst_ref = instance.borrow();
-
                 let mut klass = inst_ref.class.clone();
                 let mut exists = inst_ref.fields.borrow().contains_key(&name);
 
@@ -412,7 +484,6 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                     if exists {
                         break;
                     }
-
                     if let Some(super_ref) = klass.superclass_refs.first() {
                         klass = super_ref.clone();
                     } else {
@@ -429,18 +500,28 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                         .insert(name, value);
                     Ok(Object::Null)
                 } else {
-                    Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    let err_type = RuntimeErrorType::ErrorInReflection {
                         msg: format!(
                             "@mutate() failed: '{}' is not a valid class attribute",
                             name
                         ),
-                    }))
+                    };
+                    Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )))
                 }
             }
 
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: format!("Unknown meta method '@{}'", method.lexeme),
-            })),
+            _ => {
+                let err_type = RuntimeErrorType::ErrorInReflection {
+                    msg: format!("Unknown meta method '@{}'", method.lexeme),
+                };
+                Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    self.context.clone(),
+                )))
+            }
         }
     }
 }
@@ -475,15 +556,21 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
                         superclass_refs.push(rc_class.clone());
                         superclass_objs.push(Object::Callable(rc_class));
                     } else {
-                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                            msg: "Superclass must be a class.".into(),
-                        }));
+                        let msg = format!("{} is not a super class", evaluated.to_string());
+                        let err_type = RuntimeErrorType::ParentClassError { msg };
+                        return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                            err_type,
+                            self.context.clone(),
+                        )));
                     }
                 }
                 _ => {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                        msg: "Superclass must be a class.".into(),
-                    }));
+                    let msg = format!("{} is not a super class", evaluated.to_string());
+                    let err_type = RuntimeErrorType::ParentClassError { msg };
+                    return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )));
                 }
             }
         }
@@ -494,7 +581,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
         let mut temp_env = None;
         if !superclass_objs.is_empty() {
-            let env = Environment::from_enclosing(self.environment.clone());
+            let env = Environment::from_enclosing(self.environment.clone(), self.context.clone());
             for base_obj in superclass_objs.into_iter() {
                 env.borrow_mut().define(base_obj.to_string(), base_obj)?;
             }
@@ -607,7 +694,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
     }
 
     fn visit_block_stmt(&mut self, statements: &Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
-        let new_env = Environment::from_enclosing(self.environment.clone());
+        let new_env = Environment::from_enclosing(self.environment.clone(), self.context.clone());
         self.execute_block(statements, new_env)
     }
 
@@ -692,13 +779,15 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
 impl Interpreter {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let environment = Environment::global();
+        let context = Rc::new(RefCell::new(ExecContext::new()));
+        let environment = Environment::global(context.clone());
         let locals = HashMap::new();
         native::register_all_native_fns(environment.borrow_mut())?;
         Ok(Interpreter {
             environment,
             locals,
             exposed_value: None,
+            context,
         })
     }
 
@@ -779,9 +868,13 @@ impl Interpreter {
     fn check_number_operand(&self, operator: Token, operand: Object) -> Result<(), ExecSignal> {
         match operand {
             Object::Number(_) => Ok(()),
-            _ => Err(ExecSignal::RuntimeError(
-                RuntimeError::OperandMustBeNumber { token: operator },
-            )),
+            _ => {
+                let err_type = RuntimeErrorType::OperandMustBeNumber { token: operator };
+                Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    self.context.clone(),
+                )))
+            }
         }
     }
 
@@ -793,9 +886,13 @@ impl Interpreter {
     ) -> Result<(), ExecSignal> {
         match (a, b) {
             (Object::Number(_), Object::Number(_)) => Ok(()),
-            _ => Err(ExecSignal::RuntimeError(
-                RuntimeError::OperandMustBeNumber { token: operator },
-            )),
+            _ => {
+                let err_type = RuntimeErrorType::OperandMustBeNumber { token: operator };
+                Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    self.context.clone(),
+                )))
+            }
         }
     }
 
@@ -822,16 +919,22 @@ impl Interpreter {
         match (a, b) {
             (Object::Number(x), Object::Number(y)) => {
                 if token.token_type == TokenType::Slash && y == 0.0 {
-                    Err(ExecSignal::RuntimeError(RuntimeError::DividedByZero {
-                        token,
-                    }))
+                    let err_type = RuntimeErrorType::DividedByZero { token };
+                    Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        self.context.clone(),
+                    )))
                 } else {
                     Ok(Object::Number(op(x, y)))
                 }
             }
-            _ => Err(ExecSignal::RuntimeError(
-                RuntimeError::OperandMustBeNumber { token },
-            )),
+            _ => {
+                let err_type = RuntimeErrorType::OperandMustBeNumber { token };
+                Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    self.context.clone(),
+                )))
+            }
         }
     }
 
@@ -847,9 +950,13 @@ impl Interpreter {
     {
         match (a, b) {
             (Object::Number(x), Object::Number(y)) => Ok(Object::Bool(op(x, y))),
-            _ => Err(ExecSignal::RuntimeError(
-                RuntimeError::OperandMustBeNumber { token },
-            )),
+            _ => {
+                let err_type = RuntimeErrorType::OperandMustBeNumber { token };
+                Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    self.context.clone(),
+                )))
+            }
         }
     }
 

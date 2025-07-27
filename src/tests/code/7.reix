@@ -1,17 +1,20 @@
 fn a() {
+    let ok = 12/0;
     return 1000;
 }
 
-class b {
-
-    ok() {
-        println "OK";
-    }
-
+fn b() {
+    let first = a();
+    return first;
 }
 
-let val;
+fn c() {
+    println b();
+}
 
-do: a() -> b(), 12+1
-fail: throw "Failed doing smth", throw "uhh ohh no"
-yield: val, _, let z;
+fn d() {
+    println "232";
+}
+
+d();
+c();

@@ -3,9 +3,14 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::backend::environment::Environment;
-use crate::backend::exec_signal::{runtime_error::RuntimeError, ExecSignal};
+use crate::backend::exec_signal::{
+    runtime_error::{RuntimeError, RuntimeErrorType},
+    ExecSignal,
+};
 use crate::backend::interpreter::Interpreter;
 use crate::backend::rei_callable::ReiCallable;
+use crate::backend::stack_trace::ExecContext;
+
 use crate::crux::token::Object;
 
 #[derive(Clone, Debug)]
@@ -19,6 +24,7 @@ impl ReiCallable for NewVec {
         &self,
         _interpreter: &mut Interpreter,
         _arguments: &Vec<Object>,
+        _context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let vec = Rc::new(RefCell::new(Vec::new()));
         Ok(Object::Vec(vec))
@@ -44,13 +50,17 @@ impl ReiCallable for NewVecSized {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let size = match arguments.get(0) {
             Some(Object::Number(n)) => *n as usize,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected number".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )));
             }
         };
 
@@ -78,22 +88,29 @@ impl ReiCallable for PushToVec {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let vec_ref = match arguments.get(0) {
             Some(Object::Vec(v)) => v,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected a Vec".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )));
             }
         };
 
         let obj = match arguments.get(1) {
             Some(obj) => obj,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected an Object".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )));
             }
         };
 
@@ -121,13 +138,17 @@ impl ReiCallable for PopFromVec {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let vec_ref = match arguments.get(0) {
             Some(Object::Vec(v)) => v,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected a Vec".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )));
             }
         };
 
@@ -157,22 +178,25 @@ impl ReiCallable for AppendToVec {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let first_vec_ref = match arguments.get(0) {
             Some(Object::Vec(v)) => v,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected a Vec as first param".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         };
 
         let second_vec_ref = match arguments.get(1) {
             Some(Object::Vec(v)) => v,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected a Vec as second param".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         };
 
@@ -203,13 +227,15 @@ impl ReiCallable for ClearVec {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let vec_ref = match arguments.get(0) {
             Some(Object::Vec(v)) => v,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected a Vec".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         };
 
@@ -237,13 +263,15 @@ impl ReiCallable for VecLen {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let vec_ref = match arguments.get(0) {
             Some(Object::Vec(v)) => v,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected a Vec".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         };
 
@@ -271,18 +299,19 @@ impl ReiCallable for VecEmptyCheck {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let vec_ref = match arguments.get(0) {
             Some(Object::Vec(v)) => v,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected a Vec".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         };
 
-        let is_empty = vec_ref.borrow().is_empty();
-        Ok(Object::Bool(is_empty))
+        Ok(Object::Bool(vec_ref.borrow().is_empty()))
     }
 
     fn to_string(&self) -> String {
@@ -305,29 +334,33 @@ impl ReiCallable for SplitVec {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let vec_ref = match arguments.get(0) {
             Some(Object::Vec(v)) => v,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected a Vec".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         };
 
         let place = match arguments.get(1) {
             Some(Object::Number(n)) => *n as usize,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "expected number".to_string(),
-                }))
+                let err = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "expected a number".to_string(),
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         };
 
         if place > vec_ref.borrow().len() {
-            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+            let err = RuntimeErrorType::ErrorInNativeFn {
                 msg: format!("split index {} out of bounds", place),
-            }));
+            };
+            return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
         }
 
         let mut vec_ref = vec_ref.borrow_mut();
@@ -355,33 +388,36 @@ impl ReiCallable for VecGet {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let vec_ref = match arguments.get(0) {
             Some(Object::Vec(v)) => v,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected a Vec".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         };
 
         let place = match arguments.get(1) {
             Some(Object::Number(n)) => *n as usize,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "expected number".to_string(),
-                }))
+                let err = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "expected a number".to_string(),
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         };
 
-        if place > vec_ref.borrow().len() {
-            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: format!("split index {} out of bounds", place),
-            }));
+        if place >= vec_ref.borrow().len() {
+            let err = RuntimeErrorType::ErrorInNativeFn {
+                msg: format!("index {} out of bounds", place),
+            };
+            return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
         }
 
-        let val = vec_ref.borrow().get(place).unwrap().clone();
-        Ok(val)
+        Ok(vec_ref.borrow()[place].clone())
     }
 
     fn to_string(&self) -> String {

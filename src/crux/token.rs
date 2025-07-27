@@ -266,25 +266,32 @@ impl Token {
             path: String::from("Internal"),
         }
     }
+
+    pub fn get_location(&self) -> String {
+        format!("in {} {}:{}", self.path, self.line, self.place)
+    }
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let path = util::white_colored(&self.path);
         let place_string = format!("{}:{}", self.line, self.place);
-        let place = util::blue_colored(&place_string);
+        let place = util::red_colored(&place_string);
 
         match self.literal {
-            Object::Null => write!(
-                f,
-                "in {}\n |\n | {} -->'{}'<-- at {}\n |\n",
-                path, self.token_type, self.lexeme, place
-            ),
-            _ => write!(
-                f,
-                "in {}\n |\n | {} -->'{}'<-- {} at {}\n |\n",
-                path, self.token_type, self.lexeme, self.literal, place
-            ),
+            Object::Null => {
+                let fmt_report = util::red_colored(&format!(
+                    "in {} \n   \n◼︎ {} -> '{}' <- at {}\n \n",
+                    self.path, self.token_type, self.lexeme, place
+                ));
+                write!(f, "{}", fmt_report)
+            }
+            _ => {
+                let fmt_report = util::red_colored(&format!(
+                    "in {}\n   \n◼︎ {} ->'{}'<- {} at {}\n \n",
+                    self.path, self.token_type, self.lexeme, self.literal, place
+                ));
+                write!(f, "{}", fmt_report)
+            }
         }
     }
 }

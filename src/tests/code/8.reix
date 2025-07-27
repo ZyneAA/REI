@@ -9,3 +9,4 @@ fn who() {
 }
 
 who();
+println 12 / 0;

@@ -2,9 +2,12 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use super::exec_signal::runtime_error::RuntimeError;
+use super::exec_signal::runtime_error::{RuntimeError, RuntimeErrorType};
 use super::exec_signal::ExecSignal;
+
 use crate::crux::token::{Object, Token};
+
+use crate::backend::stack_trace::ExecContext;
 
 pub type EnvRef = Rc<RefCell<Environment>>;
 
@@ -12,20 +15,23 @@ pub type EnvRef = Rc<RefCell<Environment>>;
 pub struct Environment {
     pub values: HashMap<String, Object>,
     pub enclosing: Option<EnvRef>,
+    pub context: Rc<RefCell<ExecContext>>,
 }
 
 impl Environment {
-    pub fn global() -> EnvRef {
+    pub fn global(context: Rc<RefCell<ExecContext>>) -> EnvRef {
         Rc::new(RefCell::new(Environment {
             values: HashMap::new(),
             enclosing: None,
+            context,
         }))
     }
 
-    pub fn from_enclosing(enclosing: EnvRef) -> EnvRef {
+    pub fn from_enclosing(enclosing: EnvRef, context: Rc<RefCell<ExecContext>>) -> EnvRef {
         Rc::new(RefCell::new(Environment {
             values: HashMap::new(),
             enclosing: Some(enclosing),
+            context,
         }))
     }
 
@@ -40,9 +46,13 @@ impl Environment {
         } else if let Some(ref env) = self.enclosing {
             env.borrow().get(name)
         } else {
-            Err(ExecSignal::RuntimeError(RuntimeError::UndefinedVariable {
+            let err_type = RuntimeErrorType::UndefinedVariable {
                 token: name.clone(),
-            }))
+            };
+            Err(ExecSignal::RuntimeError(RuntimeError::new(
+                err_type,
+                self.context.clone(),
+            )))
         }
     }
 
@@ -78,9 +88,13 @@ impl Environment {
         } else if let Some(ref mut env) = self.enclosing {
             env.borrow_mut().assign(name, value)
         } else {
-            Err(ExecSignal::RuntimeError(RuntimeError::UndefinedVariable {
+            let err_type = RuntimeErrorType::UndefinedVariable {
                 token: name.clone(),
-            }))
+            };
+            Err(ExecSignal::RuntimeError(RuntimeError::new(
+                err_type,
+                self.context.clone(),
+            )))
         }
     }
 
