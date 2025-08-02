@@ -234,7 +234,9 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
                 let callframe = CallFrame::new(function.to_string(), paren.get_location());
                 self.context.borrow_mut().push_call(callframe);
                 let result = function.call(self, &args, self.context.clone());
-                // self.context.borrow_mut().pop_call();
+                if result.is_ok() {
+                    self.context.borrow_mut().pop_call();
+                }
 
                 result
             }
@@ -661,21 +663,13 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
 
     fn visit_throw_stmt(&mut self, expression: &Box<expr::Expr>) -> Result<(), ExecSignal> {
         let obj = self.evaluate(expression)?;
-        let current_thread = thread::current();
-        let current_thread_name = current_thread.name().unwrap_or("main");
-        let current_thread_id = current_thread.id();
+        let value = format!("{}", self.stringify(&obj));
 
-        let value = format!(
-            "Exeception in {:?} | {:?}:\n    at {}",
-            current_thread_name,
-            current_thread_id,
-            self.stringify(&obj)
-        );
-
-        let throw = util::red_colored(&value);
-        println!("{}", throw);
-
-        Ok(())
+        let err_type = RuntimeErrorType::CustomMsg { msg: value };
+        return Err(ExecSignal::RuntimeError(RuntimeError::new(
+            err_type,
+            self.context.clone(),
+        )));
     }
 
     fn visit_println_stmt(&mut self, expression: &expr::Expr) -> Result<(), ExecSignal> {
@@ -791,12 +785,21 @@ impl Interpreter {
         })
     }
 
-    pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) -> Result<(), ExecSignal> {
+    pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) {
         for stmt in statements {
-            self.execute(&stmt)?;
+            match self.execute(&stmt) {
+                Ok(()) => {},
+                Err(e) => {
+                    eprint!("{}", e);
+                    if let ExecSignal::RuntimeError(runtime_error) = &e {
+                        match runtime_error.err_type {
+                            RuntimeErrorType::CustomMsg { .. } => {},
+                            _ => std::process::exit(1)
+                        }
+                    }
+                }
+            }
         }
-
-        Ok(())
     }
 
     fn execute(&mut self, statement: &stmt::Stmt) -> Result<(), ExecSignal> {

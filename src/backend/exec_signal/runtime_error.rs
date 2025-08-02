@@ -49,11 +49,29 @@ where
                 ));
                 write!(f, "{}", fmt_report)?
             }
-            _ => write!(f, "{}", self.err_type)?,
+            CustomMsg { msg } => {
+                let single_line = msg.replace('\n', "\n◼︎ ");
+                let fmt_report = util::red_colored(&format!(
+                    "{} '{}' {:?} \n\n◼︎ {}\n",
+                    "Exception occured in", current_thread_name, current_thread_id, single_line
+                ));
+                write!(f, "{}", fmt_report)?
+            }
+            _ => {
+                let fmt_report = util::red_colored(&format!(
+                    "{} '{}' {:?} --- {}",
+                    "Exception occured in", current_thread_name, current_thread_id, self.err_type
+                ));
+                write!(f, "{}", fmt_report)?
+            }
         }
 
         // Then stack trace
-        writeln!(f, "  {}", self.stack_trace.borrow_mut().format_stack_trace())
+        writeln!(
+            f,
+            "  {}\n",
+            self.stack_trace.borrow_mut().format_stack_trace()
+        )
     }
 }
 

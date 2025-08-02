@@ -9,6 +9,7 @@ pub mod io;
 pub mod math;
 // pub mod memory;
 pub mod misc;
+pub mod process;
 
 pub fn register_all_native_fns(
     mut env: RefMut<Environment>,

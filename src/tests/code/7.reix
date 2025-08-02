@@ -13,7 +13,8 @@ fn c() {
 }
 
 fn d() {
-    println "232";
+    println "wd";
+    throw "bad\ntoo bad\nsooooo bad";
 }
 
 d();
