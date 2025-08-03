@@ -21,6 +21,7 @@ pub fn register_all_native_fns(
     fs::file::register(&mut *env)?;
     collections::vec::register(&mut *env)?;
     misc::clone::register(&mut *env)?;
+    process::process::register(&mut *env)?;
 
     Ok(())
 }

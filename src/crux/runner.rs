@@ -14,8 +14,6 @@ use crate::frontend::parser::Parser;
 
 use crate::backend::interpreter::Interpreter;
 use crate::backend::resolver::Resolver;
-use crate::backend::exec_signal::ExecSignal;
-use crate::backend::exec_signal::runtime_error::RuntimeErrorType;
 
 pub struct Runner;
 

@@ -1,0 +1,24 @@
+expose class Process {
+
+    static exit(code) {
+        _Proc_exit(code);
+    }
+
+    static pid() {
+        return _Proc_pid();
+    }
+
+    static sleep(time) {
+        _Proc_sleep(time);
+    }
+
+    static current_dir() {
+        return _Proc_current_dir();
+    }
+
+    static set_dir(name) {
+        _Proc_set_dir(name);
+    }
+
+}
+

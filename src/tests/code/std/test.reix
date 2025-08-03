@@ -1,0 +1,8 @@
+expose class Test {
+
+    static a(code) {
+        return _Proc_current_dir();
+
+    }
+
+}

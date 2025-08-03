@@ -1,3 +1,6 @@
+use std/process as Process;
+use std/test as Test;
+
 fn a() {
     let ok = 12/0;
     return 1000;
@@ -13,9 +16,10 @@ fn c() {
 }
 
 fn d() {
-    println "wd";
     throw "bad\ntoo bad\nsooooo bad";
 }
 
 d();
 c();
+
+println Process.pid();

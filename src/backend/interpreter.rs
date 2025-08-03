@@ -788,13 +788,13 @@ impl Interpreter {
     pub fn interpret(&mut self, statements: Vec<stmt::Stmt>) {
         for stmt in statements {
             match self.execute(&stmt) {
-                Ok(()) => {},
+                Ok(()) => {}
                 Err(e) => {
                     eprint!("{}", e);
                     if let ExecSignal::RuntimeError(runtime_error) = &e {
                         match runtime_error.err_type {
-                            RuntimeErrorType::CustomMsg { .. } => {},
-                            _ => std::process::exit(1)
+                            RuntimeErrorType::CustomMsg { .. } => {}
+                            _ => std::process::exit(1),
                         }
                     }
                 }
