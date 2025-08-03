@@ -1,12 +1,15 @@
 use std::any::Any;
+use std::cell::RefCell;
 use std::io::{self, Write};
 use std::rc::Rc;
 
 use crate::backend::environment::Environment;
-use crate::backend::exec_signal::runtime_error::RuntimeError;
+use crate::backend::exec_signal::runtime_error::{RuntimeError, RuntimeErrorType};
 use crate::backend::exec_signal::ExecSignal;
 use crate::backend::interpreter::Interpreter;
 use crate::backend::rei_callable::ReiCallable;
+use crate::backend::stack_trace::ExecContext;
+
 use crate::crux::token::Object;
 
 #[derive(Clone, Debug)]
@@ -20,6 +23,7 @@ impl ReiCallable for ReadLine {
         &self,
         _interpreter: &mut Interpreter,
         _arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         print!("");
         io::stdout().flush().unwrap();
@@ -30,9 +34,14 @@ impl ReiCallable for ReadLine {
                 let trimmed = input.trim_end_matches(&['\n', '\r'][..]).to_string();
                 Ok(Object::Str(trimmed))
             }
-            Err(_) => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "Failed to read input from stdin".to_string(),
-            })),
+            Err(_) => {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Failed to read input from stdin".to_string(),
+                };
+                Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )))
+            }
         }
     }
 
@@ -56,6 +65,7 @@ impl ReiCallable for Read {
         &self,
         _interpreter: &mut Interpreter,
         _arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
@@ -63,9 +73,14 @@ impl ReiCallable for Read {
                 let trimmed = input.trim_end_matches(&['\n', '\r'][..]).to_string();
                 Ok(Object::Str(trimmed))
             }
-            Err(_) => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "Failed to read input from stdin".to_string(),
-            })),
+            Err(_) => {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Failed to read input from stdin".to_string(),
+                };
+                Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )))
+            }
         }
     }
 

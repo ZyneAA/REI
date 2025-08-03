@@ -1,13 +1,16 @@
 use rand::Rng;
 use std::any::Any;
+use std::cell::RefCell;
 use std::f64::consts::PI;
 use std::rc::Rc;
 
 use crate::backend::environment::Environment;
-use crate::backend::exec_signal::runtime_error::RuntimeError;
+use crate::backend::exec_signal::runtime_error::{RuntimeError, RuntimeErrorType};
 use crate::backend::exec_signal::ExecSignal;
 use crate::backend::interpreter::Interpreter;
 use crate::backend::rei_callable::ReiCallable;
+use crate::backend::stack_trace::ExecContext;
+
 use crate::crux::token::Object;
 
 macro_rules! math_fn {
@@ -20,13 +23,21 @@ macro_rules! math_fn {
                 1
             }
 
-            fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
+            fn call(
+                &self,
+                _: &mut Interpreter,
+                args: &Vec<Object>,
+                context: Rc<RefCell<ExecContext>>,
+            ) -> Result<Object, ExecSignal> {
                 if let Object::Number(n) = args[0] {
                     Ok(Object::Number($rust_fn(n)))
                 } else {
-                    Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    let err_type = RuntimeErrorType::ErrorInNativeFn {
                         msg: "Expected number".to_string(),
-                    }))
+                    };
+                    Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type, context,
+                    )))
                 }
             }
 
@@ -65,12 +76,22 @@ impl ReiCallable for Pow {
         2
     }
 
-    fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
+    fn call(
+        &self,
+        _: &mut Interpreter,
+        args: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
+    ) -> Result<Object, ExecSignal> {
         match (&args[0], &args[1]) {
             (Object::Number(a), Object::Number(b)) => Ok(Object::Number(a.powf(*b))),
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "Expected two numbers".to_string(),
-            })),
+            _ => {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Expected two numbers".to_string(),
+                };
+                Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )))
+            }
         }
     }
 
@@ -90,14 +111,24 @@ impl ReiCallable for Clamp {
         3
     }
 
-    fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
+    fn call(
+        &self,
+        _: &mut Interpreter,
+        args: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
+    ) -> Result<Object, ExecSignal> {
         match (&args[0], &args[1], &args[2]) {
             (Object::Number(val), Object::Number(min), Object::Number(max)) => {
                 Ok(Object::Number(val.max(*min).min(*max)))
             }
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "Expected three numbers".to_string(),
-            })),
+            _ => {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Expected three numbers".to_string(),
+                };
+                Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )))
+            }
         }
     }
 
@@ -117,13 +148,21 @@ impl ReiCallable for ToRadians {
         1
     }
 
-    fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
+    fn call(
+        &self,
+        _: &mut Interpreter,
+        args: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
+    ) -> Result<Object, ExecSignal> {
         if let Object::Number(deg) = args[0] {
             Ok(Object::Number(deg * PI / 180.0))
         } else {
-            Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "Expected a number".to_string(),
-            }))
+            let err_type = RuntimeErrorType::ErrorInNativeFn {
+                msg: "Expected one numbers".to_string(),
+            };
+            Err(ExecSignal::RuntimeError(RuntimeError::new(
+                err_type, context,
+            )))
         }
     }
 
@@ -143,13 +182,21 @@ impl ReiCallable for ToDegrees {
         1
     }
 
-    fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
+    fn call(
+        &self,
+        _: &mut Interpreter,
+        args: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
+    ) -> Result<Object, ExecSignal> {
         if let Object::Number(rad) = args[0] {
             Ok(Object::Number(rad * 180.0 / PI))
         } else {
-            Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "Expected a number".to_string(),
-            }))
+            let err_type = RuntimeErrorType::ErrorInNativeFn {
+                msg: "Expected one numbers".to_string(),
+            };
+            Err(ExecSignal::RuntimeError(RuntimeError::new(
+                err_type, context,
+            )))
         }
     }
 
@@ -169,7 +216,12 @@ impl ReiCallable for Random {
         0
     }
 
-    fn call(&self, _: &mut Interpreter, _: &Vec<Object>) -> Result<Object, ExecSignal> {
+    fn call(
+        &self,
+        _: &mut Interpreter,
+        _: &Vec<Object>,
+        _context: Rc<RefCell<ExecContext>>,
+    ) -> Result<Object, ExecSignal> {
         Ok(Object::Number(rand::rng().random::<f64>()))
     }
 
@@ -189,15 +241,25 @@ impl ReiCallable for RandomRange {
         2
     }
 
-    fn call(&self, _: &mut Interpreter, args: &Vec<Object>) -> Result<Object, ExecSignal> {
+    fn call(
+        &self,
+        _: &mut Interpreter,
+        args: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
+    ) -> Result<Object, ExecSignal> {
         match (&args[0], &args[1]) {
             (Object::Number(min), Object::Number(max)) => {
                 let r = rand::rng().random_range(*min as i64..=*max as i64);
                 Ok(Object::Number(r as f64))
             }
-            _ => Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "Expected two numbers".to_string(),
-            })),
+            _ => {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Expected one numbers".to_string(),
+                };
+                Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )))
+            }
         }
     }
 

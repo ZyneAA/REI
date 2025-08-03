@@ -8,6 +8,7 @@ pub mod rei_function;
 pub mod rei_instance;
 pub mod rei_return;
 pub mod resolver;
+pub mod stack_trace;
 pub mod stmt;
 
 // pub mod ir;

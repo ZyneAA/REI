@@ -1,0 +1,9 @@
+expose clas Exception {
+
+    throw() {
+        if (@exist("throwable"))  {
+            throw this.throwable;
+        }
+    }
+
+}

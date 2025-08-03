@@ -3,13 +3,21 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::environment::{EnvRef, Environment};
+
 use super::exec_signal::control_flow::ControlFlow;
 use super::exec_signal::ExecSignal;
+
 use super::interpreter::Interpreter;
+
 use super::rei_callable::ReiCallable;
+
 use super::rei_instance::ReiInstance;
+
 use super::stmt;
+
 use crate::crux::token::{Object, Token};
+
+use crate::backend::stack_trace::ExecContext;
 
 #[derive(Debug, Clone)]
 pub struct ReiFunction {
@@ -25,8 +33,9 @@ impl ReiCallable for ReiFunction {
         &self,
         interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
-        let env = Environment::from_enclosing(self.closure.clone());
+        let env = Environment::from_enclosing(self.closure.clone(), context.clone());
         env.borrow_mut().define(
             self.name.lexeme.clone(),
             Object::Callable(Rc::new(self.clone()) as Rc<dyn ReiCallable>),
@@ -85,8 +94,12 @@ impl ReiFunction {
         }
     }
 
-    pub fn bind(&self, instance: ReiInstance) -> Result<ReiFunction, ExecSignal> {
-        let env = Environment::from_enclosing(self.closure.clone());
+    pub fn bind(
+        &self,
+        instance: ReiInstance,
+        context: Rc<RefCell<ExecContext>>,
+    ) -> Result<ReiFunction, ExecSignal> {
+        let env = Environment::from_enclosing(self.closure.clone(), context.clone());
         let instance = Rc::new(RefCell::new(instance));
         env.borrow_mut()
             .define("this".to_string(), Object::Instance(instance))?;

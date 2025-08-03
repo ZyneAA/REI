@@ -5,9 +5,14 @@ use std::io;
 use std::rc::Rc;
 
 use crate::backend::environment::Environment;
-use crate::backend::exec_signal::{runtime_error::RuntimeError, ExecSignal};
+use crate::backend::exec_signal::{
+    runtime_error::{RuntimeError, RuntimeErrorType},
+    ExecSignal,
+};
 use crate::backend::interpreter::Interpreter;
 use crate::backend::rei_callable::ReiCallable;
+use crate::backend::stack_trace::ExecContext;
+
 use crate::crux::token::Object;
 
 #[derive(Clone, Debug)]
@@ -21,35 +26,40 @@ impl ReiCallable for BuildDir {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let path = match arguments.get(0) {
             Some(Object::Str(n)) => n,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected Str".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         };
         let is_recursive = match arguments.get(1) {
             Some(Object::Bool(n)) => n,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected Bool".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         };
 
         if *is_recursive {
             if let Err(e) = fs::DirBuilder::new().recursive(true).create(path) {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err = RuntimeErrorType::ErrorInNativeFn {
                     msg: format!("Failed to create directory: {}", e),
-                }));
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         } else {
             if let Err(e) = fs::DirBuilder::new().create(path) {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err = RuntimeErrorType::ErrorInNativeFn {
                     msg: format!("Failed to create directory: {}", e),
-                }));
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(err, context)));
             }
         }
 
@@ -76,13 +86,17 @@ impl ReiCallable for ReadDir {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let path = match arguments.get(0) {
             Some(Object::Str(n)) => n,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected Str".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )));
             }
         };
 
@@ -114,13 +128,17 @@ impl ReiCallable for CreateFile {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let path = match arguments.get(0) {
             Some(Object::Str(n)) => n,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected Str".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type, context,
+                )));
             }
         };
 

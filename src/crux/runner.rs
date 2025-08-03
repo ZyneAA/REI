@@ -14,14 +14,18 @@ use crate::frontend::parser::Parser;
 
 use crate::backend::interpreter::Interpreter;
 use crate::backend::resolver::Resolver;
+use crate::backend::exec_signal::ExecSignal;
+use crate::backend::exec_signal::runtime_error::RuntimeErrorType;
 
 pub struct Runner;
 
 impl Runner {
     pub fn run(source: &str, location: &str) {
-        let current_file = Some(PathBuf::from(location));
+        let mut current_file = Some(PathBuf::from(location));
+        // map be current_file into Tokens?
 
-        let lexer = lexer::Lexer::new(source);
+        let current_path = String::from(location);
+        let lexer = lexer::Lexer::new(source, current_path);
         let tokens = lexer.scan_tokens();
 
         let mut global_expr_id_counter = 0;
@@ -29,7 +33,7 @@ impl Runner {
 
         let mut parser = Parser::new(
             tokens,
-            current_file.clone(),
+            &mut current_file,
             &mut global_expr_id_counter,
             &mut syntax_errors,
         );
@@ -51,11 +55,11 @@ impl Runner {
                 panic!();
             }
         };
+
         let mut resolver = Resolver::new(&mut interpreter);
         resolver.resolve(&stmts);
-        if let Err(e) = interpreter.interpret(stmts) {
-            eprintln!("{}", e);
-        }
+
+        interpreter.interpret(stmts);
     }
 
     pub fn read_file(path: &str) -> Result<String, Box<dyn std::error::Error>> {
