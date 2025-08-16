@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::rei_instance::ReiInstance;
+use crate::backend::exec_signal::runtime_error;
 
 use crate::crux::util;
 
@@ -70,7 +71,7 @@ pub enum TokenType {
     Throw,
     Do,
     Fail,
-    Yield,
+    Finish,
     Underscore,
     Eof,
 
@@ -93,7 +94,7 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("or", TokenType::Or);
     map.insert("do", TokenType::Do);
     map.insert("fail", TokenType::Fail);
-    map.insert("yield", TokenType::Fail);
+    map.insert("finish", TokenType::Finish);
     map.insert("print", TokenType::Print);
     map.insert("println", TokenType::PrintLn);
     map.insert("return", TokenType::Return);
@@ -128,6 +129,7 @@ pub enum Object {
     Instance(Rc<RefCell<ReiInstance>>),
     MBlock(*mut u8, usize),
     Vec(Rc<RefCell<Vec<Object>>>),
+    Exception(Box<runtime_error::RuntimeError<Token>>)
 }
 
 impl fmt::Display for Object {
@@ -147,6 +149,7 @@ impl fmt::Display for Object {
                 let elements: Vec<String> = vec_borrow.iter().map(|o| o.to_string()).collect();
                 write!(f, "[{}]", elements.join(", "))
             }
+            Object::Exception(e) => write!(f, "{}", e)
         }
     }
 }
@@ -209,7 +212,7 @@ impl fmt::Display for TokenType {
             TokenType::Or => "IDENTIFIER",
             TokenType::Do => "IDENTIFIER",
             TokenType::Fail => "IDENTIFIER",
-            TokenType::Yield => "IDENTIFIER",
+            TokenType::Finish => "IDENTIFIER",
             TokenType::Print => "IDENTIFIER",
             TokenType::PrintLn => "IDENTIFIER",
             TokenType::Return => "IDENTIFIER",

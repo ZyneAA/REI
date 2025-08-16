@@ -20,14 +20,11 @@ impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ParseError::SyntaxError { token, message } => {
-                write!(
-                    f,
-                    "{} | {} at {}:{}",
-                    util::red_colored("Syntax error"),
-                    message,
-                    token.line,
-                    token.place
-                )
+                let fmt_err = format!(
+                    "Syntax Error | {} at {}:{}",
+                    message, token.line, token.place
+                );
+                write!(f, "{}", util::red_colored(&fmt_err),)
             }
         }
     }

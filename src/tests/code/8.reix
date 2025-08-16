@@ -1,9 +1,9 @@
-let me = "xx";
+let me = "123";
 
 fn who() {
     println me;
     fn where() {
-        println "IDK";
+        println "no where";
     }
     where();
 }

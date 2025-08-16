@@ -1,10 +1,8 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::thread;
 
 use crate::crux::token::{Object, Token, TokenType};
-use crate::crux::util;
 
 use crate::frontend::expr;
 use crate::frontend::expr::ExprId;
@@ -529,13 +527,38 @@ impl expr::Visitor<Result<Object, ExecSignal>> for Interpreter {
 }
 
 impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
-    fn visit_do_fail_yield_stmt(
+    fn visit_exception_stmt(
         &mut self,
-        do_exprs: &Vec<expr::Expr>,
-        fail_exprs: &Vec<expr::Expr>,
-        yield_bindings: &Option<Vec<stmt::YieldBinding>>,
+        do_stmts: &stmt::Stmt,
+        fail_stmts: &stmt::Stmt,
+        fail_binding: &Option<Box<stmt::Stmt>>,
+        finish_stmts: &Option<Box<stmt::Stmt>>,
     ) -> Result<(), ExecSignal> {
-        Ok(())
+        let mut result = self.execute(do_stmts);
+
+        if let Err(signal) = result {
+            match signal {
+                ExecSignal::RuntimeError(err_obj) => {
+                    // If fail binding exists: introduce var into environment
+                    if let Some(binding_stmt) = fail_binding {
+                        let exception = Object::Exception(Box::new(err_obj));
+                        self.define_fail_binding(binding_stmt, exception)?;
+                    }
+
+                    // Run fail block
+                    result = self.execute(fail_stmts);
+                }
+                other => return Err(other),
+            }
+        }
+
+        if let Some(finish_block) = finish_stmts {
+            // even if do/fail errored, we *still* run finish
+            // if finish throws, it overrides earlier errors
+            result = self.execute(finish_block);
+        }
+
+        result
     }
 
     fn visit_class_stmt(
@@ -797,6 +820,7 @@ impl Interpreter {
                             _ => std::process::exit(1),
                         }
                     }
+                    self.context.borrow_mut().pop_call();
                 }
             }
         }
@@ -845,6 +869,7 @@ impl Interpreter {
                 let elements: Vec<String> = vec_borrow.iter().map(|o| o.to_string()).collect();
                 format!("[{}]", elements.join(", "))
             }
+            Object::Exception(e) => format!("{}", e)
         }
     }
 
@@ -972,5 +997,18 @@ impl Interpreter {
         let result = f(self);
         self.environment = previous;
         result
+    }
+
+    fn define_fail_binding(
+        &mut self,
+        binding_stmt: &stmt::Stmt,
+        err_value: Object,
+    ) -> Result<(), ExecSignal> {
+        if let stmt::Stmt::Let { name, .. } = binding_stmt {
+            self.environment.borrow_mut().define(name.lexeme.clone(), err_value)?;
+            Ok(())
+        } else {
+            unreachable!("fail binding must always be a let stmt")
+        }
     }
 }

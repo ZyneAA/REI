@@ -1,5 +1,7 @@
+use std::cell::RefCell;
 use std::fs;
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::result::Result;
 
 use super::expr;
@@ -9,6 +11,7 @@ use crate::backend::stmt;
 
 use crate::crux::error::ParseError;
 use crate::crux::token::{Object, Token, TokenType};
+use crate::crux::util;
 
 use crate::frontend::lexer::Lexer;
 
@@ -19,7 +22,7 @@ pub struct Parser<'a> {
     exposed: bool,
     current_file: &'a Option<PathBuf>,
     pub is_error: bool,
-    syntax_errors: &'a mut Vec<ParseError>,
+    pub path_tracker: Rc<RefCell<String>>,
 }
 
 impl<'a> Parser<'a> {
@@ -27,7 +30,7 @@ impl<'a> Parser<'a> {
         tokens: Vec<Token>,
         current_file: &'a Option<PathBuf>,
         id_counter: &'a mut usize,
-        syntax_errors: &'a mut Vec<ParseError>,
+        path_tracker: Rc<RefCell<String>>,
     ) -> Self {
         Parser {
             tokens,
@@ -36,7 +39,7 @@ impl<'a> Parser<'a> {
             exposed: false,
             current_file,
             is_error: false,
-            syntax_errors,
+            path_tracker,
         }
     }
 
@@ -48,7 +51,9 @@ impl<'a> Parser<'a> {
                 Ok(stmt) => statements.push(stmt),
                 Err(e) => {
                     self.is_error = true;
-                    self.syntax_errors.push(e);
+                    let location =
+                        util::red_colored(&format!("({:?})", self.path_tracker.clone().borrow()));
+                    eprintln!("{} {}", e, location);
                     self.synchronize();
                 }
             }
@@ -94,7 +99,7 @@ impl<'a> Parser<'a> {
         }
         // Error handle
         else if self.rmatch(&[TokenType::Do])? {
-            self.do_fail_statement()
+            self.exception_statement()
         }
         // Class
         else if self.rmatch(&[TokenType::Class])? {
@@ -111,60 +116,55 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn do_fail_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
-        self.consume(&TokenType::Do, "Expected 'do'")?;
-        self.consume(&TokenType::Fullcolon, "Expected ':'")?;
+    fn exception_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
+        // do block
+        let do_stmts = Box::new(self.statement()?);
 
-        let mut do_exprs = vec![];
-        while !self.rmatch(&[TokenType::Fail])? {
-            let expr = self.expression()?;
-            do_exprs.push(expr);
-            if self.peek().token_type == TokenType::Comma {
-                self.consume(&TokenType::Comma, "Expected ','")?;
-            }
-        }
-
+        // fail block
         self.consume(&TokenType::Fail, "Expected 'fail'")?;
-        self.consume(&TokenType::Fullcolon, "Expected ':'")?;
+        let fail_binding = if self.rmatch(&[TokenType::LeftParen])? {
+            self.consume(&TokenType::Let, "Expected 'let' after '(' in fail binding")?;
 
-        let mut fail_exprs = vec![];
-        while self.peek().token_type != TokenType::Yield && !self.is_end() {
-            let expr = self.expression()?;
-            fail_exprs.push(expr);
-            if self.peek().token_type == TokenType::Comma {
-                self.consume(&TokenType::Comma, "Expected ','")?;
-            } else {
-                break;
+            let name = self
+                .consume(&TokenType::Identifier, "Expect variable name")?
+                .clone();
+
+            // prevents fail binding to other expr
+            if self.rmatch(&[TokenType::Equal])? {
+                return Err(ParseError::SyntaxError {
+                    token: name,
+                    message: "Invalid assignment target. Can't assign in fail binding".into(),
+                });
             }
-        }
+            let binding = stmt::Stmt::Let {
+                name,
+                initializer: Box::new(expr::Expr::Literal {
+                    id: self.next_id(),
+                    value: Object::Null,
+                }),
+            };
 
-        let mut yield_bindings = vec![];
-        if self.peek().token_type == TokenType::Yield {
-            self.consume(&TokenType::Yield, "Expected 'yield'")?;
-            self.consume(&TokenType::Fullcolon, "Expected ':'")?;
+            self.consume(&TokenType::RightParen, "Expected ')' after fail binding")?;
+            Some(Box::new(binding))
+        } else {
+            None
+        };
 
-            loop {
-                if self.peek().token_type == TokenType::Let {
-                    let _ = self.consume(&TokenType::Let, "Expected 'let'")?;
-                    let name = self.var_declaration()?;
-                    yield_bindings.push(stmt::YieldBinding::Let(name));
-                } else if self.peek().token_type == TokenType::Underscore {
-                    let _ = self.consume(&TokenType::Underscore, "Expected '_'")?;
-                    yield_bindings.push(stmt::YieldBinding::Ignore(true));
-                }
+        // fail block
+        let fail_stmts = Box::new(self.statement()?);
 
-                if self.peek().token_type == TokenType::Comma {
-                    self.consume(&TokenType::Comma, "Expected ','")?;
-                } else {
-                    break;
-                }
-            }
-        }
+        // finish block
+        let finish_stmts = if self.rmatch(&[TokenType::Finish])? {
+            Some(Box::new(self.statement()?))
+        } else {
+            None
+        };
 
-        Ok(stmt::Stmt::DoFailYield {
-            do_exprs,
-            fail_exprs,
-            yield_bindings: Some(yield_bindings),
+        Ok(stmt::Stmt::Exception {
+            do_stmts,
+            fail_stmts,
+            fail_binding,
+            finish_stmts,
         })
     }
 
@@ -208,6 +208,7 @@ impl<'a> Parser<'a> {
 
         let path = path_parts.join("/");
         let resolved_path = self.resolve_path(&path)?;
+        self.path_tracker = Rc::new(RefCell::new(resolved_path.clone()));
 
         let source = fs::read_to_string(&resolved_path).unwrap();
         let tokens = Lexer::new(&source, resolved_path).scan_tokens();
@@ -216,7 +217,7 @@ impl<'a> Parser<'a> {
             tokens,
             &self.current_file,
             self.id_counter,
-            self.syntax_errors,
+            self.path_tracker.clone(),
         );
 
         let stmts = parser.parse().clone();
@@ -1044,6 +1045,7 @@ impl<'a> Parser<'a> {
                 | TokenType::While
                 | TokenType::Print
                 | TokenType::PrintLn
+                | TokenType::Throw
                 | TokenType::Return => return,
                 _ => {
                     self.advance();

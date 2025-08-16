@@ -14,8 +14,8 @@ fn main() {
     let get_1 = _M_read(alloc, 8, 11, false);
 
     // printing out values
-    println "the allocated value: " + get_0;
-    println "the allocated value: " + get_1;
+    println "the first allocated value: " + get_0;
+    println "the second allocated value: " + get_1;
 
     // free allocated memory
     _M_free(alloc);

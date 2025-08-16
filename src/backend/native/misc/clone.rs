@@ -69,6 +69,10 @@ impl ReiCallable for ReiClone {
 
                 Object::Callable(c) => Object::Callable(c.clone()), // shallow copy
                 Object::MBlock(p, s) => Object::MBlock(*p, *s),     // risky af
+                Object::Exception(e) => {
+                    let cloned_error = Box::new((**e).clone()); // assumes RuntimeError<T> implements Clone
+                    Object::Exception(cloned_error)
+                }
             }
         }
 

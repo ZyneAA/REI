@@ -48,7 +48,26 @@ impl<'a> Resolver<'a> {
 
     fn resolve_stmt(&mut self, stmt: &Stmt) {
         match stmt {
-            Stmt::DoFailYield { .. } => {}
+            Stmt::Exception {
+                do_stmts,
+                fail_stmts,
+                fail_binding,
+                finish_stmts
+            } => {
+                self.resolve_stmt(do_stmts);
+
+                self.begin_scope();
+                if let Some(binding) = fail_binding {
+                    self.resolve_stmt(binding);
+                }
+                self.resolve_stmt(fail_stmts);
+                self.end_scope();
+
+                // finish block (optional)
+                if let Some(finish) = finish_stmts {
+                    self.resolve_stmt(finish);
+                }
+            }
             Stmt::Block { statements } => {
                 self.begin_scope();
                 self.resolve(statements);

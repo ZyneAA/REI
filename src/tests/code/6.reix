@@ -4,48 +4,72 @@ use std/cmp/std_compare as StdCompare;
 use std/cmp/comparable as Comparable;
 use std/instance/instance as Instance;
 use std/instance/drop as Drop;
+use std/math as Math;
 
-class Person {
+class Person < Clone {
 
-    init(name) {
+    init(name, age, weight, height) {
         this.name = name;
+        this.age = age;
+        this.weight = weight;
+        this.height = height;
+    }
+
+    calculate_bmi() {
+        let val = this.weight / Math.pow(this.height, 2);
+        return val;
     }
 
 }
-let person0 = Person("me");
-let person1 = Person("u");
+
+class Info {
+
+    static show_person_info(persons) {
+
+        if (@typeof(persons, "Vec")) {
+            loop (let i = 0..persons.len(); 1) {
+                let person = persons.get(i);
+
+                println "Name: " + person.name;
+                println "Age: " + person.age;
+                println "The BMI: " + person.calculate_bmi() + "\n";
+            }
+        } else {
+            throw "persons must be a Vec!";
+        }
+
+    }
+
+}
+
+let person0 = Person("Jill", 22, 110, 66);
+let person1 = Person("Leon", 30, 160, 72);
+
 let person2 = person0;
-person2.name = "us";
+person2.name = "Lana";
+let person3 = person2;
 
-println person0.name;
-println person1.name;
-println person2.name;
+let person4 = person3.clone();
+person4.name = "Ada";
 
-let a = Vec();
-let b = Vec();
+let persons = Vec();
+persons.push(person0);
+persons.push(person1);
+persons.push(person2);
+persons.push(person3);
+persons.push(person4);
 
-a.push("OK SOSOSOSO");
-a.push(true);
-a.push(null);
-a.push(10);
+Info.show_person_info(persons);
 
-b.push("name");
-b.push("is");
-b.push("z");
+let salary = Vec();
+salary.push(9000);
+salary.push(10000);
+salary.push(3000);
 
-a.append(b);
+persons.append(salary);
 
-println "the a vec: " + a.vec;
-println "the len() is: " + a.len();
-println "is empty: " + a.is_empty();
-println "the b vec: " + b.vec;
-
-let c = a.split(3);
-println "after splitting: " + c;
-
-let d = a.clone();
-println "c, a clone from a: " + d.vec;
-
-a.clear();
-println "after clearing: " + a.vec;
+println "the 'name' vec: " + persons.vec;
+println "the len() is: " + persons.len();
+println "is empty: " + persons.is_empty();
+println "the 'salary' vec: " + salary.vec + "\n";
 

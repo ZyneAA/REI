@@ -1,0 +1,11 @@
+let num = 312;
+
+do {
+    let a = 12 + 13;
+    println a;
+    println a / 0;
+} fail (let e) {
+    println e;
+} finish {
+    println num;
+}
