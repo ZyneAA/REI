@@ -539,14 +539,25 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
         if let Err(signal) = result {
             match signal {
                 ExecSignal::RuntimeError(err_obj) => {
-                    // If fail binding exists: introduce var into environment
-                    if let Some(binding_stmt) = fail_binding {
-                        let exception = Object::Exception(Box::new(err_obj));
-                        self.define_fail_binding(binding_stmt, exception)?;
-                    }
+                    let is_custom_msg =
+                        matches!(&err_obj.err_type, RuntimeErrorType::CustomMsg { .. });
 
-                    // Run fail block
-                    result = self.execute(fail_stmts);
+                    if is_custom_msg {
+                        // Normal recoverable
+                        if let Some(binding_stmt) = fail_binding {
+                            let exception = Object::Exception(Box::new(err_obj));
+                            self.define_fail_binding(binding_stmt, exception)?;
+                        }
+                        result = self.execute(fail_stmts);
+                    } else {
+                        // Unrecoverable runtime error, still run finish, then terminate
+                        if let Some(finish_block) = finish_stmts {
+                            let _ = self.execute(finish_block);
+                        }
+                        eprint!("{}", err_obj);
+                        self.context.borrow_mut().pop_call();
+                        std::process::exit(1);
+                    }
                 }
                 other => return Err(other),
             }
@@ -689,6 +700,17 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
         let value = format!("{}", self.stringify(&obj));
 
         let err_type = RuntimeErrorType::CustomMsg { msg: value };
+        return Err(ExecSignal::RuntimeError(RuntimeError::new(
+            err_type,
+            self.context.clone(),
+        )));
+    }
+
+    fn visit_fatal_stmt(&mut self, expression: &Box<expr::Expr>) -> Result<(), ExecSignal> {
+        let obj = self.evaluate(expression)?;
+        let value = format!("{}", self.stringify(&obj));
+
+        let err_type = RuntimeErrorType::CustomMsgFatal { msg: value };
         return Err(ExecSignal::RuntimeError(RuntimeError::new(
             err_type,
             self.context.clone(),
@@ -869,7 +891,7 @@ impl Interpreter {
                 let elements: Vec<String> = vec_borrow.iter().map(|o| o.to_string()).collect();
                 format!("[{}]", elements.join(", "))
             }
-            Object::Exception(e) => format!("{}", e)
+            Object::Exception(e) => format!("{}", e),
         }
     }
 
@@ -1005,7 +1027,9 @@ impl Interpreter {
         err_value: Object,
     ) -> Result<(), ExecSignal> {
         if let stmt::Stmt::Let { name, .. } = binding_stmt {
-            self.environment.borrow_mut().define(name.lexeme.clone(), err_value)?;
+            self.environment
+                .borrow_mut()
+                .define(name.lexeme.clone(), err_value)?;
             Ok(())
         } else {
             unreachable!("fail binding must always be a let stmt")

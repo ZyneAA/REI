@@ -52,7 +52,7 @@ impl<'a> Resolver<'a> {
                 do_stmts,
                 fail_stmts,
                 fail_binding,
-                finish_stmts
+                finish_stmts,
             } => {
                 self.resolve_stmt(do_stmts);
 
@@ -187,6 +187,9 @@ impl<'a> Resolver<'a> {
                 self.resolve_expr(expression);
             }
             Stmt::Throw { expression } => {
+                self.resolve_expr(expression);
+            }
+            Stmt::Fatal { expression } => {
                 self.resolve_expr(expression);
             }
             Stmt::Break => {

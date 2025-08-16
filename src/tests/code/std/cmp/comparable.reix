@@ -1,11 +1,15 @@
 expose class Comparable {
 
+    // Get comparable from Obj that inherith this class
     get_comparable() {
 
-        if (@exist("comparable"))  {
-            return this.comparable;
+        do {
+            if (@exist("comparable"))  {
+                return this.comparable;
+            }
+        } fail(let e) {
+            println e;
         }
-        return false;
 
     }
 

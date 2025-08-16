@@ -13,33 +13,31 @@ expose class StdCompare {
     }
 
     static max(first, second) {
+        let first_type_check = @typeof(first, "Comparable");
+        let second_type_check = @typeof(first, "Comparable");
 
-        if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
-            if (first.get_comparable() > second.get_comparable()) {
-                return first;
-            }
+        if (first_type_check != true or second_type_check != true) {
+            fatal "Must inherit Comparable class to perform max()";
+        }
+
+        if (first.get_comparable() > second.get_comparable()) {
+            return first;
+        } else {
             return second;
         }
-        else {
-            println "Both comparables must inherit Comparable class";
-            return null;
-        }
-
     }
 
     static min(first, second) {
-
         if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
             if (first.get_comparable() > second.get_comparable()) {
                 return second;
+            } else {
+                return first;
             }
-            return first;
+        } else {
+            fatal "Must inherit Comparable class to perform min()";
         }
-        else {
-            println "Both comparables must inherit Comparable class";
-            return null;
-        }
-
     }
 
 }
+

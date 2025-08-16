@@ -96,6 +96,8 @@ impl<'a> Parser<'a> {
             self.continue_statement()
         } else if self.rmatch(&[TokenType::Throw])? {
             self.throw_statement()
+        } else if self.rmatch(&[TokenType::Fatal])? {
+            self.fatal_statement()
         }
         // Error handle
         else if self.rmatch(&[TokenType::Do])? {
@@ -177,6 +179,22 @@ impl<'a> Parser<'a> {
 
         match self.consume(&TokenType::Semicolon, "Expected ; after value") {
             Ok(_) => Ok(throw),
+            Err(e) => {
+                self.synchronize();
+                Err(e)
+            }
+        }
+    }
+
+    fn fatal_statement(&mut self) -> Result<stmt::Stmt, ParseError> {
+        let value = self.expression()?;
+
+        let fatal = stmt::Stmt::Fatal {
+            expression: Box::new(value),
+        };
+
+        match self.consume(&TokenType::Semicolon, "Expected ; after value") {
+            Ok(_) => Ok(fatal),
             Err(e) => {
                 self.synchronize();
                 Err(e)

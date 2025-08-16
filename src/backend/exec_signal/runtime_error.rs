@@ -56,6 +56,14 @@ where
                 ));
                 write!(f, "{}", fmt_report)?
             }
+            CustomMsgFatal { msg } => {
+                let single_line = msg.replace('\n', "\n◼︎ ");
+                let fmt_report = util::red_colored(&format!(
+                    "{} '{}' {:?} \n\n◼︎ {}\n",
+                    "Fatal error occured in", current_thread_name, current_thread_id, single_line
+                ));
+                write!(f, "{}\n", fmt_report)?
+            }
             _ => {
                 let fmt_report = util::red_colored(&format!(
                     "{} '{}' {:?} --- {}",
@@ -94,6 +102,7 @@ pub enum RuntimeErrorType<T> {
     ErrorInReflection { msg: String },
     ParentClassError { msg: String },
     CustomMsg { msg: String },
+    CustomMsgFatal { msg: String },
 }
 
 impl<T> fmt::Display for RuntimeErrorType<T>
@@ -117,7 +126,8 @@ where
             RuntimeErrorType::DividedByZero { token } => write!(f, "{} {}", util::red_colored("Divided By Zero"), token),
             RuntimeErrorType::OperandMustBeNumber { token } => write!(f, "{} {}", util::red_colored("Operand must be a number"), token),
             RuntimeErrorType::ParentClassError { msg } => write!(f, "{}", util::red_colored(msg)),
-            RuntimeErrorType::CustomMsg { msg } => write!(f, "{}", util::red_colored(msg))
+            RuntimeErrorType::CustomMsg { msg } => write!(f, "{}", util::red_colored(msg)),
+            RuntimeErrorType::CustomMsgFatal { msg } => write!(f, "{}", util::red_colored(msg))
         }
     }
 }

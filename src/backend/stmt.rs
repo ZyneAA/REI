@@ -34,6 +34,7 @@ pub trait Visitor<T> {
     ) -> T;
     fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Box<Expr>>) -> T;
     fn visit_throw_stmt(&mut self, expression: &Box<Expr>) -> T;
+    fn visit_fatal_stmt(&mut self, expression: &Box<Expr>) -> T;
     fn visit_break_stmt(&mut self) -> T;
     fn visit_continue_stmt(&mut self) -> T;
 }
@@ -88,6 +89,10 @@ pub enum Stmt {
         expression: Box<Expr>,
     },
 
+    Fatal {
+        expression: Box<Expr>,
+    },
+
     PrintLn {
         expression: Box<Expr>,
     },
@@ -135,6 +140,7 @@ impl Stmt {
                 finish_stmts,
             } => visitor.visit_exception_stmt(do_stmts, fail_stmts, fail_binding, finish_stmts),
             Stmt::Throw { expression } => visitor.visit_throw_stmt(expression),
+            Stmt::Fatal { expression } => visitor.visit_fatal_stmt(expression),
             Stmt::PrintLn { expression } => visitor.visit_println_stmt(expression),
             Stmt::Let { name, initializer } => visitor.visit_let_stmt(name, initializer),
             Stmt::While { condition, body } => visitor.visit_while_stmt(condition, body),
