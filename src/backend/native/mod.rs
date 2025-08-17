@@ -9,6 +9,7 @@ pub mod io;
 pub mod math;
 pub mod memory;
 pub mod misc;
+pub mod net;
 pub mod process;
 
 pub fn register_all_native_fns(
@@ -22,6 +23,7 @@ pub fn register_all_native_fns(
     collections::vec::register(&mut *env)?;
     misc::clone::register(&mut *env)?;
     process::process::register(&mut *env)?;
+    net::net::register(&mut *env)?;
 
     Ok(())
 }

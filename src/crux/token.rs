@@ -134,6 +134,29 @@ pub enum Object {
     Exception(Box<runtime_error::RuntimeError<Token>>),
 }
 
+impl Object {
+    pub fn as_number(&self) -> Result<f64, String> {
+        match self {
+            Object::Number(n) => Ok(*n),
+            _ => Err("Expected number".to_string()),
+        }
+    }
+
+    pub fn as_bool(&self) -> Result<bool, String> {
+        match self {
+            Object::Bool(b) => Ok(*b),
+            _ => Err("Expected bool".to_string()),
+        }
+    }
+
+    pub fn as_str(&self) -> Result<&str, String> {
+        match self {
+            Object::Str(s) => Ok(s.as_str()),
+            _ => Err("Expected string".to_string()),
+        }
+    }
+}
+
 impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

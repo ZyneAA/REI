@@ -35,7 +35,7 @@ class Info {
                 println "The BMI: " + person.calculate_bmi() + "\n";
             }
         } else {
-            throw "persons must be a Vec!";
+            fatal "persons must be a Vec!";
         }
 
     }

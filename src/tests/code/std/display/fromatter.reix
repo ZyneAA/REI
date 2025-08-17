@@ -4,9 +4,8 @@ expose class Fmt {
 
         if (@exist("fmttable")) {
             println this.fmttable;
-        }
-        else {
-            println "Formattable not found";
+        } else {
+            fatal "Formattable not found";
         }
 
     }

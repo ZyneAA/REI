@@ -2,15 +2,12 @@ expose class Comparable {
 
     // Get comparable from Obj that inherith this class
     get_comparable() {
+        let is_exist = @exist("comparable");
 
-        do {
-            if (@exist("comparable"))  {
-                return this.comparable;
-            }
-        } fail(let e) {
-            println e;
+        if (is_exist) {
+            return this.comparable;
         }
-
+        fatal "property 'comparable' not fonund";
     }
 
 }

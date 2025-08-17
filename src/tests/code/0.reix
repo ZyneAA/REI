@@ -18,7 +18,7 @@ fn hi(q) {
     return q;
 }
 
-class Person {
+class Person < Comparable {
 
     init(name, age, weight, height) {
         this.name = name;

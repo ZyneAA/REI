@@ -8,6 +8,8 @@ expose class Vec {
 
         if (@exist("vec")) {
             _Co_push_to_vec(this.vec, val);
+        } else {
+            fatal "Property 'vec' not found";
         }
 
     }
@@ -16,14 +18,23 @@ expose class Vec {
 
         if (@exist("vec")) {
             return _Co_pop_from_vec(this.vec);
+        } else {
+            fatal "Property 'vec' not found";
         }
 
     }
 
     append(target) {
 
-        if (@typeof(target, "Vec") and @exist("vec")) {
+        let target_type = @typeof(target, "Vec");
+        if (target_type == false) {
+            fatal "Can only append to Vec";
+        }
+
+        if (@exist("vec")) {
             _Co_append_to_vec(this.vec, target.vec);
+        } else {
+            fatal "Property 'vec' not found";
         }
 
     }
@@ -32,6 +43,8 @@ expose class Vec {
 
         if (@exist("vec")) {
             _Co_clear_vec(this.vec);
+        } else {
+            fatal "Property 'vec' not found";
         }
 
     }
@@ -40,6 +53,8 @@ expose class Vec {
 
         if (@exist("vec")) {
             return _Co_vec_is_empty(this.vec);
+        } else {
+            fatal "Property 'vec' not found";
         }
 
     }
@@ -48,6 +63,8 @@ expose class Vec {
 
         if (@exist("vec")) {
             return _Co_split_vec(this.vec, index);
+        } else {
+            fatal "Property 'vec' not found";
         }
 
     }
@@ -56,6 +73,8 @@ expose class Vec {
 
         if (@exist("vec")) {
             return _Co_vec_len(this.vec);
+        } else {
+            fatal "Property 'vec' not found";
         }
 
     }
@@ -64,6 +83,8 @@ expose class Vec {
 
         if (@exist("vec")) {
             return _Co_vec_get(this.vec, index);
+        } else {
+            fatal "Property 'vec' not found";
         }
 
     }
@@ -73,6 +94,8 @@ expose class Vec {
         let new_vec = Vec();
         if (@exist("vec")) {
             new_vec.vec = _Mi_clone(this.vec);
+        } else {
+            fatal "Property 'vec' not found";
         }
         return new_vec;
 

@@ -34,4 +34,23 @@ fn main() {
     calculate();
 }
 
-main();
+class A {
+
+    static new() {
+        class B {
+            new_b() {
+                this.val = 10;
+                return this;
+            }
+
+            ok() {
+                println "XSX";
+            }
+        }
+    }
+
+}
+
+let a = A.new();
+println a;
+

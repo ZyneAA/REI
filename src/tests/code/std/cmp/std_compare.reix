@@ -1,24 +1,21 @@
 expose class StdCompare {
 
+    static check(first, second, action) {
+        let first_type_check = @typeof(first, "Comparable");
+        let second_type_check = @typeof(second, "Comparable");
+
+        if (first_type_check != true or second_type_check != true) {
+            fatal "Must inherit Comparable class to perform " + action;
+        }
+    }
+
     static is_eq(first, second) {
-
-        if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
-            return first.get_comparable() == second.get_comparable();
-        }
-        else {
-            println "Both comparables must inherit Comparable class";
-            return null;
-        }
-
+        StdCompare.check(first, second, "is_eq()");
+        return first.get_comparable() == second.get_comparable();
     }
 
     static max(first, second) {
-        let first_type_check = @typeof(first, "Comparable");
-        let second_type_check = @typeof(first, "Comparable");
-
-        if (first_type_check != true or second_type_check != true) {
-            fatal "Must inherit Comparable class to perform max()";
-        }
+        StdCompare.check(first, second, "max()");
 
         if (first.get_comparable() > second.get_comparable()) {
             return first;
@@ -28,14 +25,12 @@ expose class StdCompare {
     }
 
     static min(first, second) {
-        if (@typeof(first, "Comparable") and @typeof(second, "Comparable")) {
-            if (first.get_comparable() > second.get_comparable()) {
-                return second;
-            } else {
-                return first;
-            }
+        StdCompare.check(first, second, "min()");
+
+        if (first.get_comparable() > second.get_comparable()) {
+            return second;
         } else {
-            fatal "Must inherit Comparable class to perform min()";
+            return first;
         }
     }
 
