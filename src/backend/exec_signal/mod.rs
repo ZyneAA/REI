@@ -1,5 +1,4 @@
 use std::fmt;
-use std::io;
 
 use crate::crux::token::Token;
 
@@ -33,11 +32,11 @@ impl std::error::Error for ExecSignal {
     }
 }
 
-impl From<io::Error> for ExecSignal {
-    fn from(error: io::Error) -> Self {
-        ExecSignal::RuntimeError(runtime_error::RuntimeError {
-            err_type: runtime_error::RuntimeErrorType::IoError { error },
-            stack_trace: Default::default(), // you might need to update this if ExecContext isn't Default
-        })
-    }
-}
+//impl From<io::Error> for ExecSignal {
+//    fn from(error: io::Error) -> Self {
+//        ExecSignal::RuntimeError(runtime_error::RuntimeError {
+//            err_type: runtime_error::RuntimeErrorType::IoError { error },
+//            stack_trace: Default::default(), // you might need to update this if ExecContext isn't Default
+//        })
+//    }
+//}

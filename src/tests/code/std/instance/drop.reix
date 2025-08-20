@@ -5,8 +5,9 @@ expose class Drop {
         if (@exist("target")) {
             @destroy("target");
             return;
+        } else {
+            fatal "target not found";
         }
-        println "Missing attribute 'target'";
 
     }
 

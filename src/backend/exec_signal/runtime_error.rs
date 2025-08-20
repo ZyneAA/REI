@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::fmt;
-use std::io;
 use std::rc::Rc;
 use std::thread;
 
@@ -9,7 +8,7 @@ use crate::crux::util;
 
 use crate::backend::stack_trace::ExecContext;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct RuntimeError<T> {
     pub err_type: RuntimeErrorType<T>,
     pub stack_trace: Rc<RefCell<ExecContext>>,
@@ -57,6 +56,14 @@ where
                 ));
                 write!(f, "{}", fmt_report)?
             }
+            CustomMsgFatal { msg } => {
+                let single_line = msg.replace('\n', "\n◼︎ ");
+                let fmt_report = util::red_colored(&format!(
+                    "{} '{}' {:?} \n\n◼︎ {}\n",
+                    "Fatal error occured in", current_thread_name, current_thread_id, single_line
+                ));
+                write!(f, "{}\n", fmt_report)?
+            }
             _ => {
                 let fmt_report = util::red_colored(&format!(
                     "{} '{}' {:?} --- {}",
@@ -77,7 +84,7 @@ where
 
 impl<T> std::error::Error for RuntimeError<T> where T: fmt::Debug + fmt::Display {}
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum RuntimeErrorType<T> {
     TypeMismatch { token: T },
     UndefinedVariable { token: T },
@@ -93,9 +100,9 @@ pub enum RuntimeErrorType<T> {
     PropertyError,
     ErrorInNativeFn { msg: String },
     ErrorInReflection { msg: String },
-    IoError { error: io::Error },
     ParentClassError { msg: String },
     CustomMsg { msg: String },
+    CustomMsgFatal { msg: String },
 }
 
 impl<T> fmt::Display for RuntimeErrorType<T>
@@ -104,7 +111,6 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RuntimeErrorType::IoError { error } => write!(f, "{} {}", util::red_colored("IO Error"), error),
             RuntimeErrorType::ErrorInNativeFn { msg } => write!(f, "{} {}", util::red_colored("Error In Native Function"), msg),
             RuntimeErrorType::ErrorInReflection { msg } => write!(f, "{} {}", util::red_colored("Error In Reflection"), msg),
             RuntimeErrorType::InvalidArguments { token} => write!(f, "{} {}", util::red_colored("Invalid Callable Argument Number | Arguments don't match the callable's parameters"), token),
@@ -120,7 +126,8 @@ where
             RuntimeErrorType::DividedByZero { token } => write!(f, "{} {}", util::red_colored("Divided By Zero"), token),
             RuntimeErrorType::OperandMustBeNumber { token } => write!(f, "{} {}", util::red_colored("Operand must be a number"), token),
             RuntimeErrorType::ParentClassError { msg } => write!(f, "{}", util::red_colored(msg)),
-            RuntimeErrorType::CustomMsg { msg } => write!(f, "{}", util::red_colored(msg))
+            RuntimeErrorType::CustomMsg { msg } => write!(f, "{}", util::red_colored(msg)),
+            RuntimeErrorType::CustomMsgFatal { msg } => write!(f, "{}", util::red_colored(msg))
         }
     }
 }

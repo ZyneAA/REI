@@ -1,0 +1,12 @@
+let l = _NET_listen("127.0.0.1:8080");
+let count = 0;
+
+while (true) {
+    let c = _NET_accept(l);
+    let r = _NET_recv(c, 1024);
+    println "Request: " + r + count;
+
+    let resp = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello ";
+    count = count + 1;
+    _NET_send(c, resp);
+}

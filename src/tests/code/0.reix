@@ -18,28 +18,40 @@ fn hi(q) {
     return q;
 }
 
-let sasas = 12/0;
+class Person < Comparable {
+
+    init(name, age, weight, height) {
+        this.name = name;
+        this.age = age;
+        this.weight = weight;
+        this.height = height;
+    }
+
+    calculate_bmi() {
+        let val = this.weight / Math.pow(this.height, 2);
+        return val;
+    }
+
+}
+
+let p1 = Person("a", 23, 23231, 232);
+let p2 = Person("b", 23, 23231, 232);
+println p1.name + " " + p2.name;
 
 let man1 = Man("Ball", 300);
 let man2 = Man("K", 500);
-throw "xs";
 
 man1.mutate("name", "S");
 man1.name = insert();
 println "Name: " + man1.name;
 
 let equal = StdCompare.is_eq(man1, man2);
-let max = StdCompare.max(man1, man2);
-let min = StdCompare.min(man1, man2);
-println equal + " " + max.name + " " + min.name;
 
-println "Current time: " + Clock.format_time();
-println "Time in ms: " + Clock.time_now();
-println "Enter: ";
+do {
+    let max = StdCompare.max(p1, p2);
+    println max;
+} fail {
+    println "fail to perform";
+}
 
-// let input = Input.read_line();
-let input = Input.read(); // doesnt flush the buff
-println "U entered: " + input + "\n";
-
-println man1;
 

@@ -1,21 +1,18 @@
+use std::cell::RefCell;
 use std::env;
 use std::path::Path;
+use std::rc::Rc;
 use std::{
     fs,
     io::{self, Write},
     path::PathBuf,
 };
 
-use super::util;
-use crate::crux::error::ParseError;
-
 use crate::frontend::lexer;
 use crate::frontend::parser::Parser;
 
 use crate::backend::interpreter::Interpreter;
 use crate::backend::resolver::Resolver;
-use crate::backend::exec_signal::ExecSignal;
-use crate::backend::exec_signal::runtime_error::RuntimeErrorType;
 
 pub struct Runner;
 
@@ -25,26 +22,27 @@ impl Runner {
         // map be current_file into Tokens?
 
         let current_path = String::from(location);
-        let lexer = lexer::Lexer::new(source, current_path);
+        let lexer = lexer::Lexer::new(source, current_path.clone());
         let tokens = lexer.scan_tokens();
+        // for i in tokens.clone() {
+        //     println!("{}", i);
+        // }
 
+        let path_tracker = Rc::new(RefCell::new(String::from(location)));
         let mut global_expr_id_counter = 0;
-        let mut syntax_errors: Vec<ParseError> = vec![];
 
         let mut parser = Parser::new(
             tokens,
             &mut current_file,
             &mut global_expr_id_counter,
-            &mut syntax_errors,
+            path_tracker,
         );
-        let location = util::red_colored(&format!("Error in {}", location));
-
         let stmts = parser.parse();
+        // for i in stmts.clone() {
+        //     println!("{:?}", i);
+        // }
 
-        if syntax_errors.len() > 0 {
-            for i in syntax_errors {
-                println!("{}\n{}\n", location, i);
-            }
+        if parser.is_error {
             return;
         }
 

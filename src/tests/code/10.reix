@@ -1,0 +1,56 @@
+use std/chrono/time as Time;
+use std/io/std_in as Input;
+
+fn calculate() {
+    do {
+        println 12/0;
+    } fail (let e) {
+        println "failed";
+        println e;
+    }
+}
+
+fn connect() {
+    do {
+        println "Connecting...";
+        Time.sleep(1000);
+        throw "Can't connect!";
+    } fail(let e) {
+        println e;
+    }
+}
+
+fn read_input() {
+    println "Enter: ";
+    let input = Input.read_line();
+    if (input == "z") {
+        fatal "Boooom!!!";
+    }
+    println input;
+}
+
+fn main() {
+    connect();
+    calculate();
+}
+
+class A {
+
+    static new() {
+        class B {
+            new_b() {
+                this.val = 10;
+                return this;
+            }
+
+            ok() {
+                println "XSX";
+            }
+        }
+    }
+
+}
+
+let a = A.new();
+println a;
+

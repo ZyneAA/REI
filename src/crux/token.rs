@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
+use crate::backend::exec_signal::runtime_error;
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::rei_instance::ReiInstance;
 
@@ -70,7 +71,8 @@ pub enum TokenType {
     Throw,
     Do,
     Fail,
-    Yield,
+    Finish,
+    Fatal,
     Underscore,
     Eof,
 
@@ -93,7 +95,7 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("or", TokenType::Or);
     map.insert("do", TokenType::Do);
     map.insert("fail", TokenType::Fail);
-    map.insert("yield", TokenType::Fail);
+    map.insert("finish", TokenType::Finish);
     map.insert("print", TokenType::Print);
     map.insert("println", TokenType::PrintLn);
     map.insert("return", TokenType::Return);
@@ -106,6 +108,7 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
     map.insert("loop", TokenType::Loop);
     map.insert("break", TokenType::Break);
     map.insert("throw", TokenType::Throw);
+    map.insert("fatal", TokenType::Fatal);
     map.insert("_", TokenType::Underscore);
     map.insert("use", TokenType::Use);
     map.insert("expose", TokenType::Expose);
@@ -128,6 +131,30 @@ pub enum Object {
     Instance(Rc<RefCell<ReiInstance>>),
     MBlock(*mut u8, usize),
     Vec(Rc<RefCell<Vec<Object>>>),
+    Exception(Box<runtime_error::RuntimeError<Token>>),
+}
+
+impl Object {
+    pub fn as_number(&self) -> Result<f64, String> {
+        match self {
+            Object::Number(n) => Ok(*n),
+            _ => Err("Expected number".to_string()),
+        }
+    }
+
+    pub fn as_bool(&self) -> Result<bool, String> {
+        match self {
+            Object::Bool(b) => Ok(*b),
+            _ => Err("Expected bool".to_string()),
+        }
+    }
+
+    pub fn as_str(&self) -> Result<&str, String> {
+        match self {
+            Object::Str(s) => Ok(s.as_str()),
+            _ => Err("Expected string".to_string()),
+        }
+    }
 }
 
 impl fmt::Display for Object {
@@ -147,6 +174,7 @@ impl fmt::Display for Object {
                 let elements: Vec<String> = vec_borrow.iter().map(|o| o.to_string()).collect();
                 write!(f, "[{}]", elements.join(", "))
             }
+            Object::Exception(e) => write!(f, "{}", e),
         }
     }
 }
@@ -209,7 +237,8 @@ impl fmt::Display for TokenType {
             TokenType::Or => "IDENTIFIER",
             TokenType::Do => "IDENTIFIER",
             TokenType::Fail => "IDENTIFIER",
-            TokenType::Yield => "IDENTIFIER",
+            TokenType::Finish => "IDENTIFIER",
+            TokenType::Fatal => "IDENTIFIER",
             TokenType::Print => "IDENTIFIER",
             TokenType::PrintLn => "IDENTIFIER",
             TokenType::Return => "IDENTIFIER",

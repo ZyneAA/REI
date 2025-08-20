@@ -25,23 +25,18 @@ pub trait Visitor<T> {
     fn visit_println_stmt(&mut self, expression: &Expr) -> T;
     fn visit_let_stmt(&mut self, name: &Token, initializer: &Expr) -> T;
     fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> T;
-    fn visit_do_fail_yield_stmt(
+    fn visit_exception_stmt(
         &mut self,
-        do_exprs: &Vec<Expr>,
-        fail_exprs: &Vec<Expr>,
-        yield_bindings: &Option<Vec<YieldBinding>>,
+        do_stmts: &Stmt,
+        fail_stmts: &Stmt,
+        fail_binding: &Option<Box<Stmt>>,
+        finish_stmts: &Option<Box<Stmt>>,
     ) -> T;
     fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Box<Expr>>) -> T;
     fn visit_throw_stmt(&mut self, expression: &Box<Expr>) -> T;
+    fn visit_fatal_stmt(&mut self, expression: &Box<Expr>) -> T;
     fn visit_break_stmt(&mut self) -> T;
     fn visit_continue_stmt(&mut self) -> T;
-}
-
-#[derive(Clone, Debug)]
-pub enum YieldBinding {
-    Let(Stmt),
-    Assign(Expr),
-    Ignore(bool),
 }
 
 #[derive(Clone, Debug)]
@@ -83,13 +78,18 @@ pub enum Stmt {
         value: Option<Box<Expr>>,
     },
 
-    DoFailYield {
-        do_exprs: Vec<Expr>,
-        fail_exprs: Vec<Expr>,
-        yield_bindings: Option<Vec<YieldBinding>>,
+    Exception {
+        do_stmts: Box<Stmt>,
+        fail_stmts: Box<Stmt>,
+        fail_binding: Option<Box<Stmt>>,
+        finish_stmts: Option<Box<Stmt>>,
     },
 
     Throw {
+        expression: Box<Expr>,
+    },
+
+    Fatal {
         expression: Box<Expr>,
     },
 
@@ -133,12 +133,14 @@ impl Stmt {
             } => visitor.visit_if_stmt(condition, then_branch, else_branch),
             Stmt::Print { expression } => visitor.visit_print_stmt(expression),
             Stmt::Return { keyword, value } => visitor.visit_return_stmt(keyword, value),
-            Stmt::DoFailYield {
-                do_exprs,
-                fail_exprs,
-                yield_bindings,
-            } => visitor.visit_do_fail_yield_stmt(do_exprs, fail_exprs, yield_bindings),
+            Stmt::Exception {
+                do_stmts,
+                fail_stmts,
+                fail_binding,
+                finish_stmts,
+            } => visitor.visit_exception_stmt(do_stmts, fail_stmts, fail_binding, finish_stmts),
             Stmt::Throw { expression } => visitor.visit_throw_stmt(expression),
+            Stmt::Fatal { expression } => visitor.visit_fatal_stmt(expression),
             Stmt::PrintLn { expression } => visitor.visit_println_stmt(expression),
             Stmt::Let { name, initializer } => visitor.visit_let_stmt(name, initializer),
             Stmt::While { condition, body } => visitor.visit_while_stmt(condition, body),

@@ -13,9 +13,11 @@ fn c() {
 }
 
 fn d() {
-    println "wd";
+    let a = "Hello, Wrold!";
+    println a;
     throw "bad\ntoo bad\nsooooo bad";
 }
 
 d();
 c();
+

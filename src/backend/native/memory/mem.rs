@@ -4,11 +4,15 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::backend::environment::Environment;
+use crate::backend::exec_signal::runtime_error::RuntimeErrorType;
 use crate::backend::exec_signal::{runtime_error::RuntimeError, ExecSignal};
 use crate::backend::interpreter::Interpreter;
 use crate::backend::rei_callable::ReiCallable;
 use crate::backend::rei_instance::ReiInstance;
+use crate::backend::stack_trace::ExecContext;
+
 use crate::crux::token::Object;
+use crate::crux::token::Token;
 
 #[derive(Clone, Debug)]
 pub struct ReiMalloc;
@@ -21,28 +25,38 @@ impl ReiCallable for ReiMalloc {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let size = match arguments.get(0) {
             Some(Object::Number(n)) => *n as usize,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "expected number".to_string(),
-                }))
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Expected a Number".into(),
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    context.clone(),
+                )));
             }
         };
 
         let layout = Layout::from_size_align(size, 8).map_err(|e| {
-            ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+            let err_type = RuntimeErrorType::ErrorInNativeFn {
                 msg: format!("invalid layout: {}", e),
-            })
+            };
+            ExecSignal::RuntimeError(RuntimeError::new(err_type, context.clone()))
         })?;
 
         unsafe {
             let ptr = alloc(layout);
             if ptr.is_null() {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "allocation failed".to_string(),
-                }));
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Allocation failed".into(),
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    context.clone(),
+                )));
             }
             Ok(Object::MBlock(ptr, size))
         }
@@ -68,47 +82,68 @@ impl ReiCallable for ReiRead {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let (ptr, size) = match arguments.get(0) {
             Some(Object::MBlock(p, s)) => (*p, *s),
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "expected MBlock as first arg".to_string(),
-                }))
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Expected MBlock as first arg".into(),
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    context.clone(),
+                )));
             }
         };
 
         let offset = match arguments.get(1) {
             Some(Object::Number(n)) => *n as usize,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "expected number offset as second arg".to_string(),
-                }))
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Expected number offset as second arg".into(),
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    context.clone(),
+                )));
             }
         };
 
         let length = match arguments.get(2) {
             Some(Object::Number(n)) => *n as usize,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "expected number ad third arg".to_string(),
-                }))
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Expected Number as third arg".into(),
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    context.clone(),
+                )));
             }
         };
 
         let mode = match arguments.get(3) {
             Some(Object::Bool(n)) => n,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "expected mode, true or false as fourth arg".to_string(),
-                }))
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Expected a Bool as fourth arg".into(),
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    context.clone(),
+                )));
             }
         };
 
         if offset + length > size {
-            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: format!("offset {} out of bounds for size {}", offset + length, size),
-            }));
+            let err_type = RuntimeErrorType::ErrorInNativeFn {
+                msg: format!("Offset {} out of bounds for size {}", offset + length, size),
+            };
+            return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                err_type,
+                context.clone(),
+            )));
         }
 
         let ptr = ptr as *const u8;
@@ -119,9 +154,13 @@ impl ReiCallable for ReiRead {
                     1 => Object::Number(slice[0] as f64),
                     8 => {
                         if (slice.as_ptr() as usize) % std::mem::align_of::<f64>() != 0 {
-                            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                                msg: "unaligned f64 read".to_string(),
-                            }));
+                            let err_type = RuntimeErrorType::ErrorInNativeFn {
+                                msg: "Unaligned f64 read".to_string(),
+                            };
+                            return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                                err_type,
+                                context.clone(),
+                            )));
                         }
                         let num = *(slice.as_ptr() as *const f64);
                         Object::Number(num)
@@ -187,69 +226,99 @@ impl ReiCallable for ReiWrite {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let (ptr, size) = match arguments.get(0) {
             Some(Object::MBlock(p, s)) => (*p, *s),
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "expected MBlock as first arg".to_string(),
-                }))
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Expected MBlock as first arg".into(),
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    context.clone(),
+                )));
             }
         };
 
         let offset = match arguments.get(1) {
             Some(Object::Number(n)) => *n as usize,
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                    msg: "expected number offset as second arg".to_string(),
-                }))
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
+                    msg: "Expected Number as second arg".into(),
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    context.clone(),
+                )));
             }
         };
 
         let value = arguments.get(2).ok_or_else(|| {
-            ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: "missing third argument".to_string(),
-            })
+            let err_type = RuntimeErrorType::ErrorInNativeFn {
+                msg: "Missing third argument".into(),
+            };
+            ExecSignal::RuntimeError(RuntimeError::new(err_type, context.clone()))
         })?;
 
         if offset >= size {
-            return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
-                msg: format!("offset {} out of bounds for size {}", offset, size),
-            }));
+            let err_type = RuntimeErrorType::ErrorInNativeFn {
+                msg: format!("Offset {} out of bounds for size {}", offset, size),
+            };
+            return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                err_type,
+                context.clone(),
+            )));
         }
 
         unsafe {
             match value {
                 Object::Number(n) => {
                     if offset + 8 > size {
-                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        let err_type = RuntimeErrorType::ErrorInNativeFn {
                             msg: format!("offset {}+8 out of bounds", offset),
-                        }));
+                        };
+                        return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                            err_type,
+                            context.clone(),
+                        )));
                     }
                     let ptr = ptr.add(offset) as *mut f64;
                     *ptr = *n;
                 }
                 Object::Bool(b) => {
                     if offset >= size {
-                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        let err_type = RuntimeErrorType::ErrorInNativeFn {
                             msg: format!("write: offset {} out of bounds", offset),
-                        }));
+                        };
+                        return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                            err_type,
+                            context.clone(),
+                        )));
                     }
                     *ptr.add(offset) = *b as u8;
                 }
                 Object::Str(s) => {
                     let bytes = s.as_bytes();
                     if offset + bytes.len() > size {
-                        return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                        let err_type = RuntimeErrorType::ErrorInNativeFn {
                             msg: format!("string too long to fit at offset {}", offset),
-                        }));
+                        };
+                        return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                            err_type,
+                            context.clone(),
+                        )));
                     }
                     std::ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(offset), bytes.len());
                 }
                 _ => {
-                    return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                    let err_type = RuntimeErrorType::ErrorInNativeFn {
                         msg: "unsupported type for write".to_string(),
-                    }));
+                    };
+                    return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                        err_type,
+                        context.clone(),
+                    )));
                 }
             }
         }
@@ -277,20 +346,26 @@ impl ReiCallable for ReiFree {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let (ptr, size) = match arguments.get(0) {
             Some(Object::MBlock(p, s)) => (*p, *s),
             _ => {
-                return Err(ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+                let err_type = RuntimeErrorType::ErrorInNativeFn {
                     msg: "expected a MBlock when freeing memory".to_string(),
-                }))
+                };
+                return Err(ExecSignal::RuntimeError(RuntimeError::new(
+                    err_type,
+                    context.clone(),
+                )));
             }
         };
 
         let layout = Layout::from_size_align(size, 8).map_err(|e| {
-            ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+            let err_type = RuntimeErrorType::ErrorInNativeFn {
                 msg: format!("invalid layout: {}", e),
-            })
+            };
+            ExecSignal::RuntimeError(RuntimeError::new(err_type, context.clone()))
         })?;
 
         unsafe {
@@ -320,11 +395,13 @@ impl ReiCallable for ReiSizeOf {
         &self,
         _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
+        context: Rc<RefCell<ExecContext>>,
     ) -> Result<Object, ExecSignal> {
         let obj = arguments.get(0).ok_or_else(|| {
-            ExecSignal::RuntimeError(RuntimeError::ErrorInNativeFn {
+            let err_type = RuntimeErrorType::ErrorInNativeFn {
                 msg: "Expected one argument to _M_sizeof".to_string(),
-            })
+            };
+            ExecSignal::RuntimeError(RuntimeError::new(err_type, context.clone()))
         })?;
 
         let size = match obj {
@@ -341,6 +418,9 @@ impl ReiCallable for ReiSizeOf {
                 let object_size = std::mem::size_of::<Object>();
                 let total = object_size * v.borrow().len();
                 std::mem::size_of::<Vec<Object>>() + total
+            }
+            Object::Exception(e) => {
+                std::mem::size_of::<Box<RuntimeError<Token>>>() + std::mem::size_of_val(&**e)
             }
         };
 
