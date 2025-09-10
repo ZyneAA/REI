@@ -1,0 +1,8 @@
+expose class Request {
+
+    static get(path) {
+        let res = _NET_get(path);
+        return res;
+    }
+
+}

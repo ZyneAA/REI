@@ -1,0 +1,26 @@
+use std/net as Aether;
+use std/request as Request;
+
+let HOST = "127.0.0.1:8080";
+
+let app = Aether();
+
+fn mandalay() {
+    return Request.get("http://api.weatherapi.com/v1/forecast.json?key=aec71c1efde74d9c9f1132807252308&q=mandalay&days=3&aqi=no&alerts=no");
+}
+
+fn rangoon() {
+    return Request.get("http://api.weatherapi.com/v1/forecast.json?key=aec71c1efde74d9c9f1132807252308&q=rangoon&days=3&aqi=no&alerts=no");
+}
+
+fn tokyo() {
+    return Request.get("http://api.weatherapi.com/v1/forecast.json?key=aec71c1efde74d9c9f1132807252308&q=tokyo&days=3&aqi=no&alerts=no");
+}
+
+app.set_get("/mandalay", mandalay);
+app.set_get("/rangoon", rangoon);
+app.set_get("/tokyo", tokyo);
+
+println "Server running on " + HOST;
+app.serve(HOST);
+

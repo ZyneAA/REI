@@ -1,0 +1,9 @@
+expose class Request {
+
+    // Make a GET request to a resource
+    static get(path) {
+        let res = _NET_get(path);
+        return res;
+    }
+
+}

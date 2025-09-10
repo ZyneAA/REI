@@ -1,5 +1,6 @@
 expose class Instance {
 
+    // Get the type of obj
     typeof(type) {
 
         if (@typeof(this, type)) return true;
@@ -7,10 +8,12 @@ expose class Instance {
 
     }
 
+    // Destroy an attribute
     destroy(attribute) {
         @destroy(attribute);
     }
 
+    // Saftly mutate an attribute of obj
     mutate(attribute, new_val) {
         @mutate(attribute, new_val);
     }

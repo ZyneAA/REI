@@ -1,5 +1,6 @@
 expose class StdCompare {
 
+    // Check wheather if both obj inherith Comparable class
     static check(first, second, action) {
         let first_type_check = @typeof(first, "Comparable");
         let second_type_check = @typeof(second, "Comparable");
@@ -9,11 +10,13 @@ expose class StdCompare {
         }
     }
 
+    // Check if both objs are equal or not
     static is_eq(first, second) {
         StdCompare.check(first, second, "is_eq()");
         return first.get_comparable() == second.get_comparable();
     }
 
+    // Max from both objs
     static max(first, second) {
         StdCompare.check(first, second, "max()");
 
@@ -24,6 +27,7 @@ expose class StdCompare {
         }
     }
 
+    // Min from both objs
     static min(first, second) {
         StdCompare.check(first, second, "min()");
 

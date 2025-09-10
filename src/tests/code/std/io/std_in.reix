@@ -1,9 +1,11 @@
 expose class Input {
 
+    // Read line from std-io
     static read_line() {
         return _IO_read_line();
     }
 
+    // Read from std-io
     static read() {
         return _IO_read();
     }

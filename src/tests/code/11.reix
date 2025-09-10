@@ -1,12 +1,17 @@
-let l = _NET_listen("127.0.0.1:8080");
-let count = 0;
+let app = _NET_router();
 
-while (true) {
-    let c = _NET_accept(l);
-    let r = _NET_recv(c, 1024);
-    println "Request: " + r + count;
-
-    let resp = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello ";
-    count = count + 1;
-    _NET_send(c, resp);
+fn home(a) {
+    let b = _NET_get("http://api.weatherapi.com/v1/forecast.json?key=aec71c1efde74d9c9f1132807252308&q=Mandalay&days=3&aqi=no&alerts=no");
+    return b;
 }
+
+fn time() {
+    return _C_format_time();
+}
+
+_NET_router_get(app, "/", home);
+
+_NET_router_get(app, "/time", time);
+
+println("Starting server at http://127.0.0.1:8080");
+_NET_serve(app, "127.0.0.1:8080");

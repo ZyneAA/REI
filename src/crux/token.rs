@@ -120,6 +120,11 @@ pub static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
 });
 
 #[derive(Clone, Debug)]
+pub struct Router {
+    pub routes: HashMap<(String, String), Rc<dyn ReiCallable>>,
+}
+
+#[derive(Clone, Debug)]
 pub enum Object {
     Number(f64),
     Bool(bool),
@@ -132,6 +137,7 @@ pub enum Object {
     MBlock(*mut u8, usize),
     Vec(Rc<RefCell<Vec<Object>>>),
     Exception(Box<runtime_error::RuntimeError<Token>>),
+    Router(Rc<RefCell<Router>>),
 }
 
 impl Object {
@@ -175,6 +181,7 @@ impl fmt::Display for Object {
                 write!(f, "[{}]", elements.join(", "))
             }
             Object::Exception(e) => write!(f, "{}", e),
+            Object::Router(r) => write!(f, "{:?}", r),
         }
     }
 }

@@ -1,5 +1,6 @@
 expose clas Exception {
 
+    // Std error throwing
     throw() {
         if (@exist("throwable"))  {
             throw this.throwable;

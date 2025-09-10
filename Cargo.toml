@@ -19,3 +19,4 @@ target-lexicon = "0.13.2"
 chrono = "0.4.41"
 walkdir = "2.5.0"
 rand = "0.9.1"
+reqwest = { version = "0.12.23", features = ["blocking", "json"] }
