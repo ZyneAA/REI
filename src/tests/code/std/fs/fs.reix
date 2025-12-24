@@ -1,5 +1,7 @@
 expose class Fs {
 
+    //Both functions are experimental
+
     static build_dir(path, recursive) {
         _Fs_build_dir(path, recursive);
     }

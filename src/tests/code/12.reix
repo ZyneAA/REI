@@ -1,0 +1,63 @@
+class Node {
+    init(val) {
+        this.val = val;
+        this.next = null;
+    }
+}
+
+class LinkedList {
+    init() {
+        this.head = null;
+    }
+
+    append(data) {
+        let node = Node(data);
+
+        if (this.head == null) {
+            this.head = node;
+            return;
+        }
+
+        let cur = this.head;
+        while (cur.next) {
+            cur = cur.next;
+        }
+        cur.next = node;
+    }
+
+    delete() {
+        if (this.head == null) {
+            return;
+        }
+
+        if (this.head.next == null) {
+            this.head = null;
+        }
+
+        let cur = this.head;
+        while (cur.next and cur.next.next) {
+            cur = cur.next;
+        }
+        cur.next = null;
+    }
+
+    display() {
+        let cur = this.head;
+
+        while (cur) {
+            println cur.val;
+            cur = cur.next;
+        }
+    }
+}
+
+let list = LinkedList();
+list.append(1);
+list.append(2);
+list.append(3);
+list.append(4);
+list.delete();
+
+list.display();
+
+

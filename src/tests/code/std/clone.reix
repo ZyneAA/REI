@@ -1,9 +1,11 @@
 expose class Clone {
 
+    // Clone the current obj
     clone() {
         return _Mi_clone(this);
     }
 
+    // Clone from an obj
     static clone_from(target) {
         return _Mi_clone(target);
     }

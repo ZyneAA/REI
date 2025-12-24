@@ -1,13 +1,17 @@
 expose class Process {
+    // OS related functions
 
+    // Sudo-thread-panic
     static exit(code) {
         _Proc_exit(code);
     }
 
+    // Get the process id
     static pid() {
         return _Proc_pid();
     }
 
+    // The following functions are not stable
     static sleep(time) {
         _Proc_sleep(time);
     }

@@ -1,5 +1,7 @@
 expose class Drop {
 
+    // Destroy an attribute from an obj
+    // Unstable
     drop() {
 
         if (@exist("target")) {

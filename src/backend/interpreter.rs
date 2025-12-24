@@ -554,7 +554,7 @@ impl stmt::Visitor<Result<(), ExecSignal>> for Interpreter {
                         if let Some(finish_block) = finish_stmts {
                             let _ = self.execute(finish_block);
                         }
-                        eprint!("{}", err_obj);
+                        eprintln!("{}", err_obj);
                         self.context.borrow_mut().pop_call();
                         std::process::exit(1);
                     }
@@ -892,6 +892,7 @@ impl Interpreter {
                 format!("[{}]", elements.join(", "))
             }
             Object::Exception(e) => format!("{}", e),
+            Object::Router(r) => format!("{:?}", r),
         }
     }
 

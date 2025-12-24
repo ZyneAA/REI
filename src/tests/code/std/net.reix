@@ -1,0 +1,18 @@
+expose class Aether {
+
+    // Setup a http server
+    init() {
+        this.app = _NET_router();
+    }
+
+    // Set GET request route
+    set_get(path, func) {
+        _NET_router_get(this.app, path, func);
+    }
+
+    // Serve the current server
+    serve(host) {
+        _NET_serve(this.app, host);
+    }
+
+}

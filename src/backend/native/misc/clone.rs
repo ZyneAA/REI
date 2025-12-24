@@ -73,6 +73,7 @@ impl ReiCallable for ReiClone {
                     let cloned_error = Box::new((**e).clone()); // assumes RuntimeError<T> implements Clone
                     Object::Exception(cloned_error)
                 }
+                _ => {}
             }
         }
 

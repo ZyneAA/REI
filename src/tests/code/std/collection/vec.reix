@@ -4,6 +4,7 @@ expose class Vec {
         this.vec = _Co_new_vec();
     }
 
+    // Push to the vec
     push(val) {
 
         if (@exist("vec")) {
@@ -14,6 +15,7 @@ expose class Vec {
 
     }
 
+    // Pop from vec
     pop() {
 
         if (@exist("vec")) {
@@ -24,6 +26,7 @@ expose class Vec {
 
     }
 
+    // Append to a vec
     append(target) {
 
         let target_type = @typeof(target, "Vec");
@@ -39,6 +42,7 @@ expose class Vec {
 
     }
 
+    // Clear the current vec
     clear() {
 
         if (@exist("vec")) {
@@ -59,6 +63,7 @@ expose class Vec {
 
     }
 
+    // Split the vec at given index
     split(index) {
 
         if (@exist("vec")) {
@@ -69,6 +74,7 @@ expose class Vec {
 
     }
 
+    // Length of vec
     len() {
 
         if (@exist("vec")) {
@@ -79,6 +85,7 @@ expose class Vec {
 
     }
 
+    // Get the item from given index
     get(index) {
 
         if (@exist("vec")) {
@@ -89,6 +96,7 @@ expose class Vec {
 
     }
 
+    // Deep clone the current vec
     clone() {
 
         let new_vec = Vec();

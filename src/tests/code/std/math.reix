@@ -1,6 +1,6 @@
 expose class Math {
 
-    // --- Constants ---
+    // Contains numerous math related functions
     static PI() {
         return 3.141592653589793;
     }
